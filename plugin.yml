@@ -1,0 +1,38 @@
+name: Player Spy
+description: Player Spy is a player surveillance plugin that can record the movements and interactions of a player with the world, creatures, and players.
+version: Beta 1.2.0
+
+author: Schmoller
+
+main: au.com.mineauz.PlayerSpy.SpyPlugin
+
+commands:
+  playerspy:
+    usage: /<command> <spy | stopspy | list | playback | help> [args] 
+    aliases: ps
+permissions:
+  playerspy.*:
+    default: op
+    children:
+      playerspy.spy: true
+      playerspy.playback: true
+      playerspy.list: true
+      playerspy.help: true
+  playerspy.spy:
+    default: op
+    description: Allows a player to record the movements and activities of a player.
+  playerspy.playback:
+    default: op
+    description: Allows a player to playback the movements and activities of a player.
+  playerspy.list:
+    default: op
+    description: Allows a player to list all active recordings
+  playerspy.help:
+    default: op
+    description: Allows a player to view the help
+  playerspy.purge:
+    default: op
+    description: Allows a player to purge records
+  playerspy.inspect:
+    default: op
+    description: Allows a player to inspect changes
