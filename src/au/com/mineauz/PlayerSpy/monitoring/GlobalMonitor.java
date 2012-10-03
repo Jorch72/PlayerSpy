@@ -375,14 +375,10 @@ public class GlobalMonitor implements Listener
 		
 			if(mon != null)
 				mon.onDamage(event.getDamager(), null, event.getDamage());
-		}
-		
-		if(event.getDamager() != null)
-		{
-			// Record direct attack
+			
 			if(event.getDamager() instanceof Player)
 			{
-				ShallowMonitor mon = getMonitor((Player)event.getEntity());
+				mon = getMonitor((Player)event.getEntity());
 				
 				if(mon != null)
 					mon.onAttack(event.getEntity(), event.getDamage());
@@ -390,10 +386,32 @@ public class GlobalMonitor implements Listener
 			// Record attack through projectile
 			else if(event.getDamager() instanceof Projectile && ((Projectile)event.getDamager()).getShooter() instanceof Player)
 			{
-				ShallowMonitor mon = getMonitor((Player)((Projectile)event.getDamager()).getShooter());
+				mon = getMonitor((Player)((Projectile)event.getDamager()).getShooter());
 				
 				if(mon != null)
 					mon.onAttack(event.getEntity(), event.getDamage());
+			}
+		}
+		else
+		{
+			if(event.getDamager() != null)
+			{
+				// Record direct attack
+				if(event.getDamager() instanceof Player)
+				{
+					//ShallowMonitor mon = getMonitor((Player)event.getEntity());
+					
+					//if(mon != null)
+						//mon.onAttack(event.getEntity(), event.getDamage());
+				}
+				// Record attack through projectile
+				else if(event.getDamager() instanceof Projectile)
+				{
+					//ShallowMonitor mon = getMonitor((Player)((Projectile)event.getDamager()).getShooter());
+					
+					//if(mon != null)
+						//mon.onAttack(event.getEntity(), event.getDamage());
+				}
 			}
 		}
 	}

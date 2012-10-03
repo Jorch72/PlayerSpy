@@ -54,8 +54,10 @@ public class BlockHistoryTask implements Callable<HashMap<String, RecordList>>
 		
 		// Grab all the applicable sessions
 		// TODO: Make a version of this function that allows retrieving only sessions for a specific file
-		List<SessionInFile> allSessions = CrossReferenceIndex.instance.getSessionsFor(mLocation);
+		//List<SessionInFile> allSessions = CrossReferenceIndex.instance.getSessionsFor(mLocation);
+		List<SessionInFile> allSessions = CrossReferenceIndex.instance.getSessionsFor(mLocation.getChunk());
 		
+		LogUtil.finer("Found " + allSessions.size() + " possible session matches. Attempting to narrow");
 		for(SessionInFile fileSession : allSessions)
 		{
 			// Make sure its ok to use this file
@@ -104,9 +106,10 @@ public class BlockHistoryTask implements Callable<HashMap<String, RecordList>>
 				}
 			}
 		}
-
+		
 		CrossReferenceIndex.instance.releaseLastLogs();
 		
+		LogUtil.finer("Found " + results.size() + " session matches.");
 		LogUtil.fine("Search complete");
 		return results;
 	}

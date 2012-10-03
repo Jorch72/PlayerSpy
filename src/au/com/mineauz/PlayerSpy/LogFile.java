@@ -132,7 +132,7 @@ public class LogFile
 		
 		LogUtil.fine("Created a log file for '" + playerName + "'.");
 		
-		//CrossReferenceIndex.instance.addLogFile(log);
+		CrossReferenceIndex.instance.addLogFile(log);
 		return log;
 	}
 	/**
@@ -1054,9 +1054,11 @@ public class LogFile
 			
 			// Write the index entry
 			int id = addSession(session);
-			LogUtil.finer("Added session to cross reference");
-			CrossReferenceIndex.instance.addSession(this, session, records.getAllChunks());
-			LogUtil.finer("Done");
+			
+			if(!CrossReferenceIndex.instance.addSession(this, session, records.getAllChunks()))
+				LogUtil.warning("Failed to add session to xreference");
+			else
+				LogUtil.finer("Added session to cross reference");
 			return id;
 		}
 		catch(IOException e)
