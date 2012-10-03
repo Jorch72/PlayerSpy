@@ -79,7 +79,7 @@ public class SpyPlugin extends JavaPlugin
 		Upgrader.run();
 		
 		//addExistingMonitors();
-		//GlobalMonitor.instance.initialize();
+		GlobalMonitor.instance.initialize();
 	}
 	public void onDisable()
 	{

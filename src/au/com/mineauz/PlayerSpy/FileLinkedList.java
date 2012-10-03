@@ -433,14 +433,23 @@ public abstract class FileLinkedList<E extends IWritable> implements List<E>
 	{
 		if(location == 0)
 			return null;
+		
+		location = getModifiedAddress(location);
 		mFile.seek(location);
 		ItemContainer<E> container = new ItemContainer<E>();
 		container.read(mFile, mItemClass);
-		
+		if(container.Levels == 0)
+			LogUtil.severe("Attempted to read a container with 0 levels");
+		assert container.Levels != 0 : "Attempted to read a container with 0 levels";
+
 		return container;
 	}
 	private void writeAt(long location, ItemContainer<E> container) throws IOException
 	{
+		if(container.Levels == 0)
+			LogUtil.severe("Attempted to write a container with 0 levels");
+		assert container.Levels != 0 : "Attempted to write a container with 0 levels";
+		
 		mFile.seek(location);
 		container.write(mFile);
 	}
@@ -452,7 +461,7 @@ public abstract class FileLinkedList<E extends IWritable> implements List<E>
 		writeAt(location, container);
 		onUseSpace(location,container.getSize());
 		
-		LogUtil.info("*** Relocating item " + container.Data.hashCode() + " from @" + currentLocation + " to @" + location);
+		//LogUtil.info("*** Relocating item " + container.Data.hashCode() + " from @" + currentLocation + " to @" + location);
 		mAddressMappings.put(currentLocation, location);
 		
 		// Update the references
@@ -704,7 +713,7 @@ public abstract class FileLinkedList<E extends IWritable> implements List<E>
 				handleDemote(topLeft,lastPointers[lastPointers.length-1], topLeft.Levels-1, index - lastWidths[lastWidths.length-1]);
 		}
 		// Because the promotion / demotions of the top left can affect the top right, we will need to reload it
-		topRight = readAt(getModifiedAddress(topRightLocation));
+		topRight = readAt(topRightLocation);
 		if(topRight != null)
 		{
 			if(!handlePromote(topRight,getModifiedAddress(topRightLocation), topRight.Levels-1, index + nextWidths[nextWidths.length-1]))
@@ -879,14 +888,14 @@ public abstract class FileLinkedList<E extends IWritable> implements List<E>
 			// Try to promote / demote the neighbours at each level
 			for(int l = container.Levels - 1; l >= 1; l--)
 			{
-				left = readAt(getModifiedAddress(container.LastPointers[l]));
+				left = readAt(container.LastPointers[l]);
 				if(left != null)
 				{
 					if(!handlePromote(left,getModifiedAddress(container.LastPointers[l]),left.Levels-1,index - container.LastWidths[l]))
 						handleDemote(left,getModifiedAddress(container.LastPointers[l]),left.Levels-1,index - container.LastWidths[l]);
 				}
 				
-				right = readAt(getModifiedAddress(container.NextPointers[l]));
+				right = readAt(container.NextPointers[l]);
 				
 				if(right != null)
 				{
@@ -978,7 +987,7 @@ public abstract class FileLinkedList<E extends IWritable> implements List<E>
 			// Handle cascade demotes 
 			if(left != null)
 				handleDemote(left, container.LastPointers[level], left.Levels-1, index - container.LastWidths[level]);
-			right = readAt(getModifiedAddress(container.NextPointers[level]));
+			right = readAt(container.NextPointers[level]);
 			if(right != null)
 				handleDemote(right, getModifiedAddress(container.NextPointers[level]), right.Levels-1, index + container.NextWidths[level]);
 			
@@ -998,12 +1007,12 @@ public abstract class FileLinkedList<E extends IWritable> implements List<E>
 
 
 			// Handle cascade promotes of the next level down
-			left = readAt(getModifiedAddress(container.LastPointers[level]));
+			left = readAt(container.LastPointers[level]);
 			
 			if(left != null)
 				handlePromote(left,getModifiedAddress(container.LastPointers[level]),left.Levels-1,index - container.LastWidths[level]);
 
-			right = readAt(getModifiedAddress(container.NextPointers[level]));
+			right = readAt(container.NextPointers[level]);
 			if(right != null)
 				handlePromote(right,getModifiedAddress(container.NextPointers[level]),right.Levels-1,index + container.NextWidths[level]);
 			return true;
@@ -1618,7 +1627,7 @@ class ItemContainer<E extends IWritable>
 	
 	public void promote()
 	{
-		LogUtil.info("**** Item " + Data.hashCode() + " was promoted to level " + Levels);
+		//LogUtil.info("**** Item " + Data.hashCode() + " was promoted to level " + Levels);
 		Levels++;
 		LastPointers = Arrays.copyOf(LastPointers, Levels);
 		NextPointers = Arrays.copyOf(NextPointers, Levels);
@@ -1628,7 +1637,8 @@ class ItemContainer<E extends IWritable>
 	public void demote()
 	{
 		if(Levels == 1)
-			return;
+			LogUtil.severe("Attempted to demote a container that has 1 level");
+		assert Levels > 1 : "Attempted to demote a container that has 1 level";
 		
 		Levels--;
 		LastPointers = Arrays.copyOf(LastPointers, Levels);

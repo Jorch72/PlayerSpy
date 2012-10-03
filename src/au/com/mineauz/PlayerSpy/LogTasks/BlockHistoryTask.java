@@ -54,7 +54,7 @@ public class BlockHistoryTask implements Callable<HashMap<String, RecordList>>
 		
 		// Grab all the applicable sessions
 		// TODO: Make a version of this function that allows retrieving only sessions for a specific file
-		List<SessionInFile> allSessions = CrossReferenceIndex.instance.getSessionsFor(mLocation.getChunk());
+		List<SessionInFile> allSessions = CrossReferenceIndex.instance.getSessionsFor(mLocation);
 		
 		for(SessionInFile fileSession : allSessions)
 		{
@@ -71,7 +71,12 @@ public class BlockHistoryTask implements Callable<HashMap<String, RecordList>>
 			
 			String targetName = fileSession.Log.getName();
 			if(fileSession.Log.isUsingOwnerTags())
-				targetName = fileSession.Log.getOwnerTag(fileSession.Session);
+			{
+				if(fileSession.Log.getName().equals("__global"))
+					targetName = fileSession.Log.getOwnerTag(fileSession.Session);
+				else
+					targetName = targetName + ">" + fileSession.Log.getOwnerTag(fileSession.Session); 
+			}
 			
 			if(!results.containsKey(targetName))
 				results.put(targetName, new RecordList());

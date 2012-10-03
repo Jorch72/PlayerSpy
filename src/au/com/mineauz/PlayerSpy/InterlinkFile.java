@@ -18,7 +18,7 @@ import com.google.common.collect.Multiset.Entry;
 
 public class InterlinkFile 
 {
-	public class Predicate
+	public static class Predicate
 	{
 		private long mStartTime = 0;
 		private long mEndTime = Long.MAX_VALUE;
@@ -116,7 +116,7 @@ public class InterlinkFile
 	 * @param file The location of the interlink file
 	 * @return True if the load was successful, false otherwise
 	 */
-	public boolean load(File file)
+	public synchronized boolean load(File file)
 	{
 		assert !mIsLoaded;
 		
@@ -159,7 +159,7 @@ public class InterlinkFile
 	/**
 	 * Closes the interlink file
 	 */
-	public void close()
+	public synchronized void close()
 	{
 		assert mIsLoaded;
 		
@@ -199,7 +199,7 @@ public class InterlinkFile
 	 * @param allChunks All the chunks present in the session
 	 * @return True if it was added, false if an io error occurred
 	 */
-	public boolean addSession(LogFile log, IndexEntry session, String owner, List<Chunk> allChunks)
+	public synchronized boolean addSession(LogFile log, IndexEntry session, String owner, List<Chunk> allChunks)
 	{
 		assert mIsLoaded;
 		try
@@ -232,7 +232,7 @@ public class InterlinkFile
 	 * @param session The session to remove
 	 * @return True if it was removed, false if it didnt exist or an io error occurred
 	 */
-	public boolean removeSession(LogFile log, IndexEntry session)
+	public synchronized boolean removeSession(LogFile log, IndexEntry session)
 	{
 		assert mIsLoaded;
 		// TODO: removeSession()
@@ -246,7 +246,7 @@ public class InterlinkFile
 	 * @param allChunks all chunks present in the update, only new chunks will be added
 	 * @return True if the update was successful, false if the session didnt exist, or an io error occurred
 	 */
-	public boolean updateSession(LogFile log, IndexEntry session, List<Chunk> allChunks)
+	public synchronized boolean updateSession(LogFile log, IndexEntry session, List<Chunk> allChunks)
 	{
 		assert mIsLoaded;
 		
@@ -279,6 +279,8 @@ public class InterlinkFile
 		}
 		
 		sessionEntry = result.getArg2();
+		sessionEntry.StartTime = session.StartTimestamp;
+		sessionEntry.EndTime = session.EndTimestamp;
 		
 		if(mSessions.set(index, sessionEntry) == null)
 		{
@@ -310,11 +312,43 @@ public class InterlinkFile
 		
 		return true;
 	}
+	/**
+	 * Updates the indices so that they point correctly
+	 * @param log The logfile the session is in
+	 * @param oldIndex The index the session was in
+	 * @param newIndex The index the session is in
+	 * @return True if the move succeeded
+	 */
+	public synchronized boolean moveSession(LogFile log, int oldIndex, int newIndex)
+	{
+		short fileId = -1;
+		
+		for(Map.Entry<Short, FileIndexEntry> entry : mFileMap.entrySet())
+		{
+			if(entry.getValue().LogName.equalsIgnoreCase(log.getName()))
+			{
+				fileId = entry.getKey();
+				break;
+			}
+		}
+		if(fileId == -1)
+			return false;
+		
+		Pair<Integer, SessionIndexEntry> data = mSessions.get(new SessionComparer(fileId, oldIndex));
+		if(data.getArg1() == -1)
+			return false;
+		
+		if(!mSessions.remove(data.getArg1()))
+			return false;
+		
+		if(!mSessions.add(data.getArg2()))
+			return false;
+		
+		return true;
+	}
 	
 	private void loadFileList() throws IOException
 	{
-		assert mIsLoaded;
-		
 		FileIndexEntry.sNextId = -1;
 		mFileMap = new HashMap<Short, FileIndexEntry>();
 		
@@ -327,8 +361,6 @@ public class InterlinkFile
 	}
 	private void loadHoleList() throws IOException
 	{
-		assert mIsLoaded;
-		
 		mFile.seek(mHeader.HoleLocation);
 		mHoles = new ArrayList<HoleEntry>();
 		
@@ -704,7 +736,7 @@ public class InterlinkFile
 			if(ent.LogName.equalsIgnoreCase(log.getName()))
 				return ent.Id;
 		}
-		
+		LogUtil.info("Adding new file" + log.getName());
 		// Prepare the entry
 		FileIndexEntry fileEnt = new FileIndexEntry();
 		fileEnt.LogName = log.getName();

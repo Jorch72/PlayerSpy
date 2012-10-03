@@ -122,6 +122,7 @@ public class LogFile
 		log.mPlayerName = playerName;
 		log.mIndex = new ArrayList<IndexEntry>();
 		log.mHoleIndex = new ArrayList<HoleEntry>();
+		log.mOwnerMap = new ArrayList<OwnerMapEntry>();
 		log.mIsLoaded = true;
 		log.mFile = file;
 		log.mActiveSession = null;
@@ -131,7 +132,7 @@ public class LogFile
 		
 		LogUtil.fine("Created a log file for '" + playerName + "'.");
 		
-		CrossReferenceIndex.instance.addLogFile(log);
+		//CrossReferenceIndex.instance.addLogFile(log);
 		return log;
 	}
 	/**
@@ -756,7 +757,7 @@ public class LogFile
 			session.TotalSize += bstream.size();
 			session.EndTimestamp = records.getEndTimestamp();
 			session.RecordCount += records.size();
-			updateSession(mActiveSessionIndex, session);
+			updateSession(mIndex.indexOf(session), session);
 			
 			CrossReferenceIndex.instance.updateSession(this, session, records.getAllChunks());
 		}
@@ -775,6 +776,11 @@ public class LogFile
 	{
 		assert mIsLoaded;
 		assert mHeader.VersionMajor >= 2 : "Owner tags are only suppored in version 2 and above";
+		if(mOwnerMap == null)
+		{
+			LogUtil.severe("OwnerMap is null. Log: " + getName() + " Version: " + mHeader.VersionMajor + "." + mHeader.VersionMinor);
+			return false;
+		}
 		if(!mHeader.UseOwnerTags)
 			throw new IllegalStateException("Owner tags are not enabled in this log");
 
@@ -1623,7 +1629,7 @@ public class LogFile
 	}
 	private synchronized void updateSession(int index, IndexEntry session)
 	{
-		assert index >= 0 && index < mIndex.size();
+		assert index >= 0 && index < mIndex.size() : "Tried to update session " + index + "/" + mIndex.size();
 		try
 		{
 			mFile.seek(mHeader.IndexLocation + index * IndexEntry.cSize);
@@ -1835,7 +1841,7 @@ public class LogFile
 		try
 		{
 			mOwnerMap = new ArrayList<OwnerMapEntry>();
-			
+			LogUtil.info("Ownermap is assigned");
 			if(!header.UseOwnerTags)
 				return true;
 			
@@ -1893,7 +1899,12 @@ public class LogFile
 			mIndex = null;
 			mHoleIndex.clear();
 			mHoleIndex = null;
-			
+			if(mOwnerMap != null)
+			{
+				mOwnerMap.clear();
+				mOwnerMap = null;
+				LogUtil.info("Ownermap is removed");
+			}
 			LogUtil.finest("CloseTask is completed");
 		}
 

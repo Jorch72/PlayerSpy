@@ -10,8 +10,6 @@ import java.util.Random;
 public class FLLTest 
 {
 	private RandomAccessFile mFile;
-	private TestFLL mTest;
-	
 	public FLLTest()
 	{
 	}
@@ -29,7 +27,10 @@ public class FLLTest
 			mFile = new RandomAccessFile(path, "rw");
 //			mTest = new TestFLL(mFile, 0, false);
 			//LogUtil.info("There are " + mTest.size() + " items in the list");
-			mTest = new TestFLL(mFile, 0, true);
+			TestFLL test = new TestFLL(mFile, 0, true);
+			TestFLL test2 = new TestFLL(mFile, mFile.length(), true);
+			TestFLL test3 = new TestFLL(mFile, mFile.length(), true);
+			Random orderer = new Random(12345);
 			
 			int count = 25;
 			for(int trial = 0; trial < 100; trial++)
@@ -39,7 +40,7 @@ public class FLLTest
 				long time = 0;
 				if(random)
 				{
-					Random r = new Random(trial);
+					Random r = new Random(trial * 91 + 5);
 					ArrayList<Integer> sequence = new ArrayList<Integer>(count);
 					for(int i = 0; i < count; i++)
 						sequence.add(i);
@@ -64,8 +65,31 @@ public class FLLTest
 					int i = 0;
 					for(i = 0; i < count; i++)
 					{
-						if(!mTest.add(new TestElement(sequence.get(i))))
-							break;
+						int v = orderer.nextInt(3);
+						LogUtil.info("Adding into " + v);
+						if(v == 0)
+						{
+							if(!test.add(new TestElement(sequence.get(i))))
+								break;
+						}
+						else if(v == 1)
+						{
+							if(!test2.add(new TestElement(sequence.get(i))))
+								break;
+						}
+						else
+						{
+							if(!test3.add(new TestElement(sequence.get(i))))
+								break;
+						}
+						
+						if(orderer.nextInt(10) == 0)
+						{
+							// Potentially force a duplicate
+							i--;
+							continue;
+						}
+						
 					}
 				
 					if(i == count)
@@ -81,8 +105,23 @@ public class FLLTest
 					int i = 0;
 					for(i = 0; i < count; i++)
 					{
-						if(!mTest.add(new TestElement(i)))
-							break;
+						int v = orderer.nextInt(3);
+						LogUtil.info("Adding into " + v);
+						if(v == 0)
+						{
+							if(!test.add(new TestElement(i)))
+								break;
+						}
+						else if(v == 1)
+						{
+							if(!test2.add(new TestElement(i)))
+								break;
+						}
+						else
+						{
+							if(!test3.add(new TestElement(i)))
+								break;
+						}
 					}
 					
 					if(i == count)
@@ -92,30 +131,44 @@ public class FLLTest
 				}
 				
 				LogUtil.info("Operation took " + ((Calendar.getInstance().getTimeInMillis() - time) / 1000F) + " seconds to complete");
-				LogUtil.info("Shifts: " + mTest.Debug);
-				mTest.Debug = 0;
+				LogUtil.info("Shifts: " + test.Debug);
+				test.Debug = 0;
 				
 				LogUtil.info("Now removing all items");
 				
 				random = true;
 				if(random)
 				{
-					Random r = new Random(trial + 10000);
+					Random r = new Random((trial + 10000) * 2);
 					
 					LogUtil.info("* Removing " + count + " items randomly from the list");
 					time = Calendar.getInstance().getTimeInMillis();
-					
-					int i = 0;
-					for(i = 0; i < count; i++)
+				
+					LogUtil.info("Removing from 1");
+					while(test.size() > 0)
 					{
-						if(mTest.remove((int)r.nextInt(mTest.size())) == null)
+						if(test.remove((int)r.nextInt(test.size())) == null)
 							break;
 					}
-				
-					if(i == count)
-						LogUtil.info("*All items have been removed");
-					else
-						LogUtil.severe("*Some of the items failed to remove");
+					LogUtil.info("Removing from 2");
+					while(test2.size() > 0)
+					{
+						if(test2.remove((int)r.nextInt(test2.size())) == null)
+							break;
+					}
+					LogUtil.info("Removing from 3");
+					while(test3.size() > 0)
+					{
+						if(test3.remove((int)r.nextInt(test3.size())) == null)
+							break;
+					}
+					
+					if(test.size() != 0)
+						LogUtil.severe("test1 still has " + test.size() + " items in it");
+					if(test2.size() != 0)
+						LogUtil.severe("test2 still has " + test2.size() + " items in it");
+					if(test3.size() != 0)
+						LogUtil.severe("test3 still has " + test3.size() + " items in it");
 				}
 				else
 				{
@@ -125,7 +178,7 @@ public class FLLTest
 					int i = 0;
 					for(i = 0; i < count; i++)
 					{
-						if(mTest.remove(0) == null)
+						if(test.remove(0) == null)
 							break;
 					}
 					
@@ -154,22 +207,22 @@ public class FLLTest
 				path.delete();
 			
 			mFile = new RandomAccessFile(path, "rw");
-			mTest = new TestFLL(mFile, 0, true);
+			TestFLL test = new TestFLL(mFile, 0, true);
 			
 			Random r = new Random(1532);
 			long time = Calendar.getInstance().getTimeInMillis();
 			for(int trial = 0; trial < 1000; trial++)
 			{
 
-				if(r.nextBoolean() || mTest.size() == 0)
+				if(r.nextBoolean() || test.size() == 0)
 				{
 					// Insert
-					mTest.add(new TestElement(trial));
+					test.add(new TestElement(trial));
 				}
 				else
 				{
 					// Remove
-					mTest.remove((int)r.nextInt(mTest.size()));
+					test.remove((int)r.nextInt(test.size()));
 				}
 			}
 			LogUtil.info("Operation took " + ((Calendar.getInstance().getTimeInMillis() - time) / 1000F) + " seconds to complete");

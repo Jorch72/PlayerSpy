@@ -41,7 +41,7 @@ public class DebugCommand implements ICommand
 	public boolean onCommand(CommandSender sender, String label, String[] args) 
 	{
 		FLLTest test = new FLLTest();
-		test.doTest2();
+		test.doTest();
 		
 		return true;
 	}

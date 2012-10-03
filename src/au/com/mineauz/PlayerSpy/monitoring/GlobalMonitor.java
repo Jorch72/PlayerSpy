@@ -218,7 +218,7 @@ public class GlobalMonitor implements Listener
 	{
 		if(mBuffers.get(cause).size() > 0)
 		{
-			mGlobalLog.appendRecords((RecordList)mBuffers.get(cause).clone(), cause);
+			mGlobalLog.appendRecordsAsync((RecordList)mBuffers.get(cause).clone(), cause);
 			mBuffers.get(cause).clear();
 		}
 	}
@@ -230,7 +230,7 @@ public class GlobalMonitor implements Listener
 			if(ent.getValue().size() == 0)
 				continue;
 			
-			mGlobalLog.appendRecords((RecordList)ent.getValue().clone(), ent.getKey());
+			mGlobalLog.appendRecordsAsync((RecordList)ent.getValue().clone(), ent.getKey());
 			ent.getValue().clear();
 		}
 	}

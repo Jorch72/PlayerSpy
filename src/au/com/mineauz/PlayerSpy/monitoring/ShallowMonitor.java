@@ -41,7 +41,7 @@ public class ShallowMonitor
 	/**
 	 * The size in bytes at which the buffer will be appended to the log
 	 */
-	public static int sBufferFlushThreshold = 4096;
+	public static int sBufferFlushThreshold = 16384;
 	
 	public ShallowMonitor(OfflinePlayer player)
 	{
