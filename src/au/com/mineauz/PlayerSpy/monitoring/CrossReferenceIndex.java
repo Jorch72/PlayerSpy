@@ -504,6 +504,7 @@ public class CrossReferenceIndex
 	/**
 	 * Closes or decreases reference counts of opened logs from the getSessionsFor() methods
 	 */
+	@Deprecated
 	public synchronized void releaseLastLogs()
 	{
 		for(Entry<Integer, LogFile> ent : mOpenedLogs.entrySet())

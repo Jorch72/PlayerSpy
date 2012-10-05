@@ -7,13 +7,16 @@ import java.util.concurrent.Callable;
 import org.bukkit.Location;
 
 import au.com.mineauz.PlayerSpy.LogUtil;
+import au.com.mineauz.PlayerSpy.Pair;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.Utility;
 import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
+import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex.SessionInFile;
+import au.com.mineauz.PlayerSpy.monitoring.ShallowMonitor;
 
 /**
  * A task that finds the history of a block
@@ -57,7 +60,6 @@ public class BlockHistoryTask implements Callable<HashMap<String, RecordList>>
 		//List<SessionInFile> allSessions = CrossReferenceIndex.instance.getSessionsFor(mLocation);
 		List<SessionInFile> allSessions = CrossReferenceIndex.instance.getSessionsFor(mLocation.getChunk());
 		
-		LogUtil.finer("Found " + allSessions.size() + " possible session matches. Attempting to narrow");
 		for(SessionInFile fileSession : allSessions)
 		{
 			// Make sure its ok to use this file
@@ -72,12 +74,23 @@ public class BlockHistoryTask implements Callable<HashMap<String, RecordList>>
 			RecordList target = null;
 			
 			String targetName = fileSession.Log.getName();
-			if(fileSession.Log.isUsingOwnerTags())
+			if(fileSession.Log.requiresOwnerTags())
 			{
 				if(fileSession.Log.getName().equals("__global"))
 					targetName = fileSession.Log.getOwnerTag(fileSession.Session);
 				else
-					targetName = targetName + ">" + fileSession.Log.getOwnerTag(fileSession.Session); 
+					targetName = Utility.formatName(targetName, fileSession.Log.getOwnerTag(fileSession.Session)); 
+			}
+			else
+			{
+				String ownerTag = fileSession.Log.getOwnerTag(fileSession.Session);
+				if(ownerTag != null)
+				{
+					if(fileSession.Log.getName().equals("__global"))
+						targetName = ownerTag;
+					else
+						targetName = Utility.formatName(targetName, ownerTag);
+				}
 			}
 			
 			if(!results.containsKey(targetName))
@@ -107,9 +120,44 @@ public class BlockHistoryTask implements Callable<HashMap<String, RecordList>>
 			}
 		}
 		
+		// Add in any records that are yet to be written to file
+		for(ShallowMonitor mon : GlobalMonitor.instance.getAllMonitors())
+		{
+			List<Pair<String, RecordList>> inBuffer = mon.getCurrentBlockRecords();
+			for(Pair<String, RecordList> pair : inBuffer)
+			{
+				RecordList target = null;
+				String name = Utility.formatName(mon.getMonitorTarget().getName(), pair.getArg1());
+				if(!results.containsKey(name))
+					results.put(name, new RecordList());
+				
+				target = results.get(name);
+				
+				// Load up the records in the session
+				RecordList source = pair.getArg2();
+				
+				// Find all block change records at that location
+				for(Record record : source)
+				{
+					if(record.getType() != RecordType.BlockChange)
+						continue;
+					
+					if(record.getTimestamp() < mStartTime)
+						continue;
+					if(record.getTimestamp() > mEndTime)
+						break;
+					
+					if(((BlockChangeRecord)record).getLocation().getWorld() == mLocation.getWorld())
+					{
+						if(((BlockChangeRecord)record).getLocation().distance(mLocation) < 1)
+							target.add(record);
+					}
+				}
+			}
+		}
+		
 		CrossReferenceIndex.instance.releaseLastLogs();
 		
-		LogUtil.finer("Found " + results.size() + " session matches.");
 		LogUtil.fine("Search complete");
 		return results;
 	}

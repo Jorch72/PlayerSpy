@@ -384,6 +384,7 @@ public class SpyPlugin extends JavaPlugin
 	
 	private void onTick()
 	{
+		GlobalMonitor.instance.update();
 		for(Entry<Player, PlaybackContext> playback : mPlayers.entrySet())
 		{
 			playback.getValue().update();
@@ -399,4 +400,10 @@ public class SpyPlugin extends JavaPlugin
 	
 	private static SpyPlugin sPluginInstance;
 	public static SpyPlugin getInstance() { return sPluginInstance; }
+
+	private static Config mConfig = new Config();
+	public static Config getSettings() { return mConfig; }
+	
+	private static PriorityExecutor mExecutor = new PriorityExecutor(3);
+	public static PriorityExecutor getExecutor() { return mExecutor; }
 }

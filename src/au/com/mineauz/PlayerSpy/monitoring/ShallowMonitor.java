@@ -1,6 +1,9 @@
 package au.com.mineauz.PlayerSpy.monitoring;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map.Entry;
 
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -25,6 +28,7 @@ import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.LogUtil;
+import au.com.mineauz.PlayerSpy.Pair;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.Utility;
 import au.com.mineauz.PlayerSpy.Records.*;
@@ -33,7 +37,7 @@ public class ShallowMonitor
 {
 	private LogFile mLog;
 	private OfflinePlayer mPlayer;
-	private RecordList mBuffer;
+	private HashMap<String, RecordList> mBuffers = new HashMap<String, RecordList>();
 	
 	private Inventory mCurrentTransactionInventory;
 	private ArrayList<ItemStack> mCurrentTransactions;
@@ -53,20 +57,21 @@ public class ShallowMonitor
 		if(mLog == null)
 			throw new ExceptionInInitializerError(player.getName() + " has no log and it cannot be created.");
 		
-		mBuffer = new RecordList();
+		mBuffers.put(null, new RecordList());
 	}
+	@SuppressWarnings("unchecked")
 	public ShallowMonitor(ShallowMonitor other)
 	{
 		mPlayer = other.mPlayer;
 		mLog = other.mLog;
-		mBuffer = (RecordList)other.mBuffer.clone();
+		mBuffers = (HashMap<String, RecordList>)other.mBuffers.clone();
 	}
 	/**
 	 * Cleans up everything, appends any remaining data, closes log.
 	 */
 	public synchronized void shutdown()
 	{
-		flush();
+		flushAll();
 		mLog.closeAsync();
 		if(!mLog.isLoaded())
 			LogFileRegistry.unloadLogFile(mPlayer);
@@ -81,28 +86,84 @@ public class ShallowMonitor
 	 */
 	public synchronized void logRecord(Record record)
 	{
-		mBuffer.add(record);
-		tryFlush();
+		mBuffers.get(null).add(record);
+		tryFlush(null);
+	}
+	public synchronized void logRecord(Record record, String cause)
+	{
+		if(!mBuffers.containsKey(cause))
+			mBuffers.put(cause, new RecordList());
+		
+		mBuffers.get(cause).add(record);
+		tryFlush(cause);
 	}
 	
 	/**
 	 * Appends the buffer to the log file if the buffer is large enough
 	 */
-	private void tryFlush()
+	private void tryFlush(String cause)
 	{
-		if(mBuffer.getDataSize() >= sBufferFlushThreshold)
-			flush();
+		if(mBuffers.get(cause).getDataSize() >= sBufferFlushThreshold)
+			flush(cause);
 	}
 	/**
 	 * Appends the buffer to the log file
 	 */
-	private void flush()
+	private void flush(String cause)
 	{
-		if(mBuffer.size() > 0)
+		RecordList buffer = mBuffers.get(cause);
+		if(buffer.size() > 0)
 		{
-			mLog.appendRecordsAsync((RecordList)mBuffer.clone());
-			mBuffer.clear();
+			if(cause != null)
+			{
+				LogUtil.info("Appending data to " + mLog.getName() + " using " + cause);
+				mLog.appendRecordsAsync((RecordList)buffer.clone(), cause);
+			}
+			else
+				mLog.appendRecordsAsync((RecordList)buffer.clone());
+				
+			buffer.clear();
 		}
+	}
+	private void flushAll()
+	{
+		for(Entry<String, RecordList> ent : mBuffers.entrySet())
+		{
+			if(ent.getValue().size() == 0)
+				continue;
+			
+			if(ent.getKey() != null)
+			{
+				LogUtil.info("Appending data to " + mLog.getName() + " using " + ent.getKey());
+				mLog.appendRecordsAsync((RecordList)ent.getValue().clone(), ent.getKey());
+			}
+			else
+				mLog.appendRecordsAsync((RecordList)ent.getValue().clone());
+
+			ent.getValue().clear();
+		}
+	}
+	
+	/**
+	 * Gets all current block change records in the buffers
+	 */
+	public synchronized List<Pair<String, RecordList>> getCurrentBlockRecords()
+	{
+		ArrayList<Pair<String,RecordList>> results = new ArrayList<Pair<String,RecordList>>();
+		for(Entry<String, RecordList> buffer : mBuffers.entrySet())
+		{
+			RecordList output = new RecordList();
+			for(Record record : buffer.getValue())
+			{
+				if(record.getType() == RecordType.BlockChange)
+					output.add(record);
+			}
+			
+			if(!output.isEmpty())
+				results.add(new Pair<String, RecordList>(buffer.getKey(), output));
+		}
+		
+		return results;
 	}
 	
 	public void beginTransaction(Inventory inventory)
@@ -263,7 +324,8 @@ public class ShallowMonitor
 	}
 	public void onBucketFill(Block block, ItemStack resultant)
 	{
-		logRecord(new BlockChangeRecord(block, null, false));
+		if(block != null)
+			logRecord(new BlockChangeRecord(block, null, false));
 	}
 	public void onBucketEmpty(Block block, ItemStack resultant)
 	{

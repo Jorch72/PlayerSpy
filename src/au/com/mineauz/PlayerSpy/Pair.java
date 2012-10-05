@@ -20,4 +20,13 @@ public class Pair<A,B>
 	{
 		return mArg2;
 	}
+
+	public void setArg1(A arg1) 
+	{
+		mArg1 = arg1;
+	}
+	public void setArg2(B arg2) 
+	{
+		mArg2 = arg2;
+	}
 }

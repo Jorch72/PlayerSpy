@@ -254,4 +254,12 @@ public class Utility
         }
         return name;
     }
+	
+	public static String formatName(String playerName, String cause)
+	{
+		if(cause == null)
+			return playerName;
+		else
+			return playerName + ">" + cause;
+	}
 }

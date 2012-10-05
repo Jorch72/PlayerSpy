@@ -42,9 +42,9 @@ public class LogFile
 	{
 		return mIsLoaded && !mIsClosing;
 	}
-	public boolean isUsingOwnerTags()
+	public boolean requiresOwnerTags()
 	{
-		return mHeader.UseOwnerTags;
+		return mHeader.RequiresOwnerTags;
 	}
 	
 	public synchronized long getStartDate()
@@ -95,7 +95,11 @@ public class LogFile
 		header.IndexSize = 0;
 		header.SessionCount = 0;
 		
-		header.UseOwnerTags = false;
+		header.OwnerMapCount = 0;
+		header.OwnerMapSize = 0;
+		header.OwnerMapLocation = header.getSize() + HoleEntry.cSize;
+		
+		header.RequiresOwnerTags = false;
 		
 		if(!header.write(file))
 		{
@@ -145,11 +149,8 @@ public class LogFile
 	{
 		LogFile log = create("__global", filename);
 		
-		log.mHeader.UseOwnerTags = true;
-		log.mHeader.OwnerMapCount = 0;
-		log.mHeader.OwnerMapSize = 0;
-		log.mHeader.OwnerMapLocation = log.mHeader.getSize() + HoleEntry.cSize;
-		
+		log.mHeader.RequiresOwnerTags = true;
+
 		try
 		{
 			log.mFile.seek(0);
@@ -222,7 +223,7 @@ public class LogFile
 				return false;
 			}
 			
-			if(header.VersionMajor == 2 && header.UseOwnerTags && !readOwnerMap(file, header))
+			if(header.VersionMajor == 2 && !readOwnerMap(file, header))
 			{
 				SpyPlugin.getInstance().getLogger().severe("Failed to load log file. Reason: An IOException occured.");
 				return false;
@@ -337,7 +338,7 @@ public class LogFile
 			if(ent.SessionIndex == session)
 				return ent.Owner;
 		}
-		return mPlayerName;
+		return null;
 	}
 	
 	/**
@@ -351,7 +352,7 @@ public class LogFile
 	{
 		assert mIsLoaded;
 		assert mHeader.VersionMajor >= 2 : "Owner tags are only suppored in version 2 and above";
-		if(!mHeader.UseOwnerTags)
+		if(!mHeader.RequiresOwnerTags)
 			throw new IllegalStateException("Owner tags are not enabled in this log");
 		
 		
@@ -476,7 +477,7 @@ public class LogFile
 	{
 		assert mIsLoaded;
 		assert mHeader.VersionMajor >= 2 : "Owner tags are only suppored in version 2 and above";
-		if(!mHeader.UseOwnerTags)
+		if(!mHeader.RequiresOwnerTags)
 			throw new IllegalStateException("Owner tags are not enabled in this log");
 		
 		ArrayList<IndexEntry> relevantEntries = new ArrayList<IndexEntry>();
@@ -781,8 +782,6 @@ public class LogFile
 			LogUtil.severe("OwnerMap is null. Log: " + getName() + " Version: " + mHeader.VersionMajor + "." + mHeader.VersionMinor);
 			return false;
 		}
-		if(!mHeader.UseOwnerTags)
-			throw new IllegalStateException("Owner tags are not enabled in this log");
 
 		try
 		{
@@ -823,13 +822,13 @@ public class LogFile
 	 * If there is no active session, a new session will be created
 	 * @param records The list of records to append
 	 * @return True if append was successful
-	 * @throws IllegalStateException if owner tags are enabled in the log file. You must use the other version of appendRecords()
+	 * @throws IllegalStateException if owner tags are required in the log file. You must use the other version of appendRecords()
 	 */
 	public synchronized boolean appendRecords(RecordList records)
 	{
 		assert mIsLoaded;
-		if(mHeader.UseOwnerTags && mHeader.VersionMajor >= 2)
-			throw new IllegalStateException("Owner tags are enabled. You can only append records through appendRecords(records, tag)");
+		if(mHeader.RequiresOwnerTags && mHeader.VersionMajor >= 2)
+			throw new IllegalStateException("Owner tags are required. You can only append records through appendRecords(records, tag)");
 		
 		if(mActiveSession == null)
 		{
@@ -932,8 +931,8 @@ public class LogFile
 	
 	public synchronized Future<Boolean> appendRecordsAsync(RecordList records)
 	{
-		if(mHeader.UseOwnerTags && mHeader.VersionMajor >= 2)
-			throw new IllegalStateException("Owner tags are enabled. You can only append records through appendRecords(records, tag)");
+		if(mHeader.RequiresOwnerTags && mHeader.VersionMajor >= 2)
+			throw new IllegalStateException("Owner tags are required. You can only append records through appendRecords(records, tag)");
 		
 		LogUtil.finest("Submitting appendRecords async task");
 		return mAsyncService.submit(new AppendRecordsTask(this, records));
@@ -941,8 +940,6 @@ public class LogFile
 	public synchronized Future<Boolean> appendRecordsAsync(RecordList records, String owner)
 	{
 		assert mHeader.VersionMajor >= 2 : "Owner tags are only suppored in version 2 and above";
-		if(!mHeader.UseOwnerTags)
-			throw new IllegalStateException("Owner tags are not enabled in this log");
 		
 		LogUtil.finest("Submitting appendRecords async task");
 		
@@ -1547,7 +1544,7 @@ public class LogFile
 			mFile.seek(0);
 			mHeader.write(mFile);
 			
-			if(mHeader.UseOwnerTags)
+			if(mHeader.RequiresOwnerTags)
 			{
 				// Realign owner tags
 				for(int i = 0; i < mOwnerMap.size(); i++)
@@ -1605,7 +1602,7 @@ public class LogFile
 			
 			addHole(hole);
 			
-			if(mHeader.UseOwnerTags)
+			if(mHeader.RequiresOwnerTags)
 			{
 				// Realign owner tags
 				for(int i = 0; i < mOwnerMap.size(); i++)
@@ -1844,8 +1841,6 @@ public class LogFile
 		{
 			mOwnerMap = new ArrayList<OwnerMapEntry>();
 			LogUtil.info("Ownermap is assigned");
-			if(!header.UseOwnerTags)
-				return true;
 			
 			file.seek(header.OwnerMapLocation);
 			

@@ -15,7 +15,7 @@ public class FileHeader
 	public long HolesIndexSize;
 	public int HolesIndexCount;
 	public short HolesIndexPadding;
-	public boolean UseOwnerTags = false;
+	public boolean RequiresOwnerTags = false;
 	public long OwnerMapLocation;
 	public long OwnerMapSize;
 	public int OwnerMapCount;
@@ -40,7 +40,7 @@ public class FileHeader
 			
 			if(VersionMajor == 2)
 			{
-				file.writeBoolean(UseOwnerTags);
+				file.writeBoolean(RequiresOwnerTags);
 				file.writeInt((int)OwnerMapLocation);
 				file.writeInt((int)OwnerMapSize);
 				file.writeShort((short)OwnerMapCount);
@@ -80,7 +80,7 @@ public class FileHeader
 			
 			if(VersionMajor == 2)
 			{
-				UseOwnerTags = file.readBoolean();
+				RequiresOwnerTags = file.readBoolean();
 				OwnerMapLocation = file.readInt();
 				OwnerMapSize = file.readInt();
 				OwnerMapCount = file.readShort();
