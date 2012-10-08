@@ -114,14 +114,14 @@ public class StoredInventoryInformation
 	{
 		return mPlayerName;
 	}
-	public void write(DataOutputStream stream) throws IOException
+	public void write(DataOutputStream stream, boolean absolute) throws IOException
 	{
 		stream.writeByte(mType.ordinal());
 		
 		switch(mType)
 		{
 		case Chest:
-			mBlock.write(stream);
+			mBlock.write(stream, absolute);
 			break;
 		case Enderchest:
 			stream.writeUTF(mPlayerName);
@@ -138,7 +138,7 @@ public class StoredInventoryInformation
 		}
 	}
 	
-	public void read(DataInputStream stream, World currentWorld) throws IOException
+	public void read(DataInputStream stream, World currentWorld, boolean absolute) throws IOException
 	{
 		mType = InventoryType.values()[stream.readByte()];
 		
@@ -146,7 +146,7 @@ public class StoredInventoryInformation
 		{
 		case Chest:
 			mBlock = new StoredBlock();
-			mBlock.read(stream, currentWorld);
+			mBlock.read(stream, currentWorld, absolute);
 			break;
 		case Enderchest:
 			mPlayerName = stream.readUTF();
@@ -163,14 +163,14 @@ public class StoredInventoryInformation
 		}
 	}
 	
-	public int getSize()
+	public int getSize(boolean absolute)
 	{
 		int size = 1;
 		
 		switch(mType)
 		{
 		case Chest:
-			size += mBlock.getSize();
+			size += mBlock.getSize(absolute);
 			break;
 		case Enderchest:
 			size += 2 + mPlayerName.length();

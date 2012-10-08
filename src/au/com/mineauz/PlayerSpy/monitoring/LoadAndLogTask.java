@@ -38,9 +38,7 @@ public class LoadAndLogTask implements Callable<Boolean>
 				result = false;
 		}
 		
-		log.close();
-		if(!log.isLoaded())
-			LogFileRegistry.unloadLogFile(mPlayer);
+		LogFileRegistry.unloadLogFile(mPlayer);
 		
 		return result;
 	}

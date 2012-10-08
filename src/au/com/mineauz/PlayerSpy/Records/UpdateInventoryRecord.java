@@ -24,7 +24,7 @@ public class UpdateInventoryRecord extends Record
 	}
 
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		stream.writeByte((byte)Slots.size());
 		for(InventorySlot slot : Slots)
@@ -32,7 +32,7 @@ public class UpdateInventoryRecord extends Record
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
 		int count = stream.readByte();
 		Slots = new ArrayList<InventorySlot>(count);
@@ -42,7 +42,7 @@ public class UpdateInventoryRecord extends Record
 	}
 
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
 		int size = 1;
 		for(InventorySlot slot : Slots)

@@ -94,7 +94,7 @@ public class Monitor implements Listener
 			
 			mRecording = false;
 			flushData();
-			mLogFile.close();
+			mLogFile.close(true);
 			mLogFile = null;
 		}
 	}

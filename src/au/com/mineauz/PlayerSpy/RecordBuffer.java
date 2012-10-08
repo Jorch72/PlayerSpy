@@ -296,7 +296,7 @@ public class RecordBuffer
 
 	public void release() 
 	{
-		mLogFile.closeAsync();
+		mLogFile.closeAsync(false);
 		mBuffer.clear();
 		
 	}

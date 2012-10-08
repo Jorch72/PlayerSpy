@@ -1,12 +1,19 @@
 package au.com.mineauz.PlayerSpy;
 
 import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
 
 public class Cause 
 {
 	private Cause(OfflinePlayer player, String extraCause) 
 	{
 		mPlayer = player;
+		mExtraCause = extraCause;
+		mId = -1;
+	}
+	private Cause(World world, String extraCause)
+	{
+		mWorld = world;
 		mExtraCause = extraCause;
 		mId = -1;
 	}
@@ -17,6 +24,7 @@ public class Cause
 	
 	private OfflinePlayer mPlayer;
 	private String mExtraCause;
+	private World mWorld;
 	
 	// Using for placeholders so they can be replaced with the correct info later
 	private int mId;
@@ -31,6 +39,16 @@ public class Cause
 	public String getExtraCause() { return mExtraCause; }
 	
 	/**
+	 * Sets the extra cause info. Cannot be changed if this isnt a player cause
+	 */
+	public void setExtraCause(String extraCause) { assert isPlayer(); mExtraCause = extraCause; }
+	
+	/**
+	 * Gets the world the cause is for when this is a global cause.
+	 */
+	public World getWorld() { return mWorld; }
+	
+	/**
 	 * Gets whether this is a placeholder cause
 	 * @return
 	 */
@@ -40,13 +58,19 @@ public class Cause
 	 * Gets whether this is a global cause
 	 * @return
 	 */
-	public boolean isGlobal() { return mPlayer == null && mExtraCause != null; }
+	public boolean isGlobal() { return mWorld != null && mExtraCause != null; }
 	
 	/**
 	 * Gets whether this is an unknown cause
 	 * @return
 	 */
 	public boolean isUnknown() { return mPlayer == null && mExtraCause == null && mId == -1; }
+	
+	/**
+	 * Gets whether this is a player cause
+	 * @return
+	 */
+	public boolean isPlayer() { return mPlayer != null; }
 	
 	/**
 	 * Updates this cause with the details from another one
@@ -81,6 +105,10 @@ public class Cause
 				return false;
 			else if(mPlayer == null && other.mPlayer != null)
 				return false;
+			else if(mWorld != null && mWorld.equals(other.mWorld))
+				return false;
+			else if(mWorld == null && other.mWorld != null)
+				return false;
 			else if(mExtraCause != null && !mExtraCause.equals(other.mExtraCause))
 				return false;
 			else if(mExtraCause == null && other.mExtraCause != null)
@@ -101,6 +129,8 @@ public class Cause
 		int hash = 0;
 		if(mPlayer != null)
 			hash = mPlayer.getName().hashCode();
+		else if(mWorld != null)
+			hash = mWorld.hashCode();
 		if(mExtraCause != null)
 			hash ^= mExtraCause.hashCode();
 		
@@ -114,7 +144,7 @@ public class Cause
 			return "Placeholder Cause: " + mId;
 		
 		if(isGlobal())
-			return "Global Cause: " + mExtraCause;
+			return "Global Cause: " + mWorld.getName() + "-" + mExtraCause;
 		else if(isUnknown())
 			return "Unknown Cause";
 		else
@@ -150,12 +180,15 @@ public class Cause
 	
 	/**
 	 * Creates a cause that is not caused by a player
+	 * @param world The world its in. Cannot be null
 	 * @param cause The cause. Cannot be null
 	 */
-	public static Cause globalCause(String cause)
+	public static Cause globalCause(World world, String cause)
 	{
+		assert world != null : "world cannot be null for a global cause";
 		assert cause != null : "cause cannot be null for a global cause";
-		return new Cause(null, cause);
+		
+		return new Cause(world, cause);
 	}
 	
 	/**
@@ -174,7 +207,7 @@ public class Cause
 	 */
 	public static Cause unknownCause()
 	{
-		return new Cause(null, null);
+		return new Cause(-1);
 	}
 	
 }

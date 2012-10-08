@@ -39,7 +39,7 @@ public class RightClickActionRecord extends Record
 	}
 
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		stream.writeByte((byte)mAction.ordinal());
 		mItem.writeItemStack(stream);
@@ -51,7 +51,7 @@ public class RightClickActionRecord extends Record
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
 		mAction = Action.values()[stream.readByte()];
 		mItem = StoredItemStack.readItemStack(stream);
@@ -61,7 +61,7 @@ public class RightClickActionRecord extends Record
 	}
 
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
 		return 2 + mItem.getSize() + (mEntity != null ? mEntity.getSize() : 0);
 	}

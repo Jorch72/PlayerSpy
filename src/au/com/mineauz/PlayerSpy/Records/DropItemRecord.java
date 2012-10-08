@@ -23,19 +23,19 @@ public class DropItemRecord extends Record
 	}
 
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		mStack.writeItemStack(stream);
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
 		mStack = StoredItemStack.readItemStack(stream);
 	}
 
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
 		return mStack.getSize();
 	}

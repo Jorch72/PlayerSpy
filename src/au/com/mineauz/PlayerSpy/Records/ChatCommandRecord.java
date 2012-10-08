@@ -20,13 +20,13 @@ public class ChatCommandRecord extends Record
 		super(RecordType.ChatCommand);
 	}
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		stream.writeUTF(mMessage);
 		stream.writeBoolean(mPrevented);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
 		mMessage = stream.readUTF();
 		mPrevented = stream.readBoolean();
@@ -40,7 +40,7 @@ public class ChatCommandRecord extends Record
 	private String mMessage;
 	private boolean mPrevented;
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
 		return 3 + mMessage.length();
 	}

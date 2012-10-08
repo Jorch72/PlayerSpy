@@ -22,22 +22,25 @@ public class SleepRecord extends Record {
 	}
 
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		stream.writeBoolean(mIsSleeping);
-		mLocation.writeLocation(stream, false);
+		mLocation.writeLocation(stream, absolute);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
 		mIsSleeping = stream.readBoolean();
-		mLocation = StoredLocation.readLocation(stream, currentWorld);
+		if(absolute)
+			mLocation = StoredLocation.readLocationFull(stream);
+		else
+			mLocation = StoredLocation.readLocation(stream, currentWorld);
 	}
 
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
-		return 1 + mLocation.getSize(false);
+		return 1 + mLocation.getSize(absolute);
 	}
 
 	public boolean isSleeping()

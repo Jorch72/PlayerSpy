@@ -45,7 +45,7 @@ public class InventoryRecord extends Record
 		mSlot = inventory.getHeldItemSlot();
 	}
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		stream.writeByte(mItems.length);
 		for(ItemStack item : mItems)
@@ -65,7 +65,7 @@ public class InventoryRecord extends Record
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
 		mItems = new ItemStack[stream.readByte()];
 		for(int i = 0; i < mItems.length; i++)
@@ -107,7 +107,7 @@ public class InventoryRecord extends Record
 	private int mSlot;
 	
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
 		int size = 3;
 		for(ItemStack item : mItems)

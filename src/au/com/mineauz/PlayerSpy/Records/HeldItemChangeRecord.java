@@ -21,12 +21,12 @@ public class HeldItemChangeRecord extends Record
 	}
 
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		stream.writeByte(mSlot);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
 		mSlot = stream.readByte();
 	}
@@ -38,7 +38,7 @@ public class HeldItemChangeRecord extends Record
 	private int mSlot;
 	
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
 		return 1;
 	}

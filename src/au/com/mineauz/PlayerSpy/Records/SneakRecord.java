@@ -19,13 +19,13 @@ public class SneakRecord extends Record
 	}
 
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		stream.writeBoolean(mEnabled);
 	}
 	
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
 		mEnabled = stream.readBoolean();
 	}
@@ -38,7 +38,7 @@ public class SneakRecord extends Record
 	private boolean mEnabled;
 
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
 		return 1;
 	}

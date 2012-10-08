@@ -37,7 +37,7 @@ public class InteractRecord extends Record
 	}
 
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		stream.writeByte(mType.ordinal());
 		
@@ -55,7 +55,7 @@ public class InteractRecord extends Record
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
 		mType = Action.values()[stream.readByte()];
 		
@@ -111,7 +111,7 @@ public class InteractRecord extends Record
 	private StoredItemStack mItem;
 	
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
 		int size = 4;
 		

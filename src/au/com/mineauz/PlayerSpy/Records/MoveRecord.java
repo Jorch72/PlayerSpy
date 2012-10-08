@@ -25,9 +25,9 @@ public class MoveRecord extends Record implements ILocationAware
 	}
 
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
-		mLocation.writeLocation(stream, false);
+		mLocation.writeLocation(stream, absolute);
 		// head yaw
 		stream.writeByte((byte)(mHeadLocation.getLocation().getYaw() * 256.0F / 360.0F));
 		// head pitch
@@ -35,9 +35,13 @@ public class MoveRecord extends Record implements ILocationAware
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
-		mLocation = StoredLocation.readLocation(stream, currentWorld);
+		if(absolute)
+			mLocation = StoredLocation.readLocationFull(stream);
+		else
+			mLocation = StoredLocation.readLocation(stream, currentWorld);
+		
 		byte yaw,pitch;
 		yaw = stream.readByte();
 		pitch = stream.readByte();
@@ -61,9 +65,9 @@ public class MoveRecord extends Record implements ILocationAware
 	private StoredLocation mHeadLocation;
 	
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
-		return 2 + mLocation.getSize(false);
+		return 2 + mLocation.getSize(absolute);
 	}
 	
 	@Override

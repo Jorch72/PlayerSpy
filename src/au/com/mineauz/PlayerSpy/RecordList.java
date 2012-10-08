@@ -331,11 +331,11 @@ public class RecordList extends ArrayList<Record>
 			add(0,new TeleportRecord(loc, TeleportCause.UNKNOWN));
 	}
 	
-	public long getDataSize()
+	public long getDataSize(boolean absolute)
 	{
 		long size = 0;
 		for(Record r : this)
-			size += r.getSize();
+			size += r.getSize(absolute);
 		
 		return size;
 	}

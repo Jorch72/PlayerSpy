@@ -90,7 +90,7 @@ public class SpyPlugin extends JavaPlugin
 			// Close down the log
 			LogFile log = mLogFiles.get(ent.getValue().getTargetName(0).toLowerCase());
 		
-			log.close();
+			log.close(true);
 			if(!log.isLoaded())
 				mLogFiles.remove(ent.getValue().getTargetName(0).toLowerCase());
 		}
@@ -105,7 +105,7 @@ public class SpyPlugin extends JavaPlugin
 			// Close down the log
 			LogFile log = mLogFiles.get(ent.getKey().toLowerCase());
 		
-			log.close();
+			log.close(true);
 			if(!log.isLoaded())
 				mLogFiles.remove(ent.getValue().getPlayer().toLowerCase());
 		}
@@ -208,7 +208,7 @@ public class SpyPlugin extends JavaPlugin
 		if(mMonitors.containsKey(player.toLowerCase()))
 		{
 			mMonitors.get(player.toLowerCase()).stop();
-			mLogFiles.get(player.toLowerCase()).closeAsync();
+			mLogFiles.get(player.toLowerCase()).closeAsync(true);
 			mMonitors.remove(player.toLowerCase());
 			
 			// Remove the log file if not open
@@ -328,7 +328,7 @@ public class SpyPlugin extends JavaPlugin
 				// Close down the log
 				LogFile log = mLogFiles.get(targetName.toLowerCase());
 			
-				log.closeAsync();
+				log.closeAsync(true);
 				if(!log.isLoaded())
 					mLogFiles.remove(targetName.toLowerCase());
 			}

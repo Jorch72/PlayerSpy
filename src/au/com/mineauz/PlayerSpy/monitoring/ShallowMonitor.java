@@ -72,9 +72,7 @@ public class ShallowMonitor
 	public synchronized void shutdown()
 	{
 		flushAll();
-		mLog.closeAsync();
-		if(!mLog.isLoaded())
-			LogFileRegistry.unloadLogFile(mPlayer);
+		LogFileRegistry.unloadLogFile(mPlayer);
 	}
 	
 	public OfflinePlayer getMonitorTarget()
@@ -103,7 +101,7 @@ public class ShallowMonitor
 	 */
 	private void tryFlush(String cause)
 	{
-		if(mBuffers.get(cause).getDataSize() >= sBufferFlushThreshold)
+		if(mBuffers.get(cause).getDataSize(cause != null) >= sBufferFlushThreshold)
 			flush(cause);
 	}
 	/**
@@ -116,7 +114,7 @@ public class ShallowMonitor
 		{
 			if(cause != null)
 			{
-				LogUtil.info("Appending data to " + mLog.getName() + " using " + cause);
+				//LogUtil.info("Appending data to " + mLog.getName() + " using " + cause);
 				mLog.appendRecordsAsync((RecordList)buffer.clone(), cause);
 			}
 			else
@@ -134,7 +132,7 @@ public class ShallowMonitor
 			
 			if(ent.getKey() != null)
 			{
-				LogUtil.info("Appending data to " + mLog.getName() + " using " + ent.getKey());
+				//LogUtil.info("Appending data to " + mLog.getName() + " using " + ent.getKey());
 				mLog.appendRecordsAsync((RecordList)ent.getValue().clone(), ent.getKey());
 			}
 			else

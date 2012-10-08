@@ -20,12 +20,12 @@ public class GameModeRecord extends Record
 	}
 	
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		stream.writeByte(mGameMode);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
 		mGameMode = stream.readByte();
 	}
@@ -37,7 +37,7 @@ public class GameModeRecord extends Record
 	private int mGameMode;
 	
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
 		return 1;
 	}

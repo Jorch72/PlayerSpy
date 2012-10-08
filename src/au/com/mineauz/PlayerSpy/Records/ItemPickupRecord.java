@@ -27,16 +27,19 @@ public class ItemPickupRecord extends Record
 	}
 
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		mItem.writeItemStack(stream);
-		mLocation.writeLocation(stream, false);
+		mLocation.writeLocation(stream, absolute);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
 		mItem = StoredItemStack.readItemStack(stream);
-		mLocation = StoredLocation.readLocation(stream, currentWorld);
+		if(absolute)
+			mLocation = StoredLocation.readLocationFull(stream);
+		else
+			mLocation = StoredLocation.readLocation(stream, currentWorld);
 	}
 
 	public Location getLocation()
@@ -50,9 +53,9 @@ public class ItemPickupRecord extends Record
 	StoredLocation mLocation;
 	StoredItemStack mItem;
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
-		return mItem.getSize() + mLocation.getSize(false);
+		return mItem.getSize() + mLocation.getSize(absolute);
 	}
 	
 }

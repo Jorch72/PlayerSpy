@@ -161,12 +161,12 @@ public class StoredBlock
 		return mStateData;
 	}
 	
-	public void write(DataOutputStream stream) throws IOException
+	public void write(DataOutputStream stream, boolean absolute) throws IOException
 	{
 		stream.writeInt(getTypeId());
 		stream.writeByte(mData);
 		
-		new StoredLocation(mLocation).writeLocation(stream, false);
+		new StoredLocation(mLocation).writeLocation(stream, absolute);
 		
 		stream.writeByte((byte)mStateType.ordinal());
 		switch(mStateType)
@@ -191,12 +191,15 @@ public class StoredBlock
 		}
 	}
 	
-	public void read(DataInputStream stream, World currentWorld) throws IOException
+	public void read(DataInputStream stream, World currentWorld, boolean absolute) throws IOException
 	{
 		mType = Material.getMaterial(stream.readInt());
 		mData = stream.readByte();
 		
-		mLocation = StoredLocation.readLocation(stream, currentWorld).getLocation();
+		if(absolute)
+			mLocation = StoredLocation.readLocationFull(stream).getLocation();
+		else
+			mLocation = StoredLocation.readLocation(stream, currentWorld).getLocation();
 		mStateType = BlockStateType.values()[stream.readByte()];
 		switch(mStateType)
 		{
@@ -225,9 +228,9 @@ public class StoredBlock
 		}
 	}
 	
-	public int getSize()
+	public int getSize(boolean absolute)
 	{
-		int size = 6 + new StoredLocation(mLocation).getSize(false);
+		int size = 6 + new StoredLocation(mLocation).getSize(absolute);
 		
 		switch(mStateType)
 		{

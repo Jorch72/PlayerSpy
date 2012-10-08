@@ -4,93 +4,42 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import net.minecraft.server.EntityLiving;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.BlockState;
-import org.bukkit.entity.Enderman;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Monster;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Projectile;
-import org.bukkit.entity.TNTPrimed;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockBurnEvent;
-import org.bukkit.event.block.BlockFadeEvent;
-import org.bukkit.event.block.BlockFromToEvent;
-import org.bukkit.event.block.BlockGrowEvent;
-import org.bukkit.event.block.BlockIgniteEvent;
-import org.bukkit.event.block.BlockPhysicsEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.block.BlockSpreadEvent;
-import org.bukkit.event.block.EntityBlockFormEvent;
-import org.bukkit.event.block.LeavesDecayEvent;
+import org.bukkit.World;
+import org.bukkit.block.*;
+import org.bukkit.entity.*;
+import org.bukkit.event.*;
+import org.bukkit.event.block.*;
 import org.bukkit.event.block.BlockIgniteEvent.IgniteCause;
-import org.bukkit.event.entity.EntityChangeBlockEvent;
-import org.bukkit.event.entity.EntityDamageByBlockEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.*;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
-import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
-import org.bukkit.event.player.PlayerBucketEmptyEvent;
-import org.bukkit.event.player.PlayerBucketFillEvent;
-import org.bukkit.event.player.PlayerChangedWorldEvent;
-import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerEggThrowEvent;
-import org.bukkit.event.player.PlayerFishEvent;
-import org.bukkit.event.player.PlayerGameModeChangeEvent;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerItemBreakEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerKickEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerPickupItemEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.event.player.PlayerShearEntityEvent;
+import org.bukkit.event.player.*;
+import org.bukkit.event.world.WorldLoadEvent;
+import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.material.MaterialData;
 
-import au.com.mineauz.PlayerSpy.Cause;
-import au.com.mineauz.PlayerSpy.LogFile;
-import au.com.mineauz.PlayerSpy.LogUtil;
-import au.com.mineauz.PlayerSpy.Pair;
-import au.com.mineauz.PlayerSpy.RecordList;
-import au.com.mineauz.PlayerSpy.SpyPlugin;
-import au.com.mineauz.PlayerSpy.Utility;
-import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
-import au.com.mineauz.PlayerSpy.Records.LoginRecord;
-import au.com.mineauz.PlayerSpy.Records.LogoffRecord;
-import au.com.mineauz.PlayerSpy.Records.Record;
-import au.com.mineauz.PlayerSpy.Records.SessionInfoRecord;
+import au.com.mineauz.PlayerSpy.*;
+import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Records.LogoffRecord.LogoffType;
 
 public class GlobalMonitor implements Listener
 {
 	private HashMap<OfflinePlayer, ShallowMonitor> mShallowLogs;
 	private HashMap<OfflinePlayer, DeepMonitor> mDeepLogs;
-	private LogFile mGlobalLog;
+
 	private ItemFlowTracker mItemTracker;
 	public static final GlobalMonitor instance = new GlobalMonitor();
 
-	private HashMap<String, RecordList> mBuffers = new HashMap<String, RecordList>();
+	private HashMap<World, LogFile> mGlobalLogs = new HashMap<World, LogFile>();
+	
+	private HashMap<World, HashMap<String, RecordList>> mBuffers = new HashMap<World, HashMap<String,RecordList>>();
 	private HashMap<Cause, Pair<RecordList,Cause>> mPendingRecords = new HashMap<Cause, Pair<RecordList,Cause>>();
+	
+	
 
 	private SpreadTracker mSpreadTracker = new SpreadTracker();
 	private CauseFinder mCauseFinder = new CauseFinder();
@@ -109,12 +58,20 @@ public class GlobalMonitor implements Listener
 		for(Player player : Bukkit.getOnlinePlayers())
 			attachShallow(player);
 		
-		mGlobalLog = LogFileRegistry.getGlobalLog();
-		if(mGlobalLog == null)
-			mGlobalLog = LogFileRegistry.createGlobalLog();
+		for(World world : Bukkit.getWorlds())
+		{
+			LogFile log = LogFileRegistry.getLogFile(world);
+			if(log == null)
+				log = LogFileRegistry.createLogFile(world);
 		
-		if(mGlobalLog == null)
-			LogUtil.severe("Unable to create global log file");
+			if(log == null)
+				LogUtil.severe("Unable to create global log file for " + world.getName());
+			else
+			{
+				mGlobalLogs.put(world, log);
+				mBuffers.put(world, new HashMap<String, RecordList>());
+			}
+		}
 		
 		mItemTracker = new ItemFlowTracker();
 		Bukkit.getPluginManager().registerEvents(this, SpyPlugin.getInstance());
@@ -124,13 +81,12 @@ public class GlobalMonitor implements Listener
 	{
 		LogUtil.fine("Shutting down the Global Monitor");
 		flushAll();
-		if(mGlobalLog != null)
-		{
-			mGlobalLog.close();
-			if(!mGlobalLog.isLoaded())
-				LogFileRegistry.unloadGlobalLogFile();
-			mGlobalLog = null;
-		}
+		LogFile.sNoTimeoutOverride = true;
+		for(Entry<World,LogFile> ent : mGlobalLogs.entrySet())
+			LogFileRegistry.unloadLogFile(ent.getKey());
+		
+		mGlobalLogs.clear();
+		mBuffers.clear();
 		
 		for(DeepMonitor monitor : mDeepLogs.values())
 			monitor.shutdown();
@@ -140,6 +96,7 @@ public class GlobalMonitor implements Listener
 		
 		mDeepLogs.clear();
 		mShallowLogs.clear();
+		LogFile.sNoTimeoutOverride = false;
 	}
 	public void update()
 	{
@@ -227,43 +184,41 @@ public class GlobalMonitor implements Listener
 		monitors.addAll(mDeepLogs.values());
 		return monitors;
 	}
-	/**
-	 * Logs a record with a non player process
-	 * @param cause The name of the process starting with #
-	 * @param record The record to log
-	 */
-	public void logRecordGlobal(String cause, Record record)
+
+	private void tryFlush(Cause cause)
 	{
-		if(!mBuffers.containsKey(cause))
-			mBuffers.put(cause, new RecordList());
+		assert cause.isGlobal();
 		
-		mBuffers.get(cause).add(record);
+		HashMap<String, RecordList> records = mBuffers.get(cause.getWorld());
 		
-		tryFlush(cause);
-	}
-	private void tryFlush(String cause)
-	{
-		if(mBuffers.get(cause).getDataSize() >= ShallowMonitor.sBufferFlushThreshold)
+		if(records.get(cause.getExtraCause()).getDataSize(true) >= ShallowMonitor.sBufferFlushThreshold)
 			flush(cause);
 	}
-	private void flush(String cause)
+	private void flush(Cause cause)
 	{
-		if(mBuffers.get(cause).size() > 0)
+		assert cause.isGlobal();
+		
+		HashMap<String, RecordList> records = mBuffers.get(cause.getWorld());
+		
+		if(records.get(cause.getExtraCause()).size() > 0)
 		{
-			mGlobalLog.appendRecordsAsync((RecordList)mBuffers.get(cause).clone(), cause);
-			mBuffers.get(cause).clear();
+			mGlobalLogs.get(cause.getWorld()).appendRecordsAsync((RecordList)records.get(cause.getExtraCause()).clone(), cause.getExtraCause());
+			records.get(cause.getExtraCause()).clear();
 		}
 	}
 	
 	private void flushAll()
 	{
-		for(Entry<String, RecordList> ent : mBuffers.entrySet())
+		for(Entry<World,HashMap<String, RecordList>> world : mBuffers.entrySet())
 		{
-			if(ent.getValue().size() == 0)
-				continue;
-			
-			mGlobalLog.appendRecordsAsync((RecordList)ent.getValue().clone(), ent.getKey());
-			ent.getValue().clear();
+			for(Entry<String, RecordList> ent : world.getValue().entrySet())
+			{
+				if(ent.getValue().size() == 0)
+					continue;
+				
+				mGlobalLogs.get(world.getKey()).appendRecordsAsync((RecordList)ent.getValue().clone(), ent.getKey());
+				ent.getValue().clear();
+			}
 		}
 	}
 	
@@ -291,33 +246,30 @@ public class GlobalMonitor implements Listener
 				// Add a new one
 				mPendingRecords.put(cause, new Pair<RecordList, Cause>(records, defaultCause));
 		}
+		// Find where to log it
+		else if(cause.isGlobal())
+		{
+			HashMap<String, RecordList> buffers = mBuffers.get(cause.getWorld());
+			if(!buffers.containsKey(cause.getExtraCause()))
+				buffers.put(cause.getExtraCause(), new RecordList());
+			
+			buffers.get(cause.getExtraCause()).addAll(records);
+			
+			tryFlush(cause);
+		}
 		else
 		{
-			// Find where to log it
-			if(cause.isGlobal())
+			ShallowMonitor mon = getMonitor(cause.getCausingPlayer());
+			if(mon != null)
 			{
-				if(!mBuffers.containsKey(cause.getExtraCause()))
-					mBuffers.put(cause.getExtraCause(), new RecordList());
-				
-				mBuffers.get(cause.getExtraCause()).addAll(records);
-				
-				tryFlush(cause.getExtraCause());
+				for(Record record : records)
+					mon.logRecord(record, cause.getExtraCause());
 			}
 			else
 			{
-				ShallowMonitor mon = getMonitor(cause.getCausingPlayer());
-				if(mon != null)
-				{
-					for(Record record : records)
-						mon.logRecord(record, cause.getExtraCause());
-				}
-				else
-				{
-					// TODO: Offline monitor
-				}
+				// TODO: Offline monitor
 			}
 		}
-		
 	}
 	
 	public void logRecord(Record record, Cause cause, Cause defaultCause)
@@ -348,6 +300,37 @@ public class GlobalMonitor implements Listener
 	//***********************
 	// Event Handlers
 	//***********************
+	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	private void onWorldLoad(WorldLoadEvent event)
+	{
+		LogFile log = LogFileRegistry.getLogFile(event.getWorld());
+		if(log == null)
+			log = LogFileRegistry.createLogFile(event.getWorld());
+	
+		if(log == null)
+			LogUtil.severe("Unable to create global log file for " + event.getWorld().getName());
+		else
+		{
+			mGlobalLogs.put(event.getWorld(), log);
+			mBuffers.put(event.getWorld(), new HashMap<String, RecordList>());
+		}
+	}
+	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	private void onWorldUnload(WorldUnloadEvent event)
+	{
+		for(Entry<String, RecordList> ent : mBuffers.get(event.getWorld()).entrySet())
+		{
+			if(ent.getValue().size() == 0)
+				continue;
+			
+			mGlobalLogs.get(event.getWorld()).appendRecordsAsync((RecordList)ent.getValue().clone(), ent.getKey());
+			ent.getValue().clear();
+		}
+		
+		LogFileRegistry.unloadLogFile(event.getWorld());
+		mBuffers.remove(event.getWorld());
+		mGlobalLogs.remove(event.getWorld());
+	}
 	
 	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	private void onPlayerJoin(PlayerJoinEvent event)
@@ -357,7 +340,10 @@ public class GlobalMonitor implements Listener
 		
 		ShallowMonitor mon = getMonitor(event.getPlayer());
 		if(mon != null)
+		{
 			mon.logRecord(new LoginRecord(event.getPlayer().getLocation()));
+			mon.logRecord(new InventoryRecord(event.getPlayer().getInventory()));
+		}
 	}
 	
 	@EventHandler(priority = EventPriority.LOWEST)
@@ -593,11 +579,11 @@ public class GlobalMonitor implements Listener
 		
 		if(event.getBlockPlaced().getType() == Material.FIRE && SpyPlugin.getSettings().recordFireSpread)
 			mSpreadTracker.addSource(event.getBlockPlaced().getLocation(), Cause.playerCause(event.getPlayer()));
-		if((event.getBlockPlaced().getType() == Material.WATER || event.getBlockPlaced().getType() == Material.LAVA) && SpyPlugin.getSettings().recordFluidFlow)
+		else if((event.getBlockPlaced().getType() == Material.WATER || event.getBlockPlaced().getType() == Material.LAVA || event.getBlockPlaced().getType() == Material.STATIONARY_WATER || event.getBlockPlaced().getType() == Material.STATIONARY_LAVA) && SpyPlugin.getSettings().recordFluidFlow)
 			mSpreadTracker.addSource(event.getBlockPlaced().getLocation(), Cause.playerCause(event.getPlayer()));
-		if((event.getBlockPlaced().getType() == Material.BROWN_MUSHROOM || event.getBlockPlaced().getType() == Material.RED_MUSHROOM) && SpyPlugin.getSettings().recordMushroomSpread)
+		else if((event.getBlockPlaced().getType() == Material.BROWN_MUSHROOM || event.getBlockPlaced().getType() == Material.RED_MUSHROOM) && SpyPlugin.getSettings().recordMushroomSpread)
 			mSpreadTracker.addSource(event.getBlockPlaced().getLocation(), Cause.playerCause(event.getPlayer()));
-		if((event.getBlockPlaced().getType() == Material.GRASS || event.getBlockPlaced().getType() == Material.MYCEL) && SpyPlugin.getSettings().recordGrassSpread)
+		else if((event.getBlockPlaced().getType() == Material.GRASS || event.getBlockPlaced().getType() == Material.MYCEL) && SpyPlugin.getSettings().recordGrassSpread)
 			mSpreadTracker.addSource(event.getBlockPlaced().getLocation(), Cause.playerCause(event.getPlayer()));
 	}
 	
@@ -618,7 +604,7 @@ public class GlobalMonitor implements Listener
 		
 		ShallowMonitor monitor = getMonitor(event.getPlayer());
 		if(monitor != null && event.getBlockClicked() != null)
-			monitor.onBucketEmpty(event.getBlockClicked().getRelative(event.getBlockFace()), event.getItemStack());
+			monitor.onBucketEmpty(event.getBlockClicked(), event.getItemStack());
 		
 		if(SpyPlugin.getSettings().recordFluidFlow)
 		{
@@ -677,15 +663,15 @@ public class GlobalMonitor implements Listener
 	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	private void onEntityFormBlock(EntityBlockFormEvent event)
 	{
-		String cause = "#" + event.getEntity().getType().getName().toLowerCase();
+		Cause cause = Cause.globalCause(event.getBlock().getWorld(), "#" + event.getEntity().getType().getName().toLowerCase());
 		
 		BlockChangeRecord record = new BlockChangeRecord(null, event.getBlock(), true); 
-		logRecordGlobal(cause, record);
+		logRecord(record, cause, null);
 	}
 	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	private void onEntityChangeBlock(EntityChangeBlockEvent event)
 	{
-		String cause = "#" + event.getEntity().getType().getName().toLowerCase();
+		Cause cause = Cause.globalCause(event.getEntity().getWorld(), "#" + event.getEntity().getType().getName().toLowerCase());
 		BlockChangeRecord record = null;
 		if(event.getEntityType() == EntityType.ENDERMAN)
 		{
@@ -699,14 +685,14 @@ public class GlobalMonitor implements Listener
 			record = new BlockChangeRecord(event.getBlock().getState().getData(), new MaterialData(event.getTo()), event.getBlock().getLocation(), event.getTo() != Material.AIR);
 		}
 
-		logRecordGlobal(cause, record);
+		logRecord(record, cause, null);
 	}
 	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	private void onEntityExplode(EntityExplodeEvent event)
 	{
 		if(event.getEntityType() == EntityType.PRIMED_TNT)
 		{
-			Location loc = ((TNTPrimed)event.getEntity()).getLocation();
+			//Location loc = ((TNTPrimed)event.getEntity()).getLocation();
 			RecordList records = new RecordList();
 			for(Block block : event.blockList())
 			{
@@ -714,9 +700,11 @@ public class GlobalMonitor implements Listener
 				records.add(record);
 			}
 			// TODO: See if we can track the entity back to its creation and search there
-			Cause cause = mCauseFinder.getCauseFor(loc);
-			Cause defaultCause = Cause.globalCause("#tnt");
-			logRecords(records, cause, defaultCause);
+			// NOTE: Due to the massive problems with asking for tonnes of cause lookups, i have disabled it for now
+			//Cause cause = mCauseFinder.getCauseFor(loc);
+			//Cause defaultCause = Cause.globalCause(event.getLocation().getWorld(),"#tnt");
+			Cause cause = Cause.globalCause(event.getLocation().getWorld(), "#tnt");
+			logRecords(records, cause, null);
 		}
 		else
 		{
@@ -731,7 +719,7 @@ public class GlobalMonitor implements Listener
 			if(player != null)
 				cause = Cause.playerCause(player, extraCause);
 			else
-				cause = Cause.globalCause(extraCause);
+				cause = Cause.globalCause(event.getLocation().getWorld(),extraCause);
 			
 			RecordList records = new RecordList();
 			for(Block block : event.blockList())
@@ -754,7 +742,7 @@ public class GlobalMonitor implements Listener
 		{
 		case GRASS:
 		case MYCEL:
-			cause = Cause.globalCause("#decay");
+			cause = Cause.globalCause(event.getBlock().getWorld(),"#decay");
 			
 			if(SpyPlugin.getSettings().recordGrassSpread)
 				mSpreadTracker.remove(event.getBlock().getLocation());
@@ -763,17 +751,17 @@ public class GlobalMonitor implements Listener
 			if(SpyPlugin.getSettings().recordFluidFlow)
 			{
 				cause = mCauseFinder.getCauseFor(event.getBlock().getLocation());
-				backupCause = Cause.globalCause("#melt");
+				backupCause = Cause.globalCause(event.getBlock().getWorld(), "#melt");
 				mSpreadTracker.addSource(event.getBlock().getLocation(), cause);
 			}
 			else
-				cause = Cause.globalCause("#melt");
+				cause = Cause.globalCause(event.getBlock().getWorld(), "#melt");
 			break;
 		case SNOW:
-			cause = Cause.globalCause("#melt");
+			cause = Cause.globalCause(event.getBlock().getWorld(), "#melt");
 			break;
 		case FIRE:
-			cause = Cause.globalCause("#extinguished");
+			cause = Cause.globalCause(event.getBlock().getWorld(), "#extinguished");
 			
 			if(SpyPlugin.getSettings().recordFireSpread)
 				mSpreadTracker.remove(event.getBlock().getLocation());
@@ -803,7 +791,7 @@ public class GlobalMonitor implements Listener
 
 		// Make sure there is at least the global #fire cause
 		if(cause == null)
-			cause = Cause.globalCause("#fire");
+			cause = Cause.globalCause(event.getBlock().getWorld(), "#fire");
 		if(cause.getExtraCause() == null)
 			cause.update(Cause.playerCause(cause.getCausingPlayer(), "#fire"));
 		
@@ -814,9 +802,9 @@ public class GlobalMonitor implements Listener
 	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	private void onLeavesDecay(LeavesDecayEvent event)
 	{
-		String cause = "#decay";
+		Cause cause = Cause.globalCause(event.getBlock().getWorld(), "#decay");
 		BlockChangeRecord record = new BlockChangeRecord(event.getBlock(),null, false);
-		logRecordGlobal(cause,record);
+		logRecord(record, cause, null);
 	}
 	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
 	private void onBlockFromTo(BlockFromToEvent event)
@@ -839,11 +827,16 @@ public class GlobalMonitor implements Listener
 				
 				Cause backupCause = null;
 				if(event.getBlock().getType() == Material.LAVA)
-					backupCause = Cause.globalCause("#lava");
+					backupCause = Cause.globalCause(event.getBlock().getWorld(), "#lava");
 				else if(event.getBlock().getType() == Material.WATER)
-					backupCause = Cause.globalCause("#water");
+					backupCause = Cause.globalCause(event.getBlock().getWorld(), "#water");
 				else
-					backupCause = Cause.globalCause("#fluid"); // Mods i guess?
+					backupCause = Cause.globalCause(event.getBlock().getWorld(), "#fluid"); // Mods i guess?
+				
+				if(cause.isUnknown()) // Its already been checked and is unknown
+					cause = backupCause;
+				if(cause.isPlayer() && cause.getExtraCause() == null)
+					cause.update(Cause.playerCause(cause.getCausingPlayer(), backupCause.getExtraCause()));
 				
 				delayLogBlockChange(event.getToBlock(), cause, backupCause);
 			}
@@ -877,7 +870,11 @@ public class GlobalMonitor implements Listener
 		else
 			cause = mSpreadTracker.getCause(event.getBlock().getLocation());
 		
-		Cause backupCause = Cause.globalCause("#spread");
+		Cause backupCause = Cause.globalCause(event.getBlock().getWorld(), "#spread");
+		if(cause.isUnknown()) // Its already been checked and is unknown
+			cause = backupCause;
+		if(cause.isPlayer() && cause.getExtraCause() == null)
+			cause.update(Cause.playerCause(cause.getCausingPlayer(), backupCause.getExtraCause()));
 		
 		BlockChangeRecord record = new BlockChangeRecord(event.getBlock().getState(),event.getNewState(), true);
 		logRecord(record, cause, backupCause);
@@ -933,8 +930,8 @@ public class GlobalMonitor implements Listener
 		{
 			if(extraCause != null)
 			{
-				cause = Cause.globalCause(extraCause);
-				logRecordGlobal(extraCause, record);
+				cause = Cause.globalCause(event.getBlock().getWorld(), extraCause);
+				logRecord(record, cause, null);
 			}
 		}
 		
@@ -949,6 +946,9 @@ public class GlobalMonitor implements Listener
 	@EventHandler
 	private void onCauseFound(CauseFinder.CauseFoundEvent event)
 	{
+		LogUtil.fine("Cause found for " + event.getPlaceholder() + ". Result: " + event.getCause());
+		mSpreadTracker.updateSource(event.getLocation(), event.getCause());
+		
 		// Apply the records
 		if(mPendingRecords.containsKey(event.getPlaceholder()))
 		{
@@ -961,5 +961,10 @@ public class GlobalMonitor implements Listener
 			else
 				logRecords(records.getArg1(), event.getCause(), records.getArg2());
 		}
+	}
+	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	private void onExplosionPrime(ExplosionPrimeEvent event)
+	{
+		LogUtil.info("Explosion Prime at " + Utility.locationToStringShort(event.getEntity().getLocation()) + " by " + event.getEntityType().getName());
 	}
 }

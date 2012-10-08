@@ -37,13 +37,13 @@ public class StoredPainting
 		return mLocation.getLocation();
 	}
 	
-	public boolean writePainting(DataOutputStream stream)
+	public boolean writePainting(DataOutputStream stream, boolean absolute)
 	{
 		try
 		{
 			stream.writeInt(mArt);
 			stream.writeInt(mFace);
-			mLocation.writeLocation(stream, false);
+			mLocation.writeLocation(stream, absolute);
 			
 			return true;
 		}
@@ -53,14 +53,17 @@ public class StoredPainting
 		}
 	}
 	
-	public static StoredPainting readPainting(DataInputStream stream, World currentWorld)
+	public static StoredPainting readPainting(DataInputStream stream, World currentWorld, boolean absolute)
 	{
 		try
 		{
 			StoredPainting painting = new StoredPainting();
 			painting.mArt = stream.readInt();
 			painting.mFace = stream.readInt();
-			painting.mLocation = StoredLocation.readLocation(stream,currentWorld);
+			if(absolute)
+				painting.mLocation = StoredLocation.readLocationFull(stream);
+			else
+				painting.mLocation = StoredLocation.readLocation(stream,currentWorld);
 			
 			return painting;
 		}
@@ -70,9 +73,9 @@ public class StoredPainting
 		}
 	}
 	
-	public int getSize()
+	public int getSize(boolean absolute)
 	{
-		return 8 + mLocation.getSize(false);
+		return 8 + mLocation.getSize(absolute);
 	}
 	private int mArt;
 	private int mFace;

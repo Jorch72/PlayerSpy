@@ -31,13 +31,13 @@ public class BlockChangeRecord extends Record
 		super(RecordType.BlockChange);
 	}
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		mInitialBlock.writeBlock(stream);
 		mFinalBlock.writeBlock(stream);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
 		mInitialBlock = StoredBlock.readBlock(stream, currentWorld);
 		mFinalBlock = StoredBlock.readBlock(stream, currentWorld);
@@ -56,7 +56,7 @@ public class BlockChangeRecord extends Record
 	private StoredBlock mInitialBlock;
 	private StoredBlock mFinalBlock;
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
 		return mInitialBlock.getSize() + mFinalBlock.getSize();
 	}

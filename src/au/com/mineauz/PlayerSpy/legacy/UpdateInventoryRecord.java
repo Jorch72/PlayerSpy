@@ -28,13 +28,13 @@ public class UpdateInventoryRecord extends Record
 	}
 
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		stream.writeByte(mSlotId);
 		new StoredItemStack(mItem).writeItemStack(stream);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
 		mSlotId = stream.readByte();
 		mItem = StoredItemStack.readItemStack(stream).getItem();
@@ -64,7 +64,7 @@ public class UpdateInventoryRecord extends Record
 	private ItemStack mItem;
 	
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
 		return 1 + new StoredItemStack(mItem).getSize();
 	}

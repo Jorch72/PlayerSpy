@@ -62,26 +62,26 @@ public class InventoryTransactionRecord extends Record
 		return mTake;
 	}
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		stream.writeBoolean(mTake);
 		new StoredItemStack(mItem).writeItemStack(stream);
-		mInvInfo.write(stream);
+		mInvInfo.write(stream, absolute);
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
 		mTake = stream.readBoolean();
 		mItem = StoredItemStack.readItemStack(stream).getItem();
 		mInvInfo = new StoredInventoryInformation();
-		mInvInfo.read(stream, currentWorld);
+		mInvInfo.read(stream, currentWorld, absolute);
 	}
 
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
-		return 1 + new StoredItemStack(mItem).getSize() + mInvInfo.getSize();
+		return 1 + new StoredItemStack(mItem).getSize() + mInvInfo.getSize(absolute);
 	}
 
 	@Override

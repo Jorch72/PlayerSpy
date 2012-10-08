@@ -110,7 +110,7 @@ public class Upgrader
 		
 		// Force close the old log
 		while(log.isLoaded())
-			log.close();
+			log.close(true);
 		
 		// Rename the old log
 		File backupDest = new File(log.getFile().getParentFile(), log.getFile().getName() + ".bak");
@@ -121,7 +121,7 @@ public class Upgrader
 		
 		// Force close the new log
 		while(newVersion.isLoaded())
-			newVersion.close();
+			newVersion.close(true);
 		
 		// Rename the new file
 		newVersion.getFile().renameTo(logFilePath);

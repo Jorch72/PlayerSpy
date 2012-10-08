@@ -49,13 +49,13 @@ public class InteractRecord extends Record
 	}
 
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		stream.writeByte(mType.ordinal());
 		
 		stream.writeBoolean(hasBlock());
 		if(hasBlock())
-			mBlock.write(stream);
+			mBlock.write(stream, absolute);
 		
 		stream.writeBoolean(hasItem());
 		if(hasItem())
@@ -67,7 +67,7 @@ public class InteractRecord extends Record
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
 		mType = Action.values()[stream.readByte()];
 		
@@ -75,7 +75,7 @@ public class InteractRecord extends Record
 		if(stream.readBoolean())
 		{
 			mBlock = new StoredBlock();
-			mBlock.read(stream, currentWorld);
+			mBlock.read(stream, currentWorld, absolute);
 		}
 		
 		// Item
@@ -126,12 +126,12 @@ public class InteractRecord extends Record
 	private StoredItemStack mItem;
 	
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
 		int size = 4;
 		
 		if(hasBlock())
-			size += mBlock.getSize();
+			size += mBlock.getSize(absolute);
 		
 		if(hasItem())
 			size += mItem.getSize();

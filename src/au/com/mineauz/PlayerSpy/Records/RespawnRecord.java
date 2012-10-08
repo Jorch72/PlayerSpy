@@ -22,12 +22,12 @@ public class RespawnRecord extends Record implements ILocationAware
 	}
 
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		mLocation.writeLocation(stream,true);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
 		mLocation = StoredLocation.readLocationFull(stream);
 	}
@@ -39,7 +39,7 @@ public class RespawnRecord extends Record implements ILocationAware
 	StoredLocation mLocation;
 	
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
 		return mLocation.getSize(true);
 	}

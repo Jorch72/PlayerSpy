@@ -49,6 +49,7 @@ public class CauseFinder
 	public Cause getCauseFor(Location loc)
 	{
 		// Search through the currently buffered data for an answer
+		LogUtil.fine("Looking for cause of " + Utility.locationToStringShort(loc));
 		
 		Pair<Long, Cause> answer = null;
 		for(ShallowMonitor mon : GlobalMonitor.instance.getAllMonitors())
@@ -58,7 +59,7 @@ public class CauseFinder
 			{
 				// Get the cause
 				Cause cause;
-				if(pair.getArg1() != null)
+				if(pair.getArg1() == null)
 					cause = Cause.playerCause(mon.getMonitorTarget());
 				else
 					cause = Cause.playerCause(mon.getMonitorTarget(), pair.getArg1());
@@ -116,6 +117,7 @@ public class CauseFinder
 			Entry<Location, Future<Cause>> ent = it.next();
 			if(ent.getValue().isDone())
 			{
+				LogUtil.info("Found a completed task");
 				// Notify that its done
 				try 
 				{
@@ -196,6 +198,7 @@ public class CauseFinder
 			
 			CrossReferenceIndex.instance.releaseLastLogs();
 			
+			LogUtil.finest("BlockSearchTask finished");
 			if(answer == null)
 				return Cause.unknownCause();
 			else

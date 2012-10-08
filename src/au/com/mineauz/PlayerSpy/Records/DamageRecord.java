@@ -26,7 +26,7 @@ public class DamageRecord extends Record
 	}
 
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		stream.writeShort(mAmount);
 		stream.writeBoolean(mDamager != null);
@@ -38,7 +38,7 @@ public class DamageRecord extends Record
 	}
 	
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
 		mAmount = stream.readShort();
 		boolean hasDamager = stream.readBoolean();
@@ -63,7 +63,7 @@ public class DamageRecord extends Record
 	private StoredEntity mDamager;
 	private int mAmount;
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
 		return 3 + (mDamager != null ? mDamager.getSize() : 0);
 	}

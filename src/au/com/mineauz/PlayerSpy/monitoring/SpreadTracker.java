@@ -33,6 +33,11 @@ public class SpreadTracker
 		mCheckPriority = new TreeMap<Long, Location>();
 		mCheckMap = new HashMap<Location, Long>();
 	}
+	/**
+	 * Records the start of a spread
+	 * @param loc The location to start
+	 * @param cause The cause of the spread
+	 */
 	public void addSource(Location loc, Cause cause)
 	{
 		Location cloned = loc.clone(); 
@@ -44,7 +49,17 @@ public class SpreadTracker
 		mCheckPriority.put(checkTime, cloned);
 		mCheckMap.put(cloned, checkTime);
 		
-		LogUtil.fine("Spread source added @" + Utility.locationToStringShort(loc) + " by " + cause);
+		LogUtil.fine("Spread source added by " + cause + " (" + loc.getBlock().getType().toString() + ")");
+	}
+	/**
+	 * Updates a source with newly found info about what caused it
+	 * @param loc The location of the source
+	 * @param newCause The new cause to set
+	 */
+	public void updateSource(Location loc, Cause newCause)
+	{
+		if(mSources.containsKey(loc))
+			mSources.get(loc).update(newCause);
 	}
 	public void cleanupSource(Location sourceLoc)
 	{
@@ -73,7 +88,7 @@ public class SpreadTracker
 		// Map the destination block back to the source block
 		if(sourceLocation != null)
 		{
-			LogUtil.fine("Spreading from " + Utility.locationToStringShort(from) + " to " + Utility.locationToStringShort(to));
+			LogUtil.fine("Spreading " + from.getBlock().getType().toString() + " from " + Utility.locationToStringShort(from) + " to " + Utility.locationToStringShort(to) + " thanks to " + mSources.get(sourceLocation));
 			Location loc = to.clone();
 			mMap.put(loc, sourceLocation);
 			mReferenceCount.put(sourceLocation, mReferenceCount.get(sourceLocation) + 1);
@@ -154,6 +169,9 @@ public class SpreadTracker
 			
 			// remove the block
 			remove(loc);
+			
+			if(mCheckPriority.isEmpty())
+				break;
 		}
 			
 	}

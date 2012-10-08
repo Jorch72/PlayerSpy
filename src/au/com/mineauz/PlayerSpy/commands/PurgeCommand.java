@@ -239,7 +239,7 @@ public class PurgeCommand implements ICommand
 			else if(input.equalsIgnoreCase("no") || input.equalsIgnoreCase("n"))
 			{
 				LogFile log = (LogFile)context.getSessionData("log");
-				log.closeAsync();
+				log.closeAsync(true);
 				return Prompt.END_OF_CONVERSATION;
 			}
 			else

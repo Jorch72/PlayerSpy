@@ -19,6 +19,7 @@ import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex.SessionInFile;
 
+@Deprecated
 public class SearchAndLogTask implements Callable<Boolean>
 {
 	public Location mLocation;
@@ -160,25 +161,20 @@ public class SearchAndLogTask implements Callable<Boolean>
 						log.appendRecords(mRecords, mCause);
 					
 					logged = true;
-					log.close();
-					
-					if(!log.isLoaded())
-					{
-						LogFileRegistry.unloadLogFile(Bukkit.getOfflinePlayer(playerName));
-					}
+					LogFileRegistry.unloadLogFile(Bukkit.getOfflinePlayer(playerName));
 				}
 			}
 		}
 		
 		if(!logged && mCause != null)
 		{
-			LogUtil.finer("Logging the records for " + mCause + " against __global");
-			LogFile log = null;
-			log = LogFileRegistry.getGlobalLog();
-			log.appendRecords(mRecords, mCause);
-			log.close();
-			if(!log.isLoaded())
-				LogFileRegistry.unloadGlobalLogFile();
+//			LogUtil.finer("Logging the records for " + mCause + " against __global");
+//			LogFile log = null;
+//			log = LogFileRegistry.getGlobalLog();
+//			log.appendRecords(mRecords, mCause);
+//			log.close();
+//			if(!log.isLoaded())
+//				LogFileRegistry.unloadGlobalLogFile();
 		}
 		
 		CrossReferenceIndex.instance.releaseLastLogs();

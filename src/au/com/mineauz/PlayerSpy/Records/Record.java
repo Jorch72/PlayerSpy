@@ -13,14 +13,14 @@ public abstract class Record
 		mTimestamp = Calendar.getInstance().getTimeInMillis();
 	}
 	
-	public boolean write(DataOutputStream stream)
+	public boolean write(DataOutputStream stream, boolean absolute)
 	{
 		try
 		{
 			stream.writeByte((byte)mType.ordinal());
 			stream.writeLong(mTimestamp);
 			
-			writeContents(stream);
+			writeContents(stream, absolute);
 			return true;
 		}
 		catch(IOException e)
@@ -28,14 +28,14 @@ public abstract class Record
 			return false;
 		}
 	}
-	public boolean read(DataInputStream stream, World currentWorld)
+	public boolean read(DataInputStream stream, World currentWorld, boolean absolute)
 	{
 		try
 		{
 			// Dont read type since that was already read
 			mTimestamp = stream.readLong();
 			
-			readContents(stream, currentWorld);
+			readContents(stream, currentWorld, absolute);
 			return true;
 		}
 		catch (IOException e)
@@ -51,16 +51,16 @@ public abstract class Record
 	{
 		return mType;
 	}
-	protected abstract void writeContents(DataOutputStream stream) throws IOException;
-	protected abstract void readContents(DataInputStream stream, World currentWorld) throws IOException;
+	protected abstract void writeContents(DataOutputStream stream, boolean absolute) throws IOException;
+	protected abstract void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException;
 	
-	public static Record readRecord(DataInputStream stream, World currentWorld, int version)
+	public static Record readRecord(DataInputStream stream, World currentWorld, int version, boolean absolute)
 	{
 		try
 		{
 			Record record = RecordRegistry.makeRecord(version, stream.readByte());
 
-			if(record != null && record.read(stream, currentWorld))
+			if(record != null && record.read(stream, currentWorld, absolute))
 				return record;
 		}
 		catch(IOException e)
@@ -71,11 +71,11 @@ public abstract class Record
 		return null;
 	}
 	
-	public int getSize()
+	public int getSize(boolean absolute)
 	{
-		return 9 + getContentSize();
+		return 9 + getContentSize(absolute);
 	}
-	protected abstract int getContentSize();
+	protected abstract int getContentSize(boolean absolute);
 	
 	private RecordType mType;
 	private long mTimestamp;

@@ -14,7 +14,6 @@ import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
 
-import com.google.common.collect.Multiset.Entry;
 
 public class InterlinkFile 
 {

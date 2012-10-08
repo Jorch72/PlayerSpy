@@ -22,12 +22,12 @@ public class WorldChangeRecord extends Record {
 	}
 
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		stream.writeUTF(mWorld.getName());
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
 		String worldName = stream.readUTF();
 		mWorld = Bukkit.getWorld(worldName);
@@ -45,7 +45,7 @@ public class WorldChangeRecord extends Record {
 	private World mWorld;
 	
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
 		return 2 + mWorld.getName().length();
 	}

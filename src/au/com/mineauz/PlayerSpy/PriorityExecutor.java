@@ -4,7 +4,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -39,7 +38,9 @@ public class PriorityExecutor implements Executor
 			if(nextTask.future.isCancelled() || nextTask.future.isDone())
 				return;
 			
-			final Future<?> toExecute = nextTask.future;
+			final Future<?> future = nextTask.future;
+			
+			LogUtil.finest("Executing task " + nextTask.task.getClass().getSimpleName());
 			
 			executor.execute(new Runnable() 
 			{
@@ -48,15 +49,8 @@ public class PriorityExecutor implements Executor
 				{
 					try
 					{
-						toExecute.get();
-					} 
-					catch (InterruptedException e) 
-					{
-						LogUtil.fine("Task was interupted");
-					} 
-					catch (ExecutionException e) 
-					{
-						e.printStackTrace();
+						((FutureTask<?>)future).run();
+						//toExecute.get();
 					}
 					finally
 					{
@@ -144,6 +138,7 @@ public class PriorityExecutor implements Executor
 		if(best == -1)
 			throw new RuntimeException("Error assigning work thread. No threads available.");
 		
+		LogUtil.finer("Task submitted to thread " + best);
 		// Submit the task
 		Future<T> future = new FutureTask<T>((Callable<T>)task);
 		SubmittedTask sTask = new SubmittedTask();

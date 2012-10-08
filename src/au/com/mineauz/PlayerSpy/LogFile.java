@@ -35,12 +35,21 @@ public class LogFile
 	 */
 	public synchronized void addReference()
 	{
+		if(mTimeoutId != -1)
+		{
+			Bukkit.getScheduler().cancelTask(mTimeoutId);
+			mTimeoutId = -1;
+		}
 		mReferenceCount++;
 	}
 	
 	public boolean isLoaded()
 	{
 		return mIsLoaded && !mIsClosing;
+	}
+	public boolean isTimingOut()
+	{
+		return mTimeoutId != -1;
 	}
 	public boolean requiresOwnerTags()
 	{
@@ -140,14 +149,15 @@ public class LogFile
 		return log;
 	}
 	/**
-	 * Creates a blank log file for __global entries ready to accept sessions.
+	 * Creates a blank log file for world global entries ready to accept sessions.
 	 * It will be open when returned so remember to call close() when you're done
+	 * @param the name of the world to use including the global prefix
 	 * @param filename The filename to create the log at
 	 * @return An instance with an open log or null if unable to create it
 	 */
-	public static LogFile createGlobal(String filename)
+	public static LogFile createGlobal(String worldName, String filename)
 	{
-		LogFile log = create("__global", filename);
+		LogFile log = create(worldName, filename);
 		
 		log.mHeader.RequiresOwnerTags = true;
 
@@ -234,9 +244,16 @@ public class LogFile
 			mFile = file;
 			if(mIndex.size() > 0)
 			{
-				// Use the last session as the active one since they are in time order
-				mActiveSession = mIndex.get(mIndex.size()-1);
-				mActiveSessionIndex = mIndex.size()-1;
+				// Use the last session that doesnt have an owner tag as the active one since they are in time order
+				for(int i = mIndex.size() - 1; i >= 0; --i)
+				{
+					if(getOwnerTag(i) == null)
+					{
+						mActiveSession = mIndex.get(i);
+						mActiveSessionIndex = i;
+						break;
+					}
+				}
 			}
 			else
 			{
@@ -272,28 +289,56 @@ public class LogFile
 	/**
 	 * Decreases the reference count and closes the log file if needed
 	 */
-	public void close()
+	public void close(boolean noTimeout)
 	{
-		assert mIsLoaded == true;
+		assert mIsLoaded && !mIsClosing && mTimeoutId == -1;
 		
 		mReferenceCount--;
 		
 		if(mReferenceCount <= 0)
 		{
-			mIsClosing = true;
-			try 
+			if(noTimeout || sNoTimeoutOverride)
 			{
-				// Add the close task and wait for it
-				Future<?> future = mAsyncService.submit(new CloseTask());
-				future.get();
-			} 
-			catch (InterruptedException e1) 
+				mIsClosing = true;
+				try 
+				{
+					// Add the close task and wait for it
+					Future<?> future = mAsyncService.submit(new CloseTask());
+					future.get();
+				} 
+				catch (InterruptedException e1) 
+				{
+					e1.printStackTrace();
+				} 
+				catch (ExecutionException e) 
+				{
+					e.printStackTrace();
+				}
+			}
+			else
 			{
-				e1.printStackTrace();
-			} 
-			catch (ExecutionException e) 
-			{
-				e.printStackTrace();
+				mTimeoutId = Bukkit.getScheduler().scheduleSyncDelayedTask(SpyPlugin.getInstance(), new Runnable() 
+				{
+					@Override
+					public void run() 
+					{
+						mIsClosing = true;
+						try 
+						{
+							// Add the close task and wait for it
+							Future<?> future = mAsyncService.submit(new CloseTask());
+							future.get();
+						} 
+						catch (InterruptedException e1) 
+						{
+							e1.printStackTrace();
+						} 
+						catch (ExecutionException e) 
+						{
+							e.printStackTrace();
+						}
+					}
+				}, SpyPlugin.getSettings().logTimeout / 50L);
 			}
 		}
 	}
@@ -301,17 +346,33 @@ public class LogFile
 	 * Decreases the reference count and closes the log file if needed
 	 * This method is Asynchronous
 	 */
-	public synchronized void closeAsync()
+	public synchronized void closeAsync(boolean noTimeout)
 	{
-		assert mIsLoaded == true;
+		assert mIsLoaded && !mIsClosing && mTimeoutId == -1;
 		
 		mReferenceCount--;
 		
 		if(mReferenceCount <= 0)
 		{
-			mIsClosing = true;
-			LogUtil.finer("Submitting the close task");
-			mAsyncService.submit(new CloseTask());
+			if(noTimeout || sNoTimeoutOverride)
+			{
+				mIsClosing = true;
+				LogUtil.finer("Submitting the close task");
+				mAsyncService.submit(new CloseTask());
+			}
+			else
+			{
+				mTimeoutId = Bukkit.getScheduler().scheduleSyncDelayedTask(SpyPlugin.getInstance(), new Runnable() 
+				{
+					@Override
+					public void run() 
+					{
+						mIsClosing = true;
+						LogUtil.finer("Submitting the close task");
+						mAsyncService.submit(new CloseTask());
+					}
+				}, SpyPlugin.getSettings().logTimeout / 50L);
+			}
 		}
 	}
 	
@@ -584,6 +645,9 @@ public class LogFile
 		assert mIsLoaded;
 		
 		RecordList records = null;
+		
+		boolean isAbsolute = getOwnerTag(session) != null;
+		
 		synchronized (mFile)
 		{
 			try
@@ -615,7 +679,7 @@ public class LogFile
 				// Load the records
 				for(int i = 0; i < session.RecordCount; i++)
 				{
-					Record record = Record.readRecord(stream, lastWorld, mHeader.VersionMajor);
+					Record record = Record.readRecord(stream, lastWorld, mHeader.VersionMajor, isAbsolute);
 					if(record == null)
 						break;
 					
@@ -624,7 +688,7 @@ public class LogFile
 						lastWorld = ((ILocationAware)record).getLocation().getWorld();
 					else if(record instanceof WorldChangeRecord)
 						lastWorld = ((WorldChangeRecord)record).getWorld();
-					else if(lastWorld == null && record.getType() != RecordType.FullInventory && record.getType() != RecordType.EndOfSession)
+					else if((lastWorld == null && record.getType() != RecordType.FullInventory && record.getType() != RecordType.EndOfSession) && !isAbsolute)
 					{
 						LogUtil.warning("Corruption in " + mPlayerName + ".tracdata session " +mIndex.indexOf(session) + " found. Attempting to fix");
 						lastWorld = Bukkit.getWorlds().get(0);
@@ -637,13 +701,13 @@ public class LogFile
 					if(record.getType() == RecordType.FullInventory)
 						hadInv = true;
 					
-					if(lastWorld == null && i > 3)
+					if(lastWorld == null && i > 3 && !isAbsolute)
 					{
 						LogUtil.warning("Issue detected with " + mPlayerName + ".trackdata in session " + mIndex.indexOf(session) + ". No world has been set. Defaulting to main world");
 						lastWorld = Bukkit.getWorlds().get(0);
 						records.add(new WorldChangeRecord(lastWorld));
 					}
-					if(!hadInv && i > 3)
+					if(!hadInv && i > 3 && !isAbsolute)
 					{
 						LogUtil.warning("Issue detected with " + mPlayerName + ".trackdata in session " + mIndex.indexOf(session) + ". No inventory state has been set. ");
 						hadInv = true;
@@ -672,6 +736,7 @@ public class LogFile
 		
 		// This will be populated if there are too many records to put into this session
 		RecordList splitSession = null;
+		boolean isAbsolute = getOwnerTag(session) != null;
 		
 		// Calculate the amount of space there is availble to extend into
 		long availableSpace = 0;
@@ -701,7 +766,7 @@ public class LogFile
 		int cutoffIndex = 0;
 		for(Record record : records)
 		{
-			int size = record.getSize();
+			int size = record.getSize(isAbsolute);
 			
 			if(totalSize + size > availableSpace)
 			{
@@ -731,8 +796,8 @@ public class LogFile
 			long lastSize = dstream.size();
 			for(int i = 0; i < cutoffIndex; i++)
 			{
-				int expectedSize = records.get(i).getSize();
-				records.get(i).write(dstream);
+				int expectedSize = records.get(i).getSize(isAbsolute);
+				records.get(i).write(dstream, isAbsolute);
 				
 				long actualSize = dstream.size() - lastSize;
 				
@@ -785,6 +850,7 @@ public class LogFile
 
 		try
 		{
+			LogUtil.fine("Appending " + records.size() + " records to " + mPlayerName + ">" + owner);
 			// Find a session that has this owner
 			for(OwnerMapEntry tag : mOwnerMap)
 			{
@@ -801,7 +867,7 @@ public class LogFile
 
 			// If its here then we must not have appended all the records
 			// and we are out of session that have the correct tag
-			int index = initialiseSession(records);
+			int index = initialiseSession(records, true);
 				
 			// Add the tag
 			OwnerMapEntry ent = new OwnerMapEntry();
@@ -830,10 +896,12 @@ public class LogFile
 		if(mHeader.RequiresOwnerTags && mHeader.VersionMajor >= 2)
 			throw new IllegalStateException("Owner tags are required. You can only append records through appendRecords(records, tag)");
 		
+		LogUtil.fine("Appending " + records.size() + " records to " + mPlayerName);
+		
 		if(mActiveSession == null)
 		{
 			LogUtil.finer("Tried to append records. No active session was found.");
-			mActiveSessionIndex = initialiseSession(records);
+			mActiveSessionIndex = initialiseSession(records, false);
 			if(mActiveSessionIndex != -1)
 			{
 				mActiveSession = mIndex.get(mActiveSessionIndex);
@@ -868,7 +936,7 @@ public class LogFile
 					// Find the latest position, and inventory
 					for(int i = 0; i < mActiveSession.RecordCount; i++)
 					{
-						Record record = Record.readRecord(stream, currentWorld, mHeader.VersionMajor);
+						Record record = Record.readRecord(stream, currentWorld, mHeader.VersionMajor, false);
 						
 						if(record instanceof ILocationAware)
 						{
@@ -910,7 +978,7 @@ public class LogFile
 					else
 						splitSession.add(0, new TeleportRecord(currentLocation, TeleportCause.UNKNOWN));
 				}
-				mActiveSessionIndex = initialiseSession(splitSession);
+				mActiveSessionIndex = initialiseSession(splitSession, false);
 				if(mActiveSessionIndex != -1)
 				{
 					mActiveSession = mIndex.get(mActiveSessionIndex);
@@ -946,7 +1014,7 @@ public class LogFile
 		return mAsyncService.submit(new AppendRecordsTask(this, records, owner));
 	}
 	
-	private synchronized int initialiseSession(RecordList records) 
+	private synchronized int initialiseSession(RecordList records, boolean absolute) 
 	{
 		assert mIsLoaded;
 		assert records.size() > 0;
@@ -959,7 +1027,7 @@ public class LogFile
 		// Calculate the expected size
 		int totalSize = 0;
 		for(Record record : records)
-			totalSize += record.getSize();
+			totalSize += record.getSize(absolute);
 		
 		LogUtil.finer(" Total size of records: " + totalSize);
 		LogUtil.finer(" Actual session size: " + Math.max(totalSize, DesiredMaximumSessionSize));
@@ -971,8 +1039,8 @@ public class LogFile
 		long lastSize = stream.size();
 		for(Record record : records)
 		{
-			int expectedSize = record.getSize();
-			if(!record.write(stream))
+			int expectedSize = record.getSize(absolute);
+			if(!record.write(stream, absolute))
 				return -1;
 			
 			long actualSize = stream.size() - lastSize;
@@ -1091,6 +1159,7 @@ public class LogFile
 			// Purge data
 			for(IndexEntry entry : relevantEntries)
 			{
+				boolean isAbsolute = getOwnerTag(entry) != null;
 				if(entry.StartTimestamp >= fromDate && entry.EndTimestamp < toDate)
 				{
 					// Whole session must be purged
@@ -1116,7 +1185,7 @@ public class LogFile
 						// Compile the records
 						int totalSize = 0;
 						for(Record record : sessionData)
-							totalSize += record.getSize();
+							totalSize += record.getSize(isAbsolute);
 						
 						ByteArrayOutputStream bstream = new ByteArrayOutputStream(totalSize);
 						DataOutputStream stream = new DataOutputStream(bstream);
@@ -1124,8 +1193,8 @@ public class LogFile
 						long lastSize = stream.size();
 						for(Record record : sessionData)
 						{
-							int expectedSize = record.getSize();
-							if(!record.write(stream))
+							int expectedSize = record.getSize(isAbsolute);
+							if(!record.write(stream,isAbsolute))
 								return false;
 							
 							long actualSize = stream.size() - lastSize;
@@ -1495,6 +1564,17 @@ public class LogFile
 			for(int i = mIndex.size()-1; i >= insertIndex; i--)
 				CrossReferenceIndex.instance.moveSession(this, i, i+1);
 			
+			// Update the ownermaps
+			for(int i = 0; i < mOwnerMap.size(); ++i)
+			{
+				OwnerMapEntry ent = mOwnerMap.get(i);
+				if(ent.SessionIndex >= insertIndex)
+				{
+					ent.SessionIndex++;
+					updateOwnerMap(i, ent);
+				}
+			}
+			
 			mIndex.add(insertIndex,entry);
 			
 			
@@ -1602,28 +1682,25 @@ public class LogFile
 			
 			addHole(hole);
 			
-			if(mHeader.RequiresOwnerTags)
+			// Realign owner tags
+			for(int i = 0; i < mOwnerMap.size(); i++)
 			{
-				// Realign owner tags
-				for(int i = 0; i < mOwnerMap.size(); i++)
+				OwnerMapEntry tag = mOwnerMap.get(i);
+				if(tag.SessionIndex == index)
 				{
-					OwnerMapEntry tag = mOwnerMap.get(i);
-					if(tag.SessionIndex == index)
-					{
-						removeOwnerMap(i);
-						i--;
-					}
-					else if(tag.SessionIndex >= index)
-					{
-						tag.SessionIndex--;
-						updateOwnerMap(i,tag);
-					}
+					removeOwnerMap(i);
+					i--;
+				}
+				else if(tag.SessionIndex >= index)
+				{
+					tag.SessionIndex--;
+					updateOwnerMap(i,tag);
 				}
 			}
 		}
 		catch(IOException e)
 		{
-			
+			e.printStackTrace();
 		}
 	}
 	private synchronized void updateSession(int index, IndexEntry session)
@@ -1863,6 +1940,7 @@ public class LogFile
 	
 	private boolean mIsLoaded = false;
 	private boolean mIsClosing = false;
+	private int mTimeoutId = -1;
 	private String mPlayerName;
 	private ArrayList<IndexEntry> mIndex;
 	private ArrayList<HoleEntry> mHoleIndex;
@@ -1876,6 +1954,8 @@ public class LogFile
 	
 	/// The byte size that sessions should be cut down to. This may or may not be met depending on the size of the records. 
 	public static long DesiredMaximumSessionSize = 102400;
+
+	public static boolean sNoTimeoutOverride = false;
 	
 	// Task for closing the logfile when everything is executed
 	private class CloseTask implements Runnable 

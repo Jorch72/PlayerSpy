@@ -446,12 +446,15 @@ public class CrossReferenceIndex
 						continue;
 					}
 					
-					String playerName = fileRs.getString(2);
-					if(playerName.equals("__global"))
-						log = LogFileRegistry.getGlobalLog();
+					String name = fileRs.getString(2);
+					if(name.startsWith(LogFileRegistry.cGlobalFilePrefix))
+					{
+						World world = Bukkit.getWorld(name.substring(LogFileRegistry.cGlobalFilePrefix.length()));
+						log = LogFileRegistry.getLogFile(world);
+					}
 					else
 					{
-						OfflinePlayer player = Bukkit.getOfflinePlayer(playerName);
+						OfflinePlayer player = Bukkit.getOfflinePlayer(name);
 						log = LogFileRegistry.getLogFile(player);
 					}
 					fileRs.close();
@@ -509,14 +512,10 @@ public class CrossReferenceIndex
 	{
 		for(Entry<Integer, LogFile> ent : mOpenedLogs.entrySet())
 		{
-			ent.getValue().close();
-			if(!ent.getValue().isLoaded())
-			{
-				if(ent.getValue().getName().equals("__global"))
-					LogFileRegistry.unloadGlobalLogFile();
-				else
-					LogFileRegistry.unloadLogFile(Bukkit.getOfflinePlayer(ent.getValue().getName()));
-			}
+			if(ent.getValue().getName().startsWith(LogFileRegistry.cGlobalFilePrefix))
+				LogFileRegistry.unloadLogFile(Bukkit.getWorld(ent.getValue().getName().substring(LogFileRegistry.cGlobalFilePrefix.length())));
+			else
+				LogFileRegistry.unloadLogFile(Bukkit.getOfflinePlayer(ent.getValue().getName()));
 		}
 		
 		mOpenedLogs.clear();

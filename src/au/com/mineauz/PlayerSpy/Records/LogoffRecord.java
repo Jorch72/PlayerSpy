@@ -26,7 +26,7 @@ public class LogoffRecord extends Record
 	}
 
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		stream.writeByte(mLogoffType.ordinal());
 		if(mLogoffType != LogoffType.Quit)
@@ -34,7 +34,7 @@ public class LogoffRecord extends Record
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
 		mLogoffType = LogoffType.values()[stream.readByte()];
 		if(mLogoffType != LogoffType.Quit)
@@ -52,7 +52,7 @@ public class LogoffRecord extends Record
 	private LogoffType mLogoffType;
 	private String mReason;
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
 		return 1 + (mLogoffType != LogoffType.Quit ? 2 + mReason.length() : 0);
 	}

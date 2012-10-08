@@ -24,16 +24,19 @@ public class DeathRecord extends Record implements ILocationAware
 	}
 
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
-		mLocation.writeLocation(stream, false);
+		mLocation.writeLocation(stream, absolute);
 		stream.writeUTF(mReason);
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
-		mLocation = StoredLocation.readLocation(stream, currentWorld);
+		if(absolute)
+			mLocation = StoredLocation.readLocationFull(stream);
+		else
+			mLocation = StoredLocation.readLocation(stream, currentWorld);
 		mReason = stream.readUTF();
 	}
 	
@@ -49,9 +52,9 @@ public class DeathRecord extends Record implements ILocationAware
 	private StoredLocation mLocation;
 	private String mReason;
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
-		return mLocation.getSize(false) + 2 + mReason.length();
+		return mLocation.getSize(absolute) + 2 + mReason.length();
 	}
 	@Override
 	public boolean isFullLocation() { return false;	}

@@ -24,13 +24,13 @@ public class TeleportRecord extends Record implements ILocationAware
 	}
 
 	@Override
-	protected void writeContents(DataOutputStream stream) throws IOException 
+	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		mLocation.writeLocation(stream, true);
 		stream.writeByte(mCause);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
 	{
 		mLocation = StoredLocation.readLocationFull(stream);
 		mCause = stream.readByte();
@@ -48,7 +48,7 @@ public class TeleportRecord extends Record implements ILocationAware
 	private byte mCause;
 	
 	@Override
-	protected int getContentSize() 
+	protected int getContentSize(boolean absolute) 
 	{
 		return mLocation.getSize(true) + 1;
 	}

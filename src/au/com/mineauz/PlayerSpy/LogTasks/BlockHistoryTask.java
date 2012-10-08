@@ -15,6 +15,7 @@ import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
+import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex.SessionInFile;
 import au.com.mineauz.PlayerSpy.monitoring.ShallowMonitor;
 
@@ -65,7 +66,7 @@ public class BlockHistoryTask implements Callable<HashMap<String, RecordList>>
 			// Make sure its ok to use this file
 			if(mFilter != null)
 			{
-				if(mFilter.startsWith("#") && !fileSession.Log.getName().equals("__global"))
+				if(mFilter.startsWith("#") && !fileSession.Log.getName().startsWith(LogFileRegistry.cGlobalFilePrefix))
 					continue;
 				if(!fileSession.Log.getName().equalsIgnoreCase(mFilter))
 					continue;
@@ -76,7 +77,7 @@ public class BlockHistoryTask implements Callable<HashMap<String, RecordList>>
 			String targetName = fileSession.Log.getName();
 			if(fileSession.Log.requiresOwnerTags())
 			{
-				if(fileSession.Log.getName().equals("__global"))
+				if(fileSession.Log.getName().startsWith(LogFileRegistry.cGlobalFilePrefix))
 					targetName = fileSession.Log.getOwnerTag(fileSession.Session);
 				else
 					targetName = Utility.formatName(targetName, fileSession.Log.getOwnerTag(fileSession.Session)); 
@@ -86,7 +87,7 @@ public class BlockHistoryTask implements Callable<HashMap<String, RecordList>>
 				String ownerTag = fileSession.Log.getOwnerTag(fileSession.Session);
 				if(ownerTag != null)
 				{
-					if(fileSession.Log.getName().equals("__global"))
+					if(fileSession.Log.getName().startsWith(LogFileRegistry.cGlobalFilePrefix))
 						targetName = ownerTag;
 					else
 						targetName = Utility.formatName(targetName, ownerTag);
