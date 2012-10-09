@@ -4,7 +4,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
 import au.com.mineauz.PlayerSpy.PlaybackContext;
-import au.com.mineauz.PlayerSpy.commands.Command;
 
 public class SeeInvCommand extends Command
 {

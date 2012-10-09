@@ -4,10 +4,13 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.TimeZone;
 import java.util.logging.Level;
 
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -22,6 +25,7 @@ import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
 import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 import au.com.mineauz.PlayerSpy.monitoring.Monitor;
+import au.com.mineauz.PlayerSpy.search.Searcher;
 
 public class SpyPlugin extends JavaPlugin
 {
@@ -57,6 +61,9 @@ public class SpyPlugin extends JavaPlugin
 		getLogger().getParent().getHandlers()[0].setLevel(Level.FINEST);
 		//****END DEBUG****
 
+		Calendar.getInstance().setTimeZone(TimeZone.getTimeZone(getSettings().timezone));
+		Calendar.getInstance().add(Calendar.MILLISECOND, (int) getSettings().timeoffset);
+		
 		getCommand("playerspy").setExecutor(new CommandDispatcher());
 		
 		// Update every tick
@@ -385,6 +392,7 @@ public class SpyPlugin extends JavaPlugin
 	private void onTick()
 	{
 		GlobalMonitor.instance.update();
+		Searcher.instance.update();
 		for(Entry<Player, PlaybackContext> playback : mPlayers.entrySet())
 		{
 			playback.getValue().update();

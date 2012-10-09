@@ -2,8 +2,6 @@ package au.com.mineauz.PlayerSpy.inspect;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -18,8 +16,6 @@ import au.com.mineauz.PlayerSpy.SpyPlugin;
 
 public class Inspector implements Listener
 {
-	public static final ExecutorService AsyncService = Executors.newSingleThreadExecutor();
-	
 	public static Inspector instance = new Inspector();
 	private HashSet<Player> mInspectors = new HashSet<Player>();
 	private HashMap<Player, Location> mSelected = new HashMap<Player, Location>();
@@ -59,7 +55,7 @@ public class Inspector implements Listener
 	
 	private void inspectBlock(Player player, Location loc)
 	{
-		AsyncService.submit(new InspectBlockTask(player, loc));
+		SpyPlugin.getExecutor().submit(new InspectBlockTask(player, loc));
 	}
 	@EventHandler(priority = EventPriority.MONITOR)
 	private void onClick(PlayerInteractEvent event)

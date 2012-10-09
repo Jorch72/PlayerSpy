@@ -3,7 +3,6 @@ package au.com.mineauz.PlayerSpy.commands.playback;
 import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.PlaybackContext;
-import au.com.mineauz.PlayerSpy.commands.Command;
 
 public class PauseCommand extends Command
 {

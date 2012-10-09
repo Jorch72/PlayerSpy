@@ -6,7 +6,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.PlaybackContext;
-import au.com.mineauz.PlayerSpy.commands.Command;
 
 public class HelpCommand extends Command 
 {

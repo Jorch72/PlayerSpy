@@ -428,6 +428,9 @@ public class Util
 		{
 			int id = Integer.parseInt(block);
 			Material mat = Material.getMaterial(id);
+			if(mat == null)
+				return null;
+			
 			if(mat.isBlock())
 				return mat;
 			else

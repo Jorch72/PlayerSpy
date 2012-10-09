@@ -32,7 +32,7 @@ public class Pager
 		sender.sendMessage(mName);
 		sender.sendMessage(ChatColor.RED + "------------------ Page " + ChatColor.YELLOW + (page + 1) + ChatColor.RED + " / " + ChatColor.YELLOW + getPageCount() + ChatColor.RED + "--------");
 		
-		for(int i = page * mItemsPerPage; i < mItems.size(); ++i)
+		for(int i = page * mItemsPerPage; i < mItems.size() && i < (page + 1) * mItemsPerPage; ++i)
 		{
 			sender.sendMessage(mItems.get(i));
 		}

@@ -44,6 +44,8 @@ public class CrossReferenceIndex
 	//private PreparedStatement mSelectSessionByIDStatement;
 	private PreparedStatement mSelectSessionStatement;
 	private PreparedStatement mSelectSessionByChunkStatement;
+	private PreparedStatement mSelectSessionByChunkBetweenTimeStatement;
+	private PreparedStatement mSelectSessionBetweenTimeStatement;
 	//private PreparedStatement mSelectSessionEarlierThanTimeStatement;
 	//private PreparedStatement mSelectSessionLaterThanTimeStatement;
 	//private PreparedStatement mSelectSessionContainsTimeStatement;
@@ -98,7 +100,8 @@ public class CrossReferenceIndex
 			//mSelectSessionByIDStatement = mDatabaseConnection.prepareStatement("SELECT * FROM SessionMap WHERE SESSION_ID = ?;");
 			mSelectSessionStatement = mDatabaseConnection.prepareStatement("SELECT * FROM SessionMap WHERE FILE_ID = ? AND SESSION_INDEX = ?;");
 			mSelectSessionByChunkStatement = mDatabaseConnection.prepareStatement("SELECT SessionMap.SESSION_ID, SessionMap.FILE_ID, SessionMap.SESSION_INDEX, SessionMap.START_DATE, SessionMap.END_DATE FROM Chunks JOIN SessionMap ON Chunks.SESSION_ID = SessionMap.SESSION_ID WHERE Chunks.X = ? AND Chunks.Z = ? AND Chunks.WORLD = ?;");
-			//mSelectSessionEarlierThanTimeStatement = mDatabaseConnection.prepareStatement("SELECT * FROM SessionMap WHERE START_DATE < ? ORDER BY END_DATE DESC;");
+			mSelectSessionByChunkBetweenTimeStatement = mDatabaseConnection.prepareStatement("SELECT SessionMap.SESSION_ID, SessionMap.FILE_ID, SessionMap.SESSION_INDEX, SessionMap.START_DATE, SessionMap.END_DATE FROM Chunks JOIN SessionMap ON Chunks.SESSION_ID = SessionMap.SESSION_ID WHERE Chunks.X = ? AND Chunks.Z = ? AND Chunks.WORLD = ? AND ((SessionMap.START_DATE >= ? AND SessionMap.START_DATE <= ?) OR (SessionMap.END_DATE >= ? AND SessionMap.END_DATE <= ?) OR (SessionMap.START_DATE < ? AND SessionMap.END_DATE > ?) OR (SessionMap.START_DATE < ? AND SessionMap.END_DATE > ?));");
+			mSelectSessionBetweenTimeStatement = mDatabaseConnection.prepareStatement("SELECT  SESSION_ID, FILE_ID, SESSION_INDEX, START_DATE, END_DATE FROM SessionMap WHERE (START_DATE >= ? AND START_DATE <= ?) OR (END_DATE >= ? AND END_DATE <= ?) OR (START_DATE < ? AND END_DATE > ?) OR (START_DATE < ? AND END_DATE > ?);");
 			//mSelectSessionLaterThanTimeStatement = mDatabaseConnection.prepareStatement("SELECT * FROM SessionMap WHERE END_DATE > ? ORDER BY END_DATE DESC;");
 			//mSelectSessionContainsTimeStatement = mDatabaseConnection.prepareStatement("SELECT * FROM SessionMap WHERE ? BETWEEN START_DATE AND END_DATE ORDER BY END_DATE DESC;");
 			mSelectChunksBySessionStatement = mDatabaseConnection.prepareStatement("SELECT * FROM Chunks WHERE SESSION_ID = ?");
@@ -491,7 +494,80 @@ public class CrossReferenceIndex
 	 */
 	public synchronized List<SessionInFile> getSessionsFor(Chunk chunk, long startTime, long endTime)
 	{
-		return null;
+		try
+		{
+			mSelectSessionByChunkBetweenTimeStatement.setInt(1, chunk.getX());
+			mSelectSessionByChunkBetweenTimeStatement.setInt(2, chunk.getZ());
+			mSelectSessionByChunkBetweenTimeStatement.setInt(3, getWorldHash(chunk.getWorld()));
+			mSelectSessionByChunkBetweenTimeStatement.setLong(4, startTime);
+			mSelectSessionByChunkBetweenTimeStatement.setLong(5, endTime);
+			mSelectSessionByChunkBetweenTimeStatement.setLong(6, startTime);
+			mSelectSessionByChunkBetweenTimeStatement.setLong(7, endTime);
+			mSelectSessionByChunkBetweenTimeStatement.setLong(8, startTime);
+			mSelectSessionByChunkBetweenTimeStatement.setLong(9, startTime);
+			mSelectSessionByChunkBetweenTimeStatement.setLong(10, endTime);
+			mSelectSessionByChunkBetweenTimeStatement.setLong(11, endTime);
+			
+			ResultSet rs = mSelectSessionByChunkBetweenTimeStatement.executeQuery();
+			ArrayList<SessionInFile> results = new ArrayList<CrossReferenceIndex.SessionInFile>();
+			releaseLastLogs();
+			
+			while(rs.next())
+			{
+				// Columns are: SESSION_ID, FILE_ID, SESSION_INDEX, START_DATE, END_DATE
+				int fileId = rs.getInt(2);
+				LogFile log = null;
+				if(mOpenedLogs.containsKey(fileId))
+				{
+					log = mOpenedLogs.get(fileId);
+				}
+				else
+				{
+					// Load it
+					mSelectFileByIDStatement.setInt(1, fileId);
+					ResultSet fileRs = mSelectFileByIDStatement.executeQuery();
+					
+					if(!fileRs.next())
+					{
+						fileRs.close();
+						continue;
+					}
+					
+					String name = fileRs.getString(2);
+					if(name.startsWith(LogFileRegistry.cGlobalFilePrefix))
+					{
+						World world = Bukkit.getWorld(name.substring(LogFileRegistry.cGlobalFilePrefix.length()));
+						log = LogFileRegistry.getLogFile(world);
+					}
+					else
+					{
+						OfflinePlayer player = Bukkit.getOfflinePlayer(name);
+						log = LogFileRegistry.getLogFile(player);
+					}
+					fileRs.close();
+					
+					mOpenedLogs.put(fileId, log);
+				}
+				
+				// Because inconistant state can happen though crashes. Just good to make sure
+				if(log.getSessions().size() > rs.getInt(3))
+				{
+					SessionInFile res = new SessionInFile();
+					res.Log = log;
+					res.Session = log.getSessions().get(rs.getInt(3));
+					results.add(res);
+				}
+			}
+			
+			rs.close();
+			
+			return results;
+		}
+		catch(SQLException e)
+		{
+			LogUtil.severe(e.getMessage());
+			return new ArrayList<CrossReferenceIndex.SessionInFile>();
+		}
 	}
 	/**
 	 * Gets all the sessions that are in the time limits
@@ -501,7 +577,77 @@ public class CrossReferenceIndex
 	 */
 	public synchronized List<SessionInFile> getSessionsFor(long startTime, long endTime)
 	{
-		return null;
+		try
+		{
+			mSelectSessionBetweenTimeStatement.setLong(1, startTime);
+			mSelectSessionBetweenTimeStatement.setLong(2, endTime);
+			mSelectSessionBetweenTimeStatement.setLong(3, startTime);
+			mSelectSessionBetweenTimeStatement.setLong(4, endTime);
+			mSelectSessionBetweenTimeStatement.setLong(5, startTime);
+			mSelectSessionBetweenTimeStatement.setLong(6, startTime);
+			mSelectSessionBetweenTimeStatement.setLong(7, endTime);
+			mSelectSessionBetweenTimeStatement.setLong(8, endTime);
+			
+			ResultSet rs = mSelectSessionBetweenTimeStatement.executeQuery();
+			ArrayList<SessionInFile> results = new ArrayList<CrossReferenceIndex.SessionInFile>();
+			releaseLastLogs();
+			
+			while(rs.next())
+			{
+				// Columns are: SESSION_ID, FILE_ID, SESSION_INDEX, START_DATE, END_DATE
+				int fileId = rs.getInt(2);
+				LogFile log = null;
+				if(mOpenedLogs.containsKey(fileId))
+				{
+					log = mOpenedLogs.get(fileId);
+				}
+				else
+				{
+					// Load it
+					mSelectFileByIDStatement.setInt(1, fileId);
+					ResultSet fileRs = mSelectFileByIDStatement.executeQuery();
+					
+					if(!fileRs.next())
+					{
+						fileRs.close();
+						continue;
+					}
+					
+					String name = fileRs.getString(2);
+					if(name.startsWith(LogFileRegistry.cGlobalFilePrefix))
+					{
+						World world = Bukkit.getWorld(name.substring(LogFileRegistry.cGlobalFilePrefix.length()));
+						log = LogFileRegistry.getLogFile(world);
+					}
+					else
+					{
+						OfflinePlayer player = Bukkit.getOfflinePlayer(name);
+						log = LogFileRegistry.getLogFile(player);
+					}
+					fileRs.close();
+					
+					mOpenedLogs.put(fileId, log);
+				}
+				
+				// Because inconistant state can happen though crashes. Just good to make sure
+				if(log.getSessions().size() > rs.getInt(3))
+				{
+					SessionInFile res = new SessionInFile();
+					res.Log = log;
+					res.Session = log.getSessions().get(rs.getInt(3));
+					results.add(res);
+				}
+			}
+			
+			rs.close();
+			
+			return results;
+		}
+		catch(SQLException e)
+		{
+			LogUtil.severe(e.getMessage());
+			return new ArrayList<CrossReferenceIndex.SessionInFile>();
+		}
 	}
 	
 	/**

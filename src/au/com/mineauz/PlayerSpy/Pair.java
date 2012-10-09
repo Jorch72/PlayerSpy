@@ -29,4 +29,10 @@ public class Pair<A,B>
 	{
 		mArg2 = arg2;
 	}
+	
+	@Override
+	public String toString() 
+	{
+		return "Pair: (" + mArg1 + ", " + mArg2 + " )";
+	}
 }

@@ -4,7 +4,6 @@ import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.PlaybackContext;
 import au.com.mineauz.PlayerSpy.Util;
-import au.com.mineauz.PlayerSpy.commands.Command;
 
 public class SkipCommand extends Command
 {

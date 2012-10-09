@@ -36,3 +36,6 @@ permissions:
   playerspy.inspect:
     default: op
     description: Allows a player to inspect changes
+  playerspy.search:
+    default: op
+    description: Allows a player to search through the logs

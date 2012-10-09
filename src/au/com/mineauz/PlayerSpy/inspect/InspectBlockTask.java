@@ -14,10 +14,11 @@ import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.Util;
 import au.com.mineauz.PlayerSpy.Utility;
 import au.com.mineauz.PlayerSpy.LogTasks.BlockHistoryTask;
+import au.com.mineauz.PlayerSpy.LogTasks.Task;
 import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
 
-public class InspectBlockTask implements Runnable 
+public class InspectBlockTask implements Task<Void>
 {
 	private Player mWho;
 	private Location mLocation;
@@ -28,7 +29,7 @@ public class InspectBlockTask implements Runnable
 		mLocation = block.clone();
 	}
 	@Override
-	public void run() 
+	public Void call() 
 	{
 		BlockHistoryTask task = new BlockHistoryTask(mLocation);
 		HashMap<String, RecordList> results = null;
@@ -39,7 +40,7 @@ public class InspectBlockTask implements Runnable
 		catch(Exception e)
 		{
 			e.printStackTrace();
-			return;
+			return null;
 		}
 		
 		// Find the 3 Most recent results
@@ -90,7 +91,12 @@ public class InspectBlockTask implements Runnable
 		{
 			mWho.sendMessage(line);
 		}
-		
+		return null;
+	}
+	@Override
+	public int getTaskTargetId() 
+	{
+		return 99999999;
 	}
 
 }

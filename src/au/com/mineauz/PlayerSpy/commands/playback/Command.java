@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy.commands;
+package au.com.mineauz.PlayerSpy.commands.playback;
 
 import org.bukkit.entity.Player;
 

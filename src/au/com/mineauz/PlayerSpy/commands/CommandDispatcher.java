@@ -34,6 +34,7 @@ public class CommandDispatcher implements CommandExecutor
 		registerCommand(new InspectCommand());
 		registerCommand(new HistoryCommand());
 		registerCommand(new DebugCommand());
+		registerCommand(new SearchCommand());
 	}
 	/**
 	 * Registers a command to be handled by this dispatcher
