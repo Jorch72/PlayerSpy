@@ -19,7 +19,7 @@ public class TimeState extends State
 		try
 		{
 			DateFormat fmt = new SimpleDateFormat("hh:mm:ssa");
-			fmt.setTimeZone(TimeZone.getTimeZone(SpyPlugin.getSettings().timezone));
+			fmt.setTimeZone(SpyPlugin.getSettings().timezone);
 			Date date = fmt.parse(word);
 			date.setTime(date.getTime() + SpyPlugin.getSettings().timeoffset);
 			
@@ -33,7 +33,7 @@ public class TimeState extends State
 		try
 		{
 			DateFormat fmt = new SimpleDateFormat("HH:mm:ss");
-			fmt.setTimeZone(TimeZone.getTimeZone(SpyPlugin.getSettings().timezone));
+			fmt.setTimeZone(SpyPlugin.getSettings().timezone);
 			Date date = fmt.parse(word);
 			date.setTime(date.getTime() + SpyPlugin.getSettings().timeoffset);
 			
@@ -46,7 +46,7 @@ public class TimeState extends State
 		try
 		{
 			DateFormat fmt = new SimpleDateFormat("hh:mma");
-			fmt.setTimeZone(TimeZone.getTimeZone(SpyPlugin.getSettings().timezone));
+			fmt.setTimeZone(SpyPlugin.getSettings().timezone);
 			Date date = fmt.parse(word);
 			date.setTime(date.getTime() + SpyPlugin.getSettings().timeoffset);
 			
@@ -59,7 +59,7 @@ public class TimeState extends State
 		try
 		{
 			DateFormat fmt = new SimpleDateFormat("HH:mm");
-			fmt.setTimeZone(TimeZone.getTimeZone(SpyPlugin.getSettings().timezone));
+			fmt.setTimeZone(SpyPlugin.getSettings().timezone);
 			Date date = fmt.parse(word);
 			date.setTime(date.getTime() + SpyPlugin.getSettings().timeoffset);
 			

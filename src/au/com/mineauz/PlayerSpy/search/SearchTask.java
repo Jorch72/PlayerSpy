@@ -80,7 +80,13 @@ public class SearchTask implements Task<SearchResults>
 			String ownerTag = fileSession.Log.getOwnerTag(fileSession.Session);
 			
 			if(fileSession.Log.getName().startsWith(LogFileRegistry.cGlobalFilePrefix))
+			{
+				if(ownerTag == null)
+					// :( shouldnt happen but does
+					continue;
+				
 				cause = Cause.globalCause(Bukkit.getWorld(fileSession.Log.getName().substring(LogFileRegistry.cGlobalFilePrefix.length())), ownerTag);
+			}
 			else
 			{
 				if(ownerTag == null)
@@ -202,7 +208,7 @@ public class SearchTask implements Task<SearchResults>
 				addedRecords = true;
 			}
 			
-			if(newCause && addedRecords)
+			if(addedRecords)
 				results.causes.put(id, cause);
 			
 		}

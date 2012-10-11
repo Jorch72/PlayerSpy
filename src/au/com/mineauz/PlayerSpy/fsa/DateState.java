@@ -14,7 +14,7 @@ public class DateState extends State
 	public boolean match(String word, ArrayDeque<Object> output) 
 	{
 		DateFormat fmt = DateFormat.getDateInstance(DateFormat.SHORT);
-		fmt.setTimeZone(TimeZone.getTimeZone(SpyPlugin.getSettings().timezone));
+		fmt.setTimeZone(SpyPlugin.getSettings().timezone);
 		try 
 		{
 			Date date = fmt.parse(word);

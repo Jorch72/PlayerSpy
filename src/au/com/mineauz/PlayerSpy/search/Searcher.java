@@ -88,6 +88,10 @@ public class Searcher
 		for(Pair<Record,Integer> result : results.allRecords)
 		{
 			Cause cause = results.causes.get(result.getArg2());
+			if(cause == null)
+				// TODO: Find out what is causing this
+				cause = Cause.unknownCause();
+			
 			String msg = "record";
 			switch(result.getArg1().getType())
 			{

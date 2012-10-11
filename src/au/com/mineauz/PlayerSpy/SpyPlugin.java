@@ -5,12 +5,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.TimeZone;
 import java.util.logging.Level;
 
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -34,6 +32,10 @@ public class SpyPlugin extends JavaPlugin
 		// Create the folder if needed
 		if(!getDataFolder().exists())
 			getDataFolder().mkdirs();
+		
+		// Load the config
+		getSettings().load(new File(getDataFolder(), "config.yml"));
+		getSettings().save(new File(getDataFolder(), "config.yml"));
 		
 		mPersistFile = new File(getDataFolder(), "persist.yml");
 		
@@ -61,7 +63,10 @@ public class SpyPlugin extends JavaPlugin
 		getLogger().getParent().getHandlers()[0].setLevel(Level.FINEST);
 		//****END DEBUG****
 
-		Calendar.getInstance().setTimeZone(TimeZone.getTimeZone(getSettings().timezone));
+		
+		
+		
+		Calendar.getInstance().setTimeZone(getSettings().timezone);
 		Calendar.getInstance().add(Calendar.MILLISECOND, (int) getSettings().timeoffset);
 		
 		getCommand("playerspy").setExecutor(new CommandDispatcher());

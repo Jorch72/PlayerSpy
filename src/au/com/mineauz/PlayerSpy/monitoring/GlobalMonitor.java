@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
@@ -898,13 +897,13 @@ public class GlobalMonitor implements Listener
 		switch(event.getCause())
 		{
 		case FIREBALL:
-			extraCause += "#fireball";
+			extraCause = "#fireball";
 			break;
 		case LAVA:
-			extraCause += "#lavafire";
+			extraCause = "#lavafire";
 			break;
 		case LIGHTNING:
-			extraCause += "#lightning";
+			extraCause = "#lightning";
 			break;
 		default:
 			break;

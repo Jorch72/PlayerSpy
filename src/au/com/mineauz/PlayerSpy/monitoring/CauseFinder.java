@@ -186,7 +186,17 @@ public class CauseFinder
 					
 					if(((BlockChangeRecord)record).getLocation().equals(mSearchLocation));
 					{
-						Cause cause = (ownerTag == null ? Cause.playerCause(Bukkit.getOfflinePlayer(result.Log.getName())) : Cause.playerCause(Bukkit.getOfflinePlayer(result.Log.getName()), ownerTag));
+						Cause cause = null;
+						if(result.Log.getName().startsWith(LogFileRegistry.cGlobalFilePrefix))
+						{
+							if(ownerTag == null)
+								continue;
+							cause = Cause.globalCause(Bukkit.getWorld(result.Log.getName().substring(LogFileRegistry.cGlobalFilePrefix.length())), ownerTag);
+						}
+						else
+						{
+							cause = (ownerTag == null ? Cause.playerCause(Bukkit.getOfflinePlayer(result.Log.getName())) : Cause.playerCause(Bukkit.getOfflinePlayer(result.Log.getName()), ownerTag));
+						}
 						// Record it
 						if(answer == null)
 							answer = new Pair<Long, Cause>(record.getTimestamp(), cause);

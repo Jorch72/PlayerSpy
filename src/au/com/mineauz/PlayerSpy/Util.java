@@ -85,7 +85,7 @@ public class Util
 		
 		return 0;
 	}
-	public static String dateDiffToString(long dateDiff)
+	public static String dateDiffToString(long dateDiff, boolean shortFormat)
 	{
 		String result = "";
 		if(dateDiff < 0)
@@ -99,14 +99,20 @@ public class Util
 		{
 			years = (int)Math.floor(dateDiff / 26298000000L);
 			dateDiff -= years * 26298000000L;
-			result += years + " Year" + (years > 1 ? "s" : "");
+			if(shortFormat)
+				result += years + "y";
+			else
+				result += years + " Year" + (years > 1 ? "s" : "");
 		}
 		
 		if(dateDiff >= 2191500000L)
 		{
 			months = (int)Math.floor(dateDiff / 2191500000L);
 			dateDiff -= months * 2191500000L;
-			result += months + " Month" + (months > 1 ? "s" : "");
+			if(shortFormat)
+				result += months + "mo";
+			else
+				result += months + " Month" + (months > 1 ? "s" : "");
 		}
 		else
 			months = 0;
@@ -115,7 +121,10 @@ public class Util
 		{
 			weeks = (int)Math.floor(dateDiff / 504000000L);
 			dateDiff -= weeks * 504000000L;
-			result += weeks + " Week" + (weeks > 1 ? "s" : "");
+			if(shortFormat)
+				result += weeks + "w";
+			else
+				result += weeks + " Week" + (weeks > 1 ? "s" : "");
 		}
 		else
 			weeks = 0;
@@ -124,7 +133,10 @@ public class Util
 		{
 			days = (int)Math.floor(dateDiff / 72000000L);
 			dateDiff -= days * 72000000L;
-			result += days + " Day" + (days > 1 ? "s" : "");
+			if(shortFormat)
+				result += days + "d";
+			else
+				result += days + " Day" + (days > 1 ? "s" : "");
 		}
 		else
 			days = 0;
@@ -133,7 +145,10 @@ public class Util
 		{
 			hours = (int)Math.floor(dateDiff / 3600000L);
 			dateDiff -= hours * 3600000L;
-			result += hours + " Hour" + (hours > 1 ? "s" : "");
+			if(shortFormat)
+				result += hours + "h";
+			else
+				result += hours + " Hour" + (hours > 1 ? "s" : "");
 		}
 		else
 			hours = 0;
@@ -142,20 +157,25 @@ public class Util
 		{
 			minutes = (int)Math.floor(dateDiff / 60000L);
 			dateDiff -= minutes * 60000L;
-			result += minutes + " Minute" + (minutes > 1 ? "s" : "");
+			if(shortFormat)
+				result += minutes + "m";
+			else
+				result += minutes + " Minute" + (minutes > 1 ? "s" : "");
 		}
 		else
 			minutes = 0;
 		
-		if(dateDiff >= 1000L)
+		if(dateDiff >= 0)
 		{
 			seconds = (int)Math.floor(dateDiff / 1000L);
 			dateDiff -= seconds * 1000L;
-			result += seconds + " Second" + (seconds > 1 ? "s" : "");
+			if(shortFormat)
+				result += seconds + "s";
+			else
+				result += seconds + " Second" + (seconds > 1 ? "s" : "");
 		}
 		else
 			seconds = 0;
-		
 		
 		return result;
 	}

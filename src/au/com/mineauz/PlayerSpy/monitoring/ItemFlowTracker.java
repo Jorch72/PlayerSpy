@@ -49,6 +49,12 @@ public class ItemFlowTracker implements Listener
 		if(!(event.getWhoClicked() instanceof Player))
 			return;
 		
+		if(event.getInventory().getType() == InventoryType.CRAFTING || event.getInventory().getType() == InventoryType.CREATIVE)
+			return;
+		
+		if(event.getInventory().getType() == InventoryType.PLAYER && event.getInventory().getHolder() == event.getWhoClicked())
+			return;
+		
 		
 		int lastClick = (mPlayerLastClick.containsKey((Player)event.getWhoClicked()) ? mPlayerLastClick.get((Player)event.getWhoClicked()) : -999);
 		int currentClick = event.getRawSlot();
