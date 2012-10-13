@@ -1,8 +1,13 @@
 package au.com.mineauz.PlayerSpy.commands;
 
+import net.minecraft.server.ItemStack;
+
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.FLLTest;
+import au.com.mineauz.PlayerSpy.StringTranslator;
+import au.com.mineauz.PlayerSpy.Utility;
 
 public class DebugCommand implements ICommand
 {
@@ -34,14 +39,15 @@ public class DebugCommand implements ICommand
 	@Override
 	public boolean canBeConsole() 
 	{
-		return true;
+		return false;
 	}
 
 	@Override
 	public boolean onCommand(CommandSender sender, String label, String[] args) 
 	{
-		FLLTest test = new FLLTest();
-		test.doTest();
+		Player player = (Player)sender;
+		ItemStack stack  = Utility.convertToNative(player.getItemInHand());
+		sender.sendMessage(StringTranslator.translateName(stack.getItem().c(stack)));
 		
 		return true;
 	}

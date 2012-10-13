@@ -44,4 +44,9 @@ public class ChatCommandRecord extends Record
 	{
 		return 3 + mMessage.length();
 	}
+	@Override
+	public String getDescription()
+	{
+		return "%s: " + mMessage;
+	}
 }

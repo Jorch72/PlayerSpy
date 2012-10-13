@@ -681,7 +681,10 @@ public class LogFile
 				{
 					Record record = Record.readRecord(stream, lastWorld, mHeader.VersionMajor, isAbsolute);
 					if(record == null)
+					{
+						LogUtil.severe("Read NULL record");
 						break;
+					}
 					
 					// update the last world
 					if(record instanceof ILocationAware && ((ILocationAware)record).isFullLocation())

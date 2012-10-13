@@ -54,7 +54,7 @@ public class CauseFinder
 		Pair<Long, Cause> answer = null;
 		for(ShallowMonitor mon : GlobalMonitor.instance.getAllMonitors())
 		{
-			List<Pair<String, RecordList>> inBuffer = mon.getCurrentBlockRecords();
+			List<Pair<String, RecordList>> inBuffer = mon.getBufferedRecords();
 			for(Pair<String, RecordList> pair : inBuffer)
 			{
 				// Get the cause

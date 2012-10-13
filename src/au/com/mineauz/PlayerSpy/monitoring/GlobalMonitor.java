@@ -299,7 +299,7 @@ public class GlobalMonitor implements Listener
 	//***********************
 	// Event Handlers
 	//***********************
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onWorldLoad(WorldLoadEvent event)
 	{
 		LogFile log = LogFileRegistry.getLogFile(event.getWorld());
@@ -314,7 +314,7 @@ public class GlobalMonitor implements Listener
 			mBuffers.put(event.getWorld(), new HashMap<String, RecordList>());
 		}
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onWorldUnload(WorldUnloadEvent event)
 	{
 		for(Entry<String, RecordList> ent : mBuffers.get(event.getWorld()).entrySet())
@@ -331,7 +331,7 @@ public class GlobalMonitor implements Listener
 		mGlobalLogs.remove(event.getWorld());
 	}
 	
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onPlayerJoin(PlayerJoinEvent event)
 	{
 		if(!mDeepLogs.containsKey(event.getPlayer()))
@@ -345,7 +345,7 @@ public class GlobalMonitor implements Listener
 		}
 	}
 	
-	@EventHandler(priority = EventPriority.LOWEST)
+	@EventHandler(priority = EventPriority.MONITOR)
 	private void onPlayerQuit(PlayerQuitEvent event)
 	{
 		ShallowMonitor mon = getMonitor(event.getPlayer());
@@ -354,7 +354,7 @@ public class GlobalMonitor implements Listener
 			mon.logRecord(new LogoffRecord(LogoffType.Quit, event.getQuitMessage()));
 		removeShallow(event.getPlayer());
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onPlayerKicked(PlayerKickEvent event)
 	{
 		if(event.getPlayer().isBanned())
@@ -365,7 +365,7 @@ public class GlobalMonitor implements Listener
 		removeShallow(event.getPlayer());
 	}
 	
-	@EventHandler(priority = EventPriority.LOWEST)
+	@EventHandler(priority = EventPriority.MONITOR)
 	private void onPlayerChatEvent(AsyncPlayerChatEvent event)
 	{
 		ShallowMonitor mon = getMonitor(event.getPlayer());
@@ -373,7 +373,7 @@ public class GlobalMonitor implements Listener
 		if(mon != null)
 			mon.onPlayerChatEvent(event);
 	}
-	@EventHandler(priority = EventPriority.LOWEST)
+	@EventHandler(priority = EventPriority.MONITOR)
 	private void onPlayerCommandEvent(PlayerCommandPreprocessEvent event)
 	{
 		ShallowMonitor mon = getMonitor(event.getPlayer());
@@ -381,7 +381,7 @@ public class GlobalMonitor implements Listener
 		if(mon != null)
 			mon.onPlayerCommandEvent(event);
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onPlayerChangedWorld(PlayerChangedWorldEvent event)
 	{
 		mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
@@ -390,7 +390,7 @@ public class GlobalMonitor implements Listener
 		if(mon != null)
 			mon.onPlayerChangedWorld(event);
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onPlayerGameModeChange(PlayerGameModeChangeEvent event)
 	{
 		mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
@@ -399,7 +399,7 @@ public class GlobalMonitor implements Listener
 		if(mon != null)
 			mon.onPlayerGameModeChange(event);
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onPlayerInteract(PlayerInteractEvent event)
 	{
 		mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
@@ -408,7 +408,7 @@ public class GlobalMonitor implements Listener
 		if(mon != null)
 			mon.onPlayerInteract(event);
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onPlayerInteractEntity(PlayerInteractEntityEvent event)
 	{
 		mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
@@ -417,7 +417,7 @@ public class GlobalMonitor implements Listener
 		if(mon != null)
 			mon.onPlayerInteractEntity(event);
 	}
-	@EventHandler(priority = EventPriority.LOWEST)
+	@EventHandler(priority = EventPriority.MONITOR)
 	private void onPlayerRespawn(PlayerRespawnEvent event)
 	{
 		mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
@@ -426,7 +426,7 @@ public class GlobalMonitor implements Listener
 		if(mon != null)
 			mon.onPlayerRespawn(event);
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onPlayerShearEntity(PlayerShearEntityEvent event)
 	{
 		mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
@@ -435,7 +435,7 @@ public class GlobalMonitor implements Listener
 		if(mon != null)
 			mon.onPlayerShearEntity(event);
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onPlayerFish(PlayerFishEvent event)
 	{
 		mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
@@ -444,7 +444,7 @@ public class GlobalMonitor implements Listener
 		if(mon != null)
 			mon.onPlayerFish(event);
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onPlayerDeath(PlayerDeathEvent event)
 	{
 		mItemTracker.scheduleInventoryUpdate(event.getEntity().getInventory());
@@ -460,7 +460,7 @@ public class GlobalMonitor implements Listener
 		if(mon != null)
 			mon.onMove(event.getPlayer().getLocation(), event.getPlayer().getEyeLocation());
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onDamageByEntity(EntityDamageByEntityEvent event)
 	{
 		if(event.getEntity() instanceof Player)
@@ -509,7 +509,7 @@ public class GlobalMonitor implements Listener
 			}
 		}
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onDamageByBlock(EntityDamageByBlockEvent event)
 	{
 		if(event.getEntity() instanceof Player)
@@ -520,7 +520,7 @@ public class GlobalMonitor implements Listener
 				mon.onDamage(null, event.getDamager(), event.getDamage());
 		}
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onDamage(EntityDamageEvent event)
 	{
 		if(event.getEntity() instanceof Player)
@@ -544,7 +544,7 @@ public class GlobalMonitor implements Listener
 		
 			
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onEntityDeath(EntityDeathEvent event)
 	{
 		ShallowMonitor mon = getMonitor(event.getEntity().getKiller());
@@ -552,7 +552,7 @@ public class GlobalMonitor implements Listener
 		if(mon != null)
 			mon.onAttack(event.getEntity(), -1);
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onBlockBreak(BlockBreakEvent event)
 	{
 		mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
@@ -568,7 +568,7 @@ public class GlobalMonitor implements Listener
 		if(event.getBlock().getType() == Material.ICE && SpyPlugin.getSettings().recordFluidFlow)
 			mSpreadTracker.addSource(event.getBlock().getLocation(), Cause.playerCause(event.getPlayer(), "#water"));
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onBlockPlace(BlockPlaceEvent event)
 	{
 		mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
@@ -586,7 +586,7 @@ public class GlobalMonitor implements Listener
 			mSpreadTracker.addSource(event.getBlockPlaced().getLocation(), Cause.playerCause(event.getPlayer()));
 	}
 	
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onBucketFill(PlayerBucketFillEvent event)
 	{
 		mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
@@ -596,7 +596,7 @@ public class GlobalMonitor implements Listener
 		
 		mSpreadTracker.remove(event.getBlockClicked().getLocation());
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onBucketEmpty(PlayerBucketEmptyEvent event)
 	{
 		mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
@@ -626,7 +626,7 @@ public class GlobalMonitor implements Listener
 		}
 	}
 
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onItemDrop(PlayerDropItemEvent event)
 	{
 		ShallowMonitor mon = GlobalMonitor.instance.getMonitor(event.getPlayer());
@@ -636,7 +636,7 @@ public class GlobalMonitor implements Listener
 		mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
 	}
 	
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onItemPickup(PlayerPickupItemEvent event)
 	{
 		ShallowMonitor mon = GlobalMonitor.instance.getMonitor(event.getPlayer());
@@ -646,12 +646,12 @@ public class GlobalMonitor implements Listener
 		mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
 	}
 	
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onItemBreak(PlayerItemBreakEvent event)
 	{
 		mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onEggThrow(PlayerEggThrowEvent event)
 	{
 		ShallowMonitor mon = GlobalMonitor.instance.getMonitor(event.getPlayer());
@@ -659,7 +659,7 @@ public class GlobalMonitor implements Listener
 			mon.onEggThrow();
 		mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onEntityFormBlock(EntityBlockFormEvent event)
 	{
 		Cause cause = Cause.globalCause(event.getBlock().getWorld(), "#" + event.getEntity().getType().getName().toLowerCase());
@@ -667,7 +667,7 @@ public class GlobalMonitor implements Listener
 		BlockChangeRecord record = new BlockChangeRecord(null, event.getBlock(), true); 
 		logRecord(record, cause, null);
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onEntityChangeBlock(EntityChangeBlockEvent event)
 	{
 		Cause cause = Cause.globalCause(event.getEntity().getWorld(), "#" + event.getEntity().getType().getName().toLowerCase());
@@ -686,7 +686,7 @@ public class GlobalMonitor implements Listener
 
 		logRecord(record, cause, null);
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onEntityExplode(EntityExplodeEvent event)
 	{
 		if(event.getEntityType() == EntityType.PRIMED_TNT)
@@ -727,12 +727,12 @@ public class GlobalMonitor implements Listener
 			logRecords(records, cause, null);
 		}
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onBlockGrow(BlockGrowEvent event)
 	{
 		
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onBlockFade(BlockFadeEvent event)
 	{
 		Cause cause = null;
@@ -772,7 +772,7 @@ public class GlobalMonitor implements Listener
 		BlockChangeRecord record = new BlockChangeRecord(event.getBlock(), event.getNewState().getBlock(), false);
 		logRecord(record, cause, backupCause);
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onBlockBurn(BlockBurnEvent event)
 	{
 		Cause cause = null;
@@ -798,14 +798,14 @@ public class GlobalMonitor implements Listener
 		BlockChangeRecord record = new BlockChangeRecord(event.getBlock(),null, false);
 		logRecord(record, cause, null);
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onLeavesDecay(LeavesDecayEvent event)
 	{
 		Cause cause = Cause.globalCause(event.getBlock().getWorld(), "#decay");
 		BlockChangeRecord record = new BlockChangeRecord(event.getBlock(),null, false);
 		logRecord(record, cause, null);
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onBlockFromTo(BlockFromToEvent event)
 	{
 		if(event.getBlock().getType() != Material.DRAGON_EGG)
@@ -841,7 +841,7 @@ public class GlobalMonitor implements Listener
 			}
 		}
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onBlockSpread(BlockSpreadEvent event)
 	{
 		// Check config
@@ -878,12 +878,12 @@ public class GlobalMonitor implements Listener
 		BlockChangeRecord record = new BlockChangeRecord(event.getBlock().getState(),event.getNewState(), true);
 		logRecord(record, cause, backupCause);
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onBlockPhysics(BlockPhysicsEvent event)
 	{
 		
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onBlockIgite(BlockIgniteEvent event)
 	{
 		// Flint and steal is already covered by the block place event
@@ -961,7 +961,7 @@ public class GlobalMonitor implements Listener
 				logRecords(records.getArg1(), event.getCause(), records.getArg2());
 		}
 	}
-	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onExplosionPrime(ExplosionPrimeEvent event)
 	{
 		LogUtil.info("Explosion Prime at " + Utility.locationToStringShort(event.getEntity().getLocation()) + " by " + event.getEntityType().getName());

@@ -55,4 +55,11 @@ public class TeleportRecord extends Record implements ILocationAware
 	
 	@Override
 	public boolean isFullLocation() { return true; }
+	@Override
+	public String getDescription()
+	{
+		if(getCause() == TeleportCause.COMMAND || getCause() == TeleportCause.PLUGIN )
+			return "%s was teleported to " + Utility.locationToStringShort(mLocation.getLocation());
+		return null;
+	}
 }

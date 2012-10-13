@@ -55,4 +55,12 @@ public class SleepRecord extends Record {
 	
 	private boolean mIsSleeping;
 	private StoredLocation mLocation;
+	@Override
+	public String getDescription()
+	{
+		if(mIsSleeping)
+			return "%s went to sleep";
+		else
+			return "%s woke up";
+	}
 }

@@ -7,14 +7,14 @@ import org.bukkit.entity.EntityType;
 
 import au.com.mineauz.PlayerSpy.fsa.DataAssembler;
 
-public class EntityActionDA extends DataAssembler 
+public class EntityConstraintDA extends DataAssembler 
 {
 	private boolean mHasPlayer = false;
-	public EntityActionDA()
+	public EntityConstraintDA()
 	{
 		
 	}
-	public EntityActionDA(boolean hasPlayer)
+	public EntityConstraintDA(boolean hasPlayer)
 	{
 		mHasPlayer = hasPlayer;
 	}
@@ -39,7 +39,7 @@ public class EntityActionDA extends DataAssembler
 		}
 		String actionString = (String)objects.pop();
 		
-		EntityAction action = new EntityAction();
+		EntityConstraint action = new EntityConstraint();
 		action.entityType = type;
 		action.player = player;
 		action.spawn = (actionString.equals("spawn"));

@@ -4,17 +4,17 @@ import java.util.ArrayDeque;
 
 import au.com.mineauz.PlayerSpy.fsa.DataAssembler;
 
-public class ChatCommandActionDA extends DataAssembler
+public class ChatCommandConstraintDA extends DataAssembler
 {
 	private boolean mUseContains;
-	public ChatCommandActionDA(boolean useContains)
+	public ChatCommandConstraintDA(boolean useContains)
 	{
 		mUseContains = useContains;
 	}
 	@Override
 	public Object assemble(ArrayDeque<Object> objects) 
 	{
-		 ChatCommandAction action = new ChatCommandAction();
+		 ChatCommandConstraint action = new ChatCommandConstraint();
 		 
 		 if(mUseContains)
 		 {

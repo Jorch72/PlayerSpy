@@ -4,15 +4,18 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.event.block.Action;
 import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.StoredBlock;
 import au.com.mineauz.PlayerSpy.StoredEntity;
 import au.com.mineauz.PlayerSpy.StoredItemStack;
+import au.com.mineauz.PlayerSpy.Utility;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 
@@ -140,5 +143,20 @@ public class InteractRecord extends Record
 			size += mEntity.getSize();
 		
 		return size;
+	}
+	@Override
+	public String getDescription()
+	{
+		if(hasBlock())
+		{
+			String blockName = Utility.formatItemName(new ItemStack(mBlock.getType(),1, mBlock.getData()));
+			return ChatColor.DARK_AQUA + blockName + ChatColor.RESET + " used by %s";
+		}
+		else if(hasEntity())
+		{
+			String entityName = (mEntity.getEntityType() == EntityType.PLAYER ? mEntity.getPlayerName() : mEntity.getEntityType().getName());
+			return "%s interacted with " + ChatColor.DARK_AQUA + entityName + ChatColor.RESET;
+		}
+		return null;
 	}
 }

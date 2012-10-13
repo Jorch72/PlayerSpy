@@ -1,29 +1,23 @@
 package au.com.mineauz.PlayerSpy.search;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-
-import com.avaje.ebeaninternal.api.BindParams.OrderedList;
 
 import au.com.mineauz.PlayerSpy.Cause;
 import au.com.mineauz.PlayerSpy.Pager;
 import au.com.mineauz.PlayerSpy.Pair;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
-import au.com.mineauz.PlayerSpy.Util;
 import au.com.mineauz.PlayerSpy.Utility;
-import au.com.mineauz.PlayerSpy.Records.AttackRecord;
-import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
-import au.com.mineauz.PlayerSpy.Records.ChatCommandRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
 
 public class Searcher 
@@ -32,11 +26,14 @@ public class Searcher
 	
 	private HashMap<CommandSender, Future<SearchResults>> mWaitingTasks;
 	private HashMap<CommandSender, SearchResults> mCachedResults;
+	private HashMap<CommandSender, Boolean> mCachedResultsAreSearch;
+	
 	
 	private Searcher() 
 	{
 		mWaitingTasks = new HashMap<CommandSender, Future<SearchResults>>();
 		mCachedResults = new HashMap<CommandSender, SearchResults>();
+		mCachedResultsAreSearch = new HashMap<CommandSender, Boolean>();
 	}
 	
 	public void update()
@@ -68,10 +65,16 @@ public class Searcher
 	
 	public void searchAndDisplay(CommandSender sender, SearchFilter filter)
 	{
-		SearchTask task = new SearchTask(filter, (sender instanceof Player ? ((Player)sender).getLocation() : null));
+		SearchTask task = new SearchTask(filter);
 		mWaitingTasks.put(sender, SpyPlugin.getExecutor().submit(task));
+		mCachedResultsAreSearch.put(sender, true);
 	}
-	
+	public void getBlockHistory(CommandSender sender, SearchFilter filter)
+	{
+		SearchTask task = new SearchTask(filter);
+		mWaitingTasks.put(sender, SpyPlugin.getExecutor().submit(task));
+		mCachedResultsAreSearch.put(sender, false);
+	}
 	public void displayResults(CommandSender who, int page)
 	{
 		if(!mCachedResults.containsKey(who))
@@ -84,42 +87,47 @@ public class Searcher
 		}
 		
 		SearchResults results = mCachedResults.get(who);
-		Pager pager = new Pager("Search results", (who instanceof Player ? 10 : 40));
+		String title;
+		if(mCachedResultsAreSearch.get(who))
+			title = "Search results";
+		else
+			title = "Block history";
+		
+		Date lastDate = new Date(0);
+		Pager pager = new Pager(title, (who instanceof Player ? 10 : 40));
+		int lastPageCount = 0;
 		for(Pair<Record,Integer> result : results.allRecords)
 		{
-			Cause cause = results.causes.get(result.getArg2());
-			if(cause == null)
-				// TODO: Find out what is causing this
-				cause = Cause.unknownCause();
+			String msg = result.getArg1().getDescription();
 			
-			String msg = "record";
-			switch(result.getArg1().getType())
+			if(msg == null)
+				continue;
+			
+			// Do date stuff
+			Date date = new Date(result.getArg1().getTimestamp());
+			Date dateOnly = Utility.getDatePortion(date);
+			date.setTime(date.getTime() - dateOnly.getTime());
+			// Output the date if it has changed
+			if(lastDate.getTime() != dateOnly.getTime() || pager.getPageCount() != lastPageCount)
 			{
-			case Attack:
-				if(((AttackRecord)result.getArg1()).getDamagee().getEntityType() == EntityType.PLAYER)
-				{
-					msg = ((AttackRecord)result.getArg1()).getDamagee().getPlayerName() + " was killed @" + Utility.locationToStringShort(((AttackRecord)result.getArg1()).getDamagee().getLocation());
-				}
+				if(dateOnly.getTime() == Utility.getDatePortion(new Date()).getTime())
+					pager.addItem(ChatColor.GREEN + "Today");
 				else
 				{
-					msg = ((AttackRecord)result.getArg1()).getDamagee().getEntityType().getName() + " was killed @" + Utility.locationToStringShort(((AttackRecord)result.getArg1()).getDamagee().getLocation());
+					DateFormat fmt = DateFormat.getDateInstance(DateFormat.FULL);
+					pager.addItem(ChatColor.GREEN + fmt.format(dateOnly));
 				}
-				break;
-			case BlockChange:
-				msg = Utility.formatItemName(new ItemStack(((BlockChangeRecord)result.getArg1()).getBlock().getType()));
-				if(((BlockChangeRecord)result.getArg1()).wasPlaced())
-					msg += " placed ";
-				else
-					msg += " removed ";
+				lastDate = dateOnly;
 				
-				break;
-			case ChatCommand:
-				msg = "'" + ((ChatCommandRecord)result.getArg1()).getMessage() + "'";
-				break;
-			default:
-				break;
+				lastPageCount = pager.getPageCount();
 			}
-			pager.addItem(String.format(ChatColor.GREEN + "%16s" + ChatColor.RESET + " %s by " + ChatColor.DARK_AQUA + "%s", Util.dateToString(result.getArg1().getTimestamp()), msg, (cause.isGlobal() ? cause.getExtraCause() : (cause.isPlayer() ? Utility.formatName(cause.getCausingPlayer().getName(), cause.getExtraCause()) : "Unknown"))));
+			SimpleDateFormat fmt = new SimpleDateFormat("hh:mma");
+			
+			Cause cause = results.causes.get(result.getArg2());
+			
+			String output = String.format(ChatColor.GREEN + " %7s " + ChatColor.RESET, fmt.format(date)) + String.format(msg, ChatColor.RED + cause.friendlyName() + ChatColor.RESET);
+			
+			pager.addItem(output);
 		}
 		
 		pager.displayPage(who, page);

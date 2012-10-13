@@ -33,6 +33,12 @@ public class SpyPlugin extends JavaPlugin
 		if(!getDataFolder().exists())
 			getDataFolder().mkdirs();
 		
+		LogUtil.setLogger(getLogger());
+		//*****DEBUG******
+		getLogger().setLevel(Level.FINEST);
+		getLogger().getParent().getHandlers()[0].setLevel(Level.FINEST);
+		//****END DEBUG****
+		
 		// Load the config
 		getSettings().load(new File(getDataFolder(), "config.yml"));
 		getSettings().save(new File(getDataFolder(), "config.yml"));
@@ -57,14 +63,6 @@ public class SpyPlugin extends JavaPlugin
 		}
 		
 		sPluginInstance = this;
-		LogUtil.setLogger(getLogger());
-		//*****DEBUG******
-		getLogger().setLevel(Level.FINEST);
-		getLogger().getParent().getHandlers()[0].setLevel(Level.FINEST);
-		//****END DEBUG****
-
-		
-		
 		
 		Calendar.getInstance().setTimeZone(getSettings().timezone);
 		Calendar.getInstance().add(Calendar.MILLISECOND, (int) getSettings().timeoffset);

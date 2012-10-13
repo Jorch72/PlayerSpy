@@ -8,6 +8,7 @@ import org.bukkit.World;
 import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.StoredItemStack;
+import au.com.mineauz.PlayerSpy.Utility;
 
 public class DropItemRecord extends Record 
 {
@@ -46,4 +47,10 @@ public class DropItemRecord extends Record
 	}
 	
 	private StoredItemStack mStack;
+
+	@Override
+	public String getDescription()
+	{
+		return mStack.getItem().getAmount() + "x " + Utility.formatItemName(mStack.getItem()) + " dropped by %s";
+	}
 }

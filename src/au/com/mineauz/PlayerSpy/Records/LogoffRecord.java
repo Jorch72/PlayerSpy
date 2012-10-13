@@ -56,4 +56,14 @@ public class LogoffRecord extends Record
 	{
 		return 1 + (mLogoffType != LogoffType.Quit ? 2 + mReason.length() : 0);
 	}
+	@Override
+	public String getDescription()
+	{
+		if(mLogoffType == LogoffType.Ban)
+			return "%s was banned for '" + mReason + "'";
+		else if(mLogoffType == LogoffType.Kick)
+			return "%s was kicked for '" + mReason + "'";
+		else
+			return "%s logged off";
+	}
 }

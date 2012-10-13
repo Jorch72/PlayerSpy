@@ -60,4 +60,9 @@ public class BlockChangeRecord extends Record
 	{
 		return mInitialBlock.getSize() + mFinalBlock.getSize();
 	}
+	@Override
+	public String getDescription()
+	{
+		return null;
+	}
 }

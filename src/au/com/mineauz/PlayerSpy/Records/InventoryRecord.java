@@ -122,5 +122,10 @@ public class InventoryRecord extends Record
 		}
 		return size;
 	}
+	@Override
+	public String getDescription()
+	{
+		return null;
+	}
 	
 }

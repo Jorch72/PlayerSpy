@@ -42,5 +42,10 @@ public class HeldItemChangeRecord extends Record
 	{
 		return 1;
 	}
+	@Override
+	public String getDescription()
+	{
+		return "%s changed held item to slot " + mSlot;
+	}
 
 }

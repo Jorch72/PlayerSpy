@@ -4,8 +4,10 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 
 import au.com.mineauz.PlayerSpy.StoredEntity;
 
@@ -60,6 +62,26 @@ public class AttackRecord extends Record
 	protected int getContentSize(boolean absolute) 
 	{
 		return 2 + mDamagee.getSize();
+	}
+	@Override
+	public String getDescription()
+	{
+		String entityName = (mDamagee.getEntityType() == EntityType.PLAYER ? mDamagee.getPlayerName() : mDamagee.getEntityType().getName());
+		
+		if(mDamagee.getEntityType().isAlive())
+		{
+			if(mAmount == -1)
+				return ChatColor.DARK_AQUA + entityName + ChatColor.RESET + " was killed by %s";
+			else
+				return ChatColor.DARK_AQUA + entityName + ChatColor.RESET + " was damaged by %s";
+		}
+		else
+		{
+			if(mAmount == -1)
+				return ChatColor.DARK_AQUA + entityName + ChatColor.RESET + " was broken by %s";
+			else
+				return ChatColor.DARK_AQUA + entityName + ChatColor.RESET + " was damaged by %s";
+		}
 	}
 	
 	

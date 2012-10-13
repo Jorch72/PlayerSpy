@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import org.bukkit.GameMode;
 import org.bukkit.World;
 
 public class GameModeRecord extends Record 
@@ -40,5 +41,10 @@ public class GameModeRecord extends Record
 	protected int getContentSize(boolean absolute) 
 	{
 		return 1;
+	}
+	@Override
+	public String getDescription()
+	{
+		return "Gamemode changed to " + GameMode.values()[mGameMode].toString() + " for %s";
 	}
 }

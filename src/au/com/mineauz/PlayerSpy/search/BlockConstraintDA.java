@@ -7,7 +7,7 @@ import org.bukkit.Material;
 import au.com.mineauz.PlayerSpy.Pair;
 import au.com.mineauz.PlayerSpy.fsa.DataAssembler;
 
-public class BlockActionDA extends DataAssembler
+public class BlockConstraintDA extends DataAssembler
 {
 	@SuppressWarnings("unchecked")
 	@Override
@@ -16,7 +16,7 @@ public class BlockActionDA extends DataAssembler
 		Pair<Material, Integer> mat = (Pair<Material, Integer>)objects.pop();
 		String action = (String)objects.pop();
 		
-		BlockAction result = new BlockAction();
+		BlockConstraint result = new BlockConstraint();
 		result.placed = (action.equals("place"));
 		result.material = mat;
 		

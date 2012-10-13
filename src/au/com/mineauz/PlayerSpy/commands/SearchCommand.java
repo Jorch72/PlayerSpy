@@ -5,6 +5,7 @@ import java.util.ArrayDeque;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.fsa.*;
 import au.com.mineauz.PlayerSpy.search.*;
@@ -22,8 +23,7 @@ public class SearchCommand implements ICommand
 		State terminator = new FinalCompactorDA().addNext(new FinalState());
 		
 		// Constraints
-		State dateConstraintDa = new DateConstraintDA(false).addNext(terminator);
-		State dateConstraintDaDouble = new DateConstraintDA(true).addNext(terminator);
+		State dateConstraintDa = new DateConstraintDA().addNext(terminator);
 	
 		State dateConstraint = new NullState()
 			.addNext(new StringState("before")
@@ -54,10 +54,10 @@ public class SearchCommand implements ICommand
 								.addNext(new DateState()
 									.addNext(new TimeState()
 										.addNext(new DateCompactorDA()
-											.addNext(dateConstraintDaDouble)
+											.addNext(dateConstraintDa)
 										)
 									)
-									.addNext(dateConstraintDaDouble)
+									.addNext(dateConstraintDa)
 								)
 							)
 						)
@@ -66,33 +66,29 @@ public class SearchCommand implements ICommand
 						.addNext(new DateState()
 							.addNext(new TimeState()
 								.addNext(new DateCompactorDA()
-									.addNext(dateConstraintDaDouble)
+									.addNext(dateConstraintDa)
 								)
 							)
-							.addNext(dateConstraintDaDouble)
+							.addNext(dateConstraintDa)
 						)
 					)
 				)
 			);
 		
 		
-		State extraPlayerConstraint = new StringState("or");
+		State extraCauseConstraint = new StringState("or");
 		
-		extraPlayerConstraint.addNext(new PlayerNameState()
-			.addNext(new PlayerConstraintDA()
-				.addNext(extraPlayerConstraint)
-				.addNext(dateConstraint)
-			)
+		extraCauseConstraint.addNext(new CauseState()
+			.addNext(extraCauseConstraint)
+			.addNext(dateConstraint)
 		);
 		
 		
-		State playerConstraint = new NullState()
+		State causeConstraint = new NullState()
 			.addNext(new StringState("by")
-				.addNext(new PlayerNameState()
-					.addNext(new PlayerConstraintDA()
-						.addNext(extraPlayerConstraint)
-						.addNext(dateConstraint)
-					)
+				.addNext(new CauseState()
+					.addNext(extraCauseConstraint)
+					.addNext(dateConstraint)
 				)
 			)
 			.addNext(dateConstraint)
@@ -104,16 +100,16 @@ public class SearchCommand implements ICommand
 			.addNext(new StringState("within")
 				.addNext(new IntState(0, Integer.MAX_VALUE)
 					.addNext(new DistanceConstraintDA()
-						.addNext(playerConstraint)
+						.addNext(causeConstraint)
 					)
 				)
 			)
-			.addNext(playerConstraint)
+			.addNext(causeConstraint)
 		;
 		
 		
 		// All block related ones
-		State endOfBlockAction = new BlockActionDA().addNext(endOfActions);
+		State endOfBlockAction = new BlockConstraintDA().addNext(endOfActions);
 		
 		State anyBlock = new StringState("any").addNext(new StringState("block")
 			.addNext(new AnyBlockDA()
@@ -123,34 +119,34 @@ public class SearchCommand implements ICommand
 		State blockId = new BlockIdState().addNext(endOfBlockAction);
 		
 		// All entity related ones
-		State entityId = new EntityTypeState().addNext(new EntityActionDA(false)
+		State entityId = new EntityTypeState().addNext(new EntityConstraintDA(false)
 			.addNext(endOfActions)
 		);
 		
 		State anyEntity = new StringState("any").addNext(new StringState("entity")
 			.addNext(new AnyEntityDA()
-				.addNext(new EntityActionDA(false)
+				.addNext(new EntityConstraintDA(false)
 					.addNext(endOfActions)
 				)
 			)
 		);
 		
-		State playerName = new PlayerNameState().addNext(new EntityActionDA(true)
+		State playerName = new PlayerNameState().addNext(new EntityConstraintDA(true)
 			.addNext(endOfActions)
 		);
 		State playerNameAlt = new StringState("player").addNext(new PlayerNameState()
 			.addNext(new AltPlayerDA()
-				.addNext(new EntityActionDA(true)
+				.addNext(new EntityConstraintDA(true)
 					.addNext(endOfActions)
 				)
 			)
 		);
 		
 		// All chat / command related ones
-		State endOfChatAction = new ChatCommandActionDA(false).addNext(playerConstraint);
+		State endOfChatAction = new ChatCommandConstraintDA(false).addNext(causeConstraint);
 		State chatCommandMatches = new StringState("contains").addNext(new StringState(null)
-			.addNext(new ChatCommandActionDA(true)
-				.addNext(playerConstraint)
+			.addNext(new ChatCommandConstraintDA(true)
+				.addNext(causeConstraint)
 			)
 		);
 		
@@ -234,19 +230,19 @@ public class SearchCommand implements ICommand
 			ArrayDeque<Object> results = FiniteStateAutomata.parse(inputString.toLowerCase(), mStartState);
 			SearchFilter filter = (SearchFilter)results.pop();
 			
-			if(sender instanceof ConsoleCommandSender)
-				// Check for illegal within constraint
+			for(Constraint constraint : filter.andConstraints)
 			{
-				for(Constraint constraint : filter.constraints)
+				if(constraint instanceof DistanceConstraint)
 				{
-					if(constraint instanceof DistanceConstraint)
+					if(sender instanceof ConsoleCommandSender)
 					{
 						sender.sendMessage(ChatColor.RED + "You need to be a player to use 'within <range>'");
 						return true;
 					}
+					((DistanceConstraint) constraint).location = ((Player)sender).getLocation().clone();
 				}
 			}
-			
+		
 			sender.sendMessage(ChatColor.GREEN + "Searching...");
 			Searcher.instance.searchAndDisplay(sender, filter);
 		}

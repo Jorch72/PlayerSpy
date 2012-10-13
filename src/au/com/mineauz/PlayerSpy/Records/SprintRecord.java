@@ -42,5 +42,10 @@ public class SprintRecord extends Record
 	{
 		return 1;
 	}
+	@Override
+	public String getDescription()
+	{
+		return null;
+	}
 
 }

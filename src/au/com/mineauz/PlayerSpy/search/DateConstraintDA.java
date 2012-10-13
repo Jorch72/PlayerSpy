@@ -7,33 +7,28 @@ import au.com.mineauz.PlayerSpy.fsa.DataAssembler;
 
 public class DateConstraintDA extends DataAssembler 
 {
-	private boolean mBetween;
-	public DateConstraintDA(boolean between)
-	{
-		mBetween = between;
-	}
 	@Override
 	public Object assemble(ArrayDeque<Object> objects) 
 	{
 		Date startDate = new Date(0L);
 		Date endDate = new Date(Long.MAX_VALUE);
 		
-		if(mBetween)
+		Date temp = (Date)objects.pop();
+		
+		String type = (String)objects.pop();
+		if(type.equals("and"))
 		{
-			endDate = (Date)objects.pop();
-			objects.pop();
+			endDate = temp;
 			startDate = (Date)objects.pop();
 			objects.pop();
 		}
-		else
+		else if(type.equals("after"))
 		{
-			Date temp = (Date) objects.pop();
-			String type = (String)objects.pop();
-			
-			if(type.equals("after"))
-				startDate = temp;
-			else
-				endDate = temp;
+			startDate = temp;
+		}
+		else if(type.equals("before"))
+		{
+			endDate = temp;
 		}
 		
 		DateConstraint constraint = new DateConstraint();

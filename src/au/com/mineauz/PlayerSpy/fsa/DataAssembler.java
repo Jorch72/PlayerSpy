@@ -9,7 +9,9 @@ public abstract class DataAssembler extends NullState
 	@Override
 	public boolean match(String word, ArrayDeque<Object> output) 
 	{
-		output.push(assemble(output));
+		Object result = assemble(output);
+		if(result != null)
+			output.push(result);
 		return true;
 	}
 }

@@ -303,6 +303,15 @@ public class RecordList extends ArrayList<Record>
 				chunk = ((SleepRecord)record).getBedLocation().getChunk();
 			else if(record instanceof VehicleMountRecord)
 				chunk = ((VehicleMountRecord)record).getVehicle().getLocation().getChunk();
+			else if(record instanceof InventoryTransactionRecord)
+			{
+				if(((InventoryTransactionRecord)record).getInventoryInfo().getBlock() != null)
+					chunk = ((InventoryTransactionRecord)record).getInventoryInfo().getBlock().getLocation().getChunk();
+				else if(((InventoryTransactionRecord)record).getInventoryInfo().getEntity() != null)
+					chunk = ((InventoryTransactionRecord)record).getInventoryInfo().getEntity().getLocation().getChunk();
+				else
+					continue;
+			}
 			else
 				continue;
 			

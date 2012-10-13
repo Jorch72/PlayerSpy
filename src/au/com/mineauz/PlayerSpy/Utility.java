@@ -1,6 +1,9 @@
 package au.com.mineauz.PlayerSpy;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.Map.Entry;
 
 import org.bukkit.Location;
@@ -241,18 +244,20 @@ public class Utility
 	}
 	public static String formatItemName( org.bukkit.inventory.ItemStack myItem )
     {
-        String name = new StringBuilder().append( Character.toUpperCase(myItem.getType().name().charAt(0)) )
-                .append( myItem.getType().name().substring(1).toLowerCase() ).toString();
-        name = name.replace('_', ' ');
-        for ( int i = 0; i < name.length(); i++ )
-        {
-            StringBuilder sb = new StringBuilder();
-            if ( name.charAt( i ) == ' ' && i < name.length() - 1 )
-            {
-                name = sb.append( name.substring(0, i + 1) ).append( Character.toUpperCase(name.charAt( i + 1 ) ) ).append(name.substring( i + 2 ) ).toString();
-            }
-        }
-        return name;
+		ItemStack nativeStack = convertToNative(myItem);
+		return StringTranslator.translateName(nativeStack.getItem().c(nativeStack));
+//        String name = new StringBuilder().append( Character.toUpperCase(myItem.getType().name().charAt(0)) )
+//                .append( myItem.getType().name().substring(1).toLowerCase() ).toString();
+//        name = name.replace('_', ' ');
+//        for ( int i = 0; i < name.length(); i++ )
+//        {
+//            StringBuilder sb = new StringBuilder();
+//            if ( name.charAt( i ) == ' ' && i < name.length() - 1 )
+//            {
+//                name = sb.append( name.substring(0, i + 1) ).append( Character.toUpperCase(name.charAt( i + 1 ) ) ).append(name.substring( i + 2 ) ).toString();
+//            }
+//        }
+//        return name;
     }
 	
 	public static String formatName(String playerName, String cause)
@@ -261,5 +266,17 @@ public class Utility
 			return playerName;
 		else
 			return playerName + ">" + cause;
+	}
+	
+	public static Date getDatePortion(Date timeDate)
+	{
+		Calendar cal = new GregorianCalendar();
+		cal.setTime(timeDate);
+		cal.set(Calendar.HOUR_OF_DAY, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.set(Calendar.SECOND, 0);
+		cal.set(Calendar.MILLISECOND, 0);
+
+		return cal.getTime();
 	}
 }

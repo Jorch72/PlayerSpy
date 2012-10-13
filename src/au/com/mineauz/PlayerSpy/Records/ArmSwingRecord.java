@@ -31,4 +31,10 @@ public class ArmSwingRecord extends Record
 	{
 		// Nothing to do
 	}
+
+	@Override
+	public String getDescription()
+	{
+		return "%s Swung Arm";
+	}
 }

@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Item;
@@ -56,6 +57,13 @@ public class ItemPickupRecord extends Record
 	protected int getContentSize(boolean absolute) 
 	{
 		return mItem.getSize() + mLocation.getSize(absolute);
+	}
+	@Override
+	public String getDescription()
+	{
+		String itemName = Utility.formatItemName(mItem.getItem());
+		
+		return "%s picked up " + ChatColor.DARK_AQUA + itemName + ChatColor.RESET;
 	}
 	
 }

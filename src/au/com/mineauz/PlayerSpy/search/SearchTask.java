@@ -7,20 +7,12 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.EntityType;
 
 import au.com.mineauz.PlayerSpy.Cause;
 import au.com.mineauz.PlayerSpy.Pair;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.LogTasks.Task;
-import au.com.mineauz.PlayerSpy.Records.AttackRecord;
-import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
-import au.com.mineauz.PlayerSpy.Records.ChatCommandRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
-import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex.SessionInFile;
@@ -28,38 +20,27 @@ import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex.SessionInFile;
 public class SearchTask implements Task<SearchResults>
 {
 	private SearchFilter mFilter;
-	private Location mLocation;
-	public SearchTask(SearchFilter filter, Location location)
+	public SearchTask(SearchFilter filter)
 	{
 		mFilter = filter;
-		if(location != null)
-			mLocation = location.clone();
 	}
 	@SuppressWarnings("deprecation")
 	@Override
-	public SearchResults call() throws Exception 
+	public SearchResults call()
 	{
 		List<SessionInFile> sessionsToSearch = null;
 		
 		// Get the contraints
 		long startTime = 0, endTime = Long.MAX_VALUE;
-		int distance = -1;
-		ArrayList<OfflinePlayer> playerConstraints = new ArrayList<OfflinePlayer>();
-		
-		for(Constraint constraint : mFilter.constraints)
+
+		for(Constraint constraint : mFilter.andConstraints)
 		{
 			if(constraint instanceof DateConstraint)
 			{
 				startTime = ((DateConstraint)constraint).startDate.getTime();
 				endTime = ((DateConstraint)constraint).endDate.getTime();
-			}
-			else if(constraint instanceof PlayerConstraint)
-			{
-				playerConstraints.add(((PlayerConstraint)constraint).player);
-			}
-			else if(constraint instanceof DistanceConstraint)
-			{
-				distance = ((DistanceConstraint)constraint).distance;
+				mFilter.andConstraints.remove(constraint);
+				break;
 			}
 		}
 		
@@ -96,15 +77,12 @@ public class SearchTask implements Task<SearchResults>
 			}
 			
 			// Check the constraints
-			if(playerConstraints.size() != 0)
+			if(mFilter.causes.size() != 0)
 			{
-				if(!cause.isPlayer())
-					continue;
-				
 				boolean constraintOk = false;
-				for(OfflinePlayer player : playerConstraints)
+				for(Cause testCause : mFilter.causes)
 				{
-					if(cause.getCausingPlayer().equals(player))
+					if(cause.equals(testCause) || ((cause.isGlobal() && testCause.isGlobal()) && cause.getExtraCause().equalsIgnoreCase(testCause.getExtraCause())))
 					{
 						constraintOk = true;
 						break;
@@ -117,7 +95,6 @@ public class SearchTask implements Task<SearchResults>
 			
 			// Get the cause id
 			int id;
-			boolean newCause = false;
 			boolean addedRecords = false;
 			if(reverseCauseMap.containsKey(cause))
 				id = reverseCauseMap.get(cause);
@@ -125,7 +102,6 @@ public class SearchTask implements Task<SearchResults>
 			{
 				id = nextCauseId++;
 				reverseCauseMap.put(cause, id);
-				newCause = true;
 			}
 			
 			// Load up the records for the session
@@ -141,66 +117,36 @@ public class SearchTask implements Task<SearchResults>
 				if(record.getTimestamp() > endTime)
 					break;
 				
-				if(mFilter.action instanceof ChatCommandAction)
+				boolean ok = true;
+				// Do the and constraints
+				if(!mFilter.andConstraints.isEmpty())
 				{
-					if(record.getType() != RecordType.ChatCommand)
+					for(Constraint constraint : mFilter.andConstraints)
+					{
+						if(!constraint.matches(record))
+						{
+							ok = false;
+							break;
+						}
+					}
+					if(!ok)
 						continue;
-					
-					if(((ChatCommandAction)mFilter.action).command)
-					{
-						if(!((ChatCommandRecord)record).getMessage().startsWith("/"))
-							continue;
-					}
-					else
-					{
-						if(((ChatCommandRecord)record).getMessage().startsWith("/"))
-							continue;
-					}
 				}
-				else if(mFilter.action instanceof BlockAction)
+				
+				// Now do the or constraints
+				if(!mFilter.orConstraints.isEmpty())
 				{
-					if(record.getType() != RecordType.BlockChange)
-						continue;
-					
-					// Check the placed flag
-					if(((BlockChangeRecord)record).wasPlaced() != ((BlockAction)mFilter.action).placed)
-						continue;
-					
-					// Check the material
-					if(((BlockAction)mFilter.action).material.getArg1() != Material.AIR && ((BlockAction)mFilter.action).material.getArg1() != ((BlockChangeRecord)record).getBlock().getType())
-						continue;
-					
-					// Check the metadata
-					if(((BlockAction)mFilter.action).material.getArg2() != -1 && ((BlockAction)mFilter.action).material.getArg2() != ((BlockChangeRecord)record).getBlock().getData())
-						continue;
-					
-					// Check the distance constraint
-					if(distance != -1 && mLocation != null)
+					ok = false;
+					for(Constraint constraint : mFilter.orConstraints)
 					{
-						if(!((BlockChangeRecord)record).getLocation().getWorld().equals(mLocation.getWorld()))
-							continue;
-						
-						if(((BlockChangeRecord)record).getLocation().distance(mLocation) > distance)
-							continue;
+						if(constraint.matches(record))
+						{
+							ok = true;
+							break;
+						}
 					}
-				}
-				else if(mFilter.action instanceof EntityAction)
-				{
-					if(((EntityAction)mFilter.action).spawn)
-					{
-						continue; // No records for this yet
-					}
-					else
-					{
-						if(record.getType() != RecordType.Attack || ((AttackRecord)record).getDamage() != -1)
-							continue;
-						
-						if(((EntityAction)mFilter.action).entityType != ((AttackRecord)record).getDamagee().getEntityType())
-							continue;
-						
-						if(((EntityAction)mFilter.action).entityType == EntityType.PLAYER && !((EntityAction)mFilter.action).player.getName().equalsIgnoreCase(((AttackRecord)record).getDamagee().getPlayerName()))
-							continue;
-					}
+					if(!ok)
+						continue;
 				}
 				
 				// Passed all the constraints

@@ -50,5 +50,10 @@ public class UpdateInventoryRecord extends Record
 		
 		return size;
 	}
+	@Override
+	public String getDescription()
+	{
+		return null;
+	}
 
 }

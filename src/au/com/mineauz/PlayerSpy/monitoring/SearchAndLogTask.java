@@ -39,7 +39,7 @@ public class SearchAndLogTask implements Callable<Boolean>
 		// Add in any records that are yet to be written to file
 		for(ShallowMonitor mon : GlobalMonitor.instance.getAllMonitors())
 		{
-			List<Pair<String, RecordList>> inBuffer = mon.getCurrentBlockRecords();
+			List<Pair<String, RecordList>> inBuffer = mon.getBufferedRecords();
 			for(Pair<String, RecordList> pair : inBuffer)
 			{
 				if(!results.containsKey(mon.getMonitorTarget().getName()))

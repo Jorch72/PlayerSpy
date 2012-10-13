@@ -1,88 +1,239 @@
 package au.com.mineauz.PlayerSpy.inspect;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map.Entry;
+import java.util.Date;
+import java.util.List;
+import java.util.ListIterator;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import au.com.mineauz.PlayerSpy.Cause;
 import au.com.mineauz.PlayerSpy.Pair;
 import au.com.mineauz.PlayerSpy.RecordList;
-import au.com.mineauz.PlayerSpy.Util;
+import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Utility;
-import au.com.mineauz.PlayerSpy.LogTasks.BlockHistoryTask;
 import au.com.mineauz.PlayerSpy.LogTasks.Task;
 import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
+import au.com.mineauz.PlayerSpy.Records.InteractRecord;
+import au.com.mineauz.PlayerSpy.Records.InventoryTransactionRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.Records.RecordType;
+import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
+import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
+import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
+import au.com.mineauz.PlayerSpy.monitoring.ShallowMonitor;
+import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex.SessionInFile;
 
 public class InspectBlockTask implements Task<Void>
 {
 	private Player mWho;
 	private Location mLocation;
+	private ArrayList<Pair<Cause, Record>> mostRecent;
 	
 	public InspectBlockTask(Player who, Location block)
 	{
 		mWho = who;
 		mLocation = block.clone();
 	}
+	
+	private void processRecords(Cause cause, RecordList list)
+	{
+		if(mostRecent.size() < SpyPlugin.getSettings().inspectCount || list.getEndTimestamp() > mostRecent.get(mostRecent.size()-1).getArg2().getTimestamp())
+		{
+			long minDate = 0;
+			if(mostRecent.size() >= SpyPlugin.getSettings().inspectCount)
+				minDate = mostRecent.get(mostRecent.size()-1).getArg2().getTimestamp();
+			
+			ListIterator<Record> it = list.listIterator(list.size()-1);
+			// Find all block change records at that location
+			while(it.hasPrevious())
+			{
+				Record record = it.previous();
+				
+				if(record.getTimestamp() < minDate)
+					break;
+				
+				if(processRecord(cause, record))
+				{
+					// It was inserted. Recheck whether we need to search or not
+					if(mostRecent.size() >= SpyPlugin.getSettings().inspectCount)
+						break;
+					minDate = Math.min(mostRecent.get(mostRecent.size()-1).getArg2().getTimestamp(),minDate);
+				}
+			}
+		}
+	}
+	private boolean processRecord(Cause cause, Record record)
+	{
+		if(record.getType() == RecordType.BlockChange)
+		{
+			if(((BlockChangeRecord)record).getLocation().equals(mLocation))
+			{
+				insertRecord(cause, record);
+				return true;
+			}
+		}
+		else if(record.getType() == RecordType.ItemTransaction && SpyPlugin.getSettings().inspectTransactions)
+		{
+			InventoryTransactionRecord transaction = (InventoryTransactionRecord)record;
+			if(transaction.getInventoryInfo().getBlock() != null && transaction.getInventoryInfo().getBlock().getLocation().equals(mLocation))
+			{
+				insertRecord(cause, record);
+				return true;
+			}
+		}
+		else if(record.getType() == RecordType.Interact && SpyPlugin.getSettings().inspectUse)
+		{
+			InteractRecord interact = (InteractRecord)record;
+			if(interact.hasBlock() && interact.getBlock().getLocation().equals(mLocation))
+			{
+				if(interact.getBlock().getType() == Material.STONE_BUTTON || 
+					interact.getBlock().getType() == Material.STONE_PLATE || 
+					interact.getBlock().getType() == Material.WOOD_PLATE || 
+					interact.getBlock().getType() == Material.LEVER || 
+					interact.getBlock().getType() == Material.CAKE_BLOCK || 
+					interact.getBlock().getType() == Material.DRAGON_EGG || 
+					interact.getBlock().getType() == Material.DIODE_BLOCK_OFF || 
+					interact.getBlock().getType() == Material.DIODE_BLOCK_ON || 
+					interact.getBlock().getType() == Material.FENCE_GATE || 
+					interact.getBlock().getType() == Material.WOODEN_DOOR || 
+					interact.getBlock().getType() == Material.TRAP_DOOR)
+				{
+					insertRecord(cause, record);
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	private void insertRecord(Cause cause, Record record)
+	{
+		for(int i = 0; i < mostRecent.size(); i++)
+		{
+			if(record.getTimestamp() > mostRecent.get(i).getArg2().getTimestamp())
+			{
+				mostRecent.add(i,new Pair<Cause, Record>(cause, record));
+				return;
+			}
+		}
+		mostRecent.add(new Pair<Cause, Record>(cause, record));
+	}
 	@Override
 	public Void call() 
 	{
-		BlockHistoryTask task = new BlockHistoryTask(mLocation);
-		HashMap<String, RecordList> results = null;
-		try
+		mostRecent = new ArrayList<Pair<Cause, Record>>();
+
+		// Add in any records that are yet to be written to file
+		for(ShallowMonitor mon : GlobalMonitor.instance.getAllMonitors())
 		{
-			results = task.call();
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-			return null;
-		}
-		
-		// Find the 3 Most recent results
-		int maxResults = 3;
-		ArrayList<Pair<String, Record>> mostRecent = new ArrayList<Pair<String, Record>>();
-		
-		for(Entry<String, RecordList> ent : results.entrySet())
-		{
-			for(Record record : ent.getValue())
+			List<Pair<String, RecordList>> inBuffer = mon.getBufferedRecords();
+			for(Pair<String, RecordList> pair : inBuffer)
 			{
-				// Attempt to put them into the most recent list
-				boolean added = false;
-				for(int i = 0; i < mostRecent.size(); i++)
-				{
-					if(record.getTimestamp() > mostRecent.get(i).getArg2().getTimestamp())
-					{
-						mostRecent.add(i,new Pair<String, Record>(ent.getKey(), record));
-						added = true;
-						break;
-					}
-				}
-				if(!added && mostRecent.size() < maxResults)
-					mostRecent.add(new Pair<String, Record>(ent.getKey(), record));
-				else if(added && mostRecent.size() > maxResults)
-					mostRecent.remove(mostRecent.size()-1);
+				Cause cause;
+				if(pair.getArg1() != null)
+					cause = Cause.playerCause(mon.getMonitorTarget(), pair.getArg1());
+				else
+					cause = Cause.playerCause(mon.getMonitorTarget());
+				
+				// Load up the records in the session
+				RecordList source = pair.getArg2();
+
+				processRecords(cause, source);
 			}
+		}
+		
+		
+		// Check stuff saved to disk
+		List<SessionInFile> allSessions = CrossReferenceIndex.instance.getSessionsFor(mLocation.getChunk());
+		for(SessionInFile fileSession : allSessions)
+		{
+			// Dont check ones that clearly have nothing of interest 
+			if(mostRecent.size() >= SpyPlugin.getSettings().inspectCount && fileSession.Session.EndTimestamp < mostRecent.get(mostRecent.size()-1).getArg2().getTimestamp())
+				continue;
+			
+			Cause cause;
+			String ownerTag = fileSession.Log.getOwnerTag(fileSession.Session);
+			if(fileSession.Log.getName().startsWith(LogFileRegistry.cGlobalFilePrefix))
+			{
+				if(ownerTag == null)
+					cause = Cause.unknownCause();
+				else
+					cause = Cause.globalCause(Bukkit.getWorld(fileSession.Log.getName().substring(LogFileRegistry.cGlobalFilePrefix.length())), ownerTag);
+			}
+			else
+			{
+				if(ownerTag == null)
+					cause = Cause.playerCause(Bukkit.getOfflinePlayer(fileSession.Log.getName()));
+				else
+					cause = Cause.playerCause(Bukkit.getOfflinePlayer(fileSession.Log.getName()), ownerTag);
+			}
+			
+			RecordList source = fileSession.Log.loadSession(fileSession.Session);
+			
+			processRecords(cause, source);
 		}
 		
 		// Format the results into a neat list and display
 		ArrayList<String> output = new ArrayList<String>();
 		
-		output.add(ChatColor.GOLD + "[PlayerSpy] " + ChatColor.WHITE + "Inspect block changes @" + Utility.locationToStringShort(mLocation));
+		Date lastDate = new Date(0);
+		output.add(ChatColor.GOLD + "[PlayerSpy] " + ChatColor.WHITE + "Block changes " + Utility.locationToStringShort(mLocation));
 		if(mostRecent.size() == 0)
 			output.add(ChatColor.GREEN + "  No changes to the block detected");
 		else
 		{
 			for(int i = 0; i < mostRecent.size(); i++)
 			{
-				BlockChangeRecord record = (BlockChangeRecord)mostRecent.get(i).getArg2();
+				Date date = new Date(mostRecent.get(i).getArg2().getTimestamp());
+				//date.setTime(date.getTime() + SpyPlugin.getSettings().timezone.getOffset(date.getTime()));
+				Date dateOnly = Utility.getDatePortion(date);
+				//Date timeOnly = new Date(date.getTime() - dateOnly.getTime());
+				date.setTime(date.getTime() - dateOnly.getTime());
+				// Output the date if it has changed
+				if(lastDate.getTime() != dateOnly.getTime())
+				{
+					if(dateOnly.getTime() == Utility.getDatePortion(new Date()).getTime())
+						output.add(" " + ChatColor.GREEN + "Today");
+					else
+					{
+						DateFormat fmt = DateFormat.getDateInstance(DateFormat.MEDIUM);
+						output.add(" " + ChatColor.GREEN + fmt.format(dateOnly));
+					}
+					lastDate = dateOnly;
+				}
+				SimpleDateFormat fmt = new SimpleDateFormat("hh:mma");
 				
-				String blockName = Utility.formatItemName(new ItemStack(record.getBlock().getType(),1, record.getBlock().getData()));
-				output.add("  " + ChatColor.GREEN + Util.dateToString(record.getTimestamp()) + ChatColor.WHITE + ": " + blockName + " " + (record.wasPlaced() ? "placed by " : "broken by ") + ChatColor.DARK_AQUA + mostRecent.get(i).getArg1());
+				if(mostRecent.get(i).getArg2().getType() == RecordType.BlockChange)
+				{
+					BlockChangeRecord record = (BlockChangeRecord)mostRecent.get(i).getArg2();
+					
+					String blockName = Utility.formatItemName(new ItemStack(record.getBlock().getType(),1, record.getBlock().getData()));
+					output.add("  " + ChatColor.GREEN + fmt.format(date) + ChatColor.WHITE + ": " + ChatColor.RED + blockName +ChatColor.WHITE + " " + (record.wasPlaced() ? "placed by " : "removed by ") + ChatColor.DARK_AQUA + mostRecent.get(i).getArg1().friendlyName());
+				}
+				else if(mostRecent.get(i).getArg2().getType() == RecordType.ItemTransaction)
+				{
+					InventoryTransactionRecord record = (InventoryTransactionRecord)mostRecent.get(i).getArg2();
+					String blockName = Utility.formatItemName(new ItemStack(record.getInventoryInfo().getBlock().getType(),1, record.getInventoryInfo().getBlock().getData()));
+
+					String itemName = Utility.formatItemName(record.getItem());
+					int amount = record.getItem().getAmount();
+					
+					output.add("  " + ChatColor.GREEN + fmt.format(date) + ChatColor.WHITE + ": " + "(" + (record.isTaking() ? ChatColor.RED + "-" + amount : ChatColor.GREEN + "+" + amount) + ChatColor.RESET + ") " + itemName + (record.isTaking() ? " from " : " to ") + ChatColor.RED + blockName +ChatColor.WHITE + " by " + ChatColor.DARK_AQUA + mostRecent.get(i).getArg1().friendlyName());
+				}
+				else if(mostRecent.get(i).getArg2().getType() == RecordType.Interact)
+				{
+					InteractRecord record = (InteractRecord)mostRecent.get(i).getArg2();
+					String blockName = Utility.formatItemName(new ItemStack(record.getBlock().getType(),1, record.getBlock().getData()));
+					
+					output.add("  " + ChatColor.GREEN + fmt.format(date) + ChatColor.WHITE + ": " + ChatColor.RED + blockName +ChatColor.WHITE + " used by " + ChatColor.DARK_AQUA + mostRecent.get(i).getArg1().friendlyName());
+				}
 			}
 		}
 		

@@ -136,5 +136,6 @@ public class RecordRegistry
 		registerRecordType(2, RecordType.UpdateInventory, UpdateInventoryRecord.class);
 		registerRecordType(2, RecordType.BlockChange, BlockChangeRecord.class);
 		registerRecordType(2, RecordType.Interact, InteractRecord.class);
+		registerRecordType(2, RecordType.ItemTransaction, InventoryTransactionRecord.class);
 	}
 }

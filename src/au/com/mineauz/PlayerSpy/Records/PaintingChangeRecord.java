@@ -54,4 +54,12 @@ public class PaintingChangeRecord extends Record
 	
 	private StoredPainting mPainting;
 	private boolean mPlaced;
+	@Override
+	public String getDescription()
+	{
+		if(mPlaced)
+			return "%s placed a painting";
+		else
+			return "%s removed a painting";
+	}
 }

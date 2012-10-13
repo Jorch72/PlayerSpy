@@ -38,5 +38,10 @@ public class SessionInfoRecord extends Record
 	{
 		return mDeep;
 	}
+	@Override
+	public String getDescription()
+	{
+		return null;
+	}
 	
 }

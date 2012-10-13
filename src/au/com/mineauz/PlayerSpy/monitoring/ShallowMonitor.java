@@ -145,17 +145,12 @@ public class ShallowMonitor
 	/**
 	 * Gets all current block change records in the buffers
 	 */
-	public synchronized List<Pair<String, RecordList>> getCurrentBlockRecords()
+	public synchronized List<Pair<String, RecordList>> getBufferedRecords()
 	{
 		ArrayList<Pair<String,RecordList>> results = new ArrayList<Pair<String,RecordList>>();
 		for(Entry<String, RecordList> buffer : mBuffers.entrySet())
 		{
-			RecordList output = new RecordList();
-			for(Record record : buffer.getValue())
-			{
-				if(record.getType() == RecordType.BlockChange)
-					output.add(record);
-			}
+			RecordList output = (RecordList)buffer.getValue().clone();
 			
 			if(!output.isEmpty())
 				results.add(new Pair<String, RecordList>(buffer.getKey(), output));

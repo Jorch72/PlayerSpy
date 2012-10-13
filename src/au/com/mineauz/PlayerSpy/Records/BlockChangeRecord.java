@@ -4,14 +4,17 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
 
 import au.com.mineauz.PlayerSpy.StoredBlock;
+import au.com.mineauz.PlayerSpy.Utility;
 
 public class BlockChangeRecord extends Record
 {
@@ -122,5 +125,12 @@ public class BlockChangeRecord extends Record
 	public void setPlaced(boolean placed)
 	{
 		mPlaced = placed;
+	}
+	@Override
+	public String getDescription()
+	{
+		String blockName = Utility.formatItemName(new ItemStack(getBlock().getType(), 1, getBlock().getData()));
+		
+		return ChatColor.DARK_AQUA + blockName + ChatColor.RESET + " was " + (mPlaced ? "placed" : "removed") + " by %s";
 	}
 }

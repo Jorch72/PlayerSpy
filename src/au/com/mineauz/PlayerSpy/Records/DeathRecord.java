@@ -58,5 +58,10 @@ public class DeathRecord extends Record implements ILocationAware
 	}
 	@Override
 	public boolean isFullLocation() { return false;	}
+	@Override
+	public String getDescription()
+	{
+		return "%s Died '" + mReason + "'";
+	}
 
 }

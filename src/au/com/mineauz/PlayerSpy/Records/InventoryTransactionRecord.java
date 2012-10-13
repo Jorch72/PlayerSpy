@@ -4,12 +4,16 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import org.bukkit.ChatColor;
 import org.bukkit.World;
+import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.StoredInventoryInformation;
+import au.com.mineauz.PlayerSpy.StoredInventoryInformation.InventoryType;
 import au.com.mineauz.PlayerSpy.StoredItemStack;
+import au.com.mineauz.PlayerSpy.Utility;
 
 public class InventoryTransactionRecord extends Record
 {
@@ -88,5 +92,38 @@ public class InventoryTransactionRecord extends Record
 	public String toString() 
 	{
 		return "InventoryTransaction {Item: " + mItem.toString() + ", Dir: " + (mTake ? "Taking" : "Putting") + ", " + mInvInfo.toString();
+	}
+	@Override
+	public String getDescription()
+	{
+		String itemName = Utility.formatItemName(mItem);
+		int amount = mItem.getAmount();
+		
+		String result = "(" + (mTake ? ChatColor.RED + "-" : ChatColor.GREEN + "+" ) + amount + ChatColor.RESET + " " + itemName + (mTake ? " from " : " to ");
+		if(mInvInfo.getBlock() != null)
+		{
+			String blockName = Utility.formatItemName(new ItemStack(mInvInfo.getBlock().getType(),1, mInvInfo.getBlock().getData()));
+			result += ChatColor.DARK_AQUA + blockName + ChatColor.RESET;
+		}
+		else if(mInvInfo.getEntity() != null)
+		{
+			String entityName = (mInvInfo.getEntity().getEntityType() == EntityType.PLAYER ? mInvInfo.getEntity().getPlayerName() : mInvInfo.getEntity().getEntityType().getName());
+			result += ChatColor.DARK_AQUA + entityName + ChatColor.RESET;
+		}
+		else if(mInvInfo.getType() == InventoryType.Player)
+		{
+			result += ChatColor.DARK_AQUA + mInvInfo.getPlayerName() + ChatColor.RESET;
+		}
+		else if(mInvInfo.getType() == InventoryType.Enderchest)
+		{
+			result += ChatColor.DARK_AQUA + "Ender Chest" + ChatColor.RESET;
+		}
+		else
+		{
+			result += ChatColor.DARK_AQUA + "Unknown" + ChatColor.RESET;
+		}
+		
+		result += " by %s";
+		return result;
 	}
 }

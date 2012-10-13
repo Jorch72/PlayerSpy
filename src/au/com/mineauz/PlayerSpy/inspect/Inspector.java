@@ -6,6 +6,7 @@ import java.util.HashSet;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event.Result;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -57,7 +58,7 @@ public class Inspector implements Listener
 	{
 		SpyPlugin.getExecutor().submit(new InspectBlockTask(player, loc));
 	}
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.HIGHEST)
 	private void onClick(PlayerInteractEvent event)
 	{
 		if(event.getClickedBlock() != null && mInspectors.contains(event.getPlayer()))
@@ -80,6 +81,7 @@ public class Inspector implements Listener
 			}
 			
 			event.setCancelled(true);
+			event.setUseInteractedBlock(Result.DENY);
 		}
 	}
 }

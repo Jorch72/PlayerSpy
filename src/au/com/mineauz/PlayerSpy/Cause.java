@@ -156,6 +156,22 @@ public class Cause
 		}
 
 	}
+	public String friendlyName()
+	{
+		if(isPlaceholder() || isUnknown())
+			return "Unknown";
+		
+		if(isGlobal())
+			return mExtraCause;
+		else
+		{
+			if(mExtraCause != null)
+				return Utility.formatName(mPlayer.getName(), mExtraCause);
+			else
+				return mPlayer.getName();
+		}
+
+	}
 	
 	/**
 	 * Creates a cause that is by a player

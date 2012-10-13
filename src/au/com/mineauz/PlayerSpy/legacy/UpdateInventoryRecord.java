@@ -68,4 +68,9 @@ public class UpdateInventoryRecord extends Record
 	{
 		return 1 + new StoredItemStack(mItem).getSize();
 	}
+	@Override
+	public String getDescription()
+	{
+		return null;
+	}
 }

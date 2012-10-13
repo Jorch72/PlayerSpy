@@ -72,4 +72,10 @@ public class MoveRecord extends Record implements ILocationAware
 	
 	@Override
 	public boolean isFullLocation() { return false; }
+
+	@Override
+	public String getDescription()
+	{
+		return null;
+	}
 }

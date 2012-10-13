@@ -46,4 +46,9 @@ public class RespawnRecord extends Record implements ILocationAware
 	
 	@Override
 	public boolean isFullLocation() { return true; }
+	@Override
+	public String getDescription()
+	{
+		return "%s respawned at " + Utility.locationToStringShort(mLocation.getLocation());
+	}
 }

@@ -42,4 +42,9 @@ public class SneakRecord extends Record
 	{
 		return 1;
 	}
+	@Override
+	public String getDescription()
+	{
+		return null;
+	}
 }

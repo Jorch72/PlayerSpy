@@ -26,8 +26,8 @@ public class FiniteStateAutomata
 		if(!state.match(word, output))
 			return false;
 
-		if(state instanceof FinalState && index < words.length) // Hit the final state but havent finished parsing input
-			throw new ParseException("Expected nothing after " + words[index-1]);
+		if(state instanceof FinalState && !word.isEmpty()) // Hit the final state but havent finished parsing input
+			throw new ParseException("Expected nothing after " + (index == 0 ? "beginning" : words[index-1]));
 		else if(state instanceof FinalState)
 			return true;
 		

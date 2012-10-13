@@ -126,4 +126,10 @@ public class InteractRecord extends Record
 		
 		return size;
 	}
+
+	@Override
+	public String getDescription()
+	{
+		return null;
+	}
 }

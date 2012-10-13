@@ -1,5 +1,8 @@
 package au.com.mineauz.PlayerSpy.search;
 
-public abstract class Constraint {
+import au.com.mineauz.PlayerSpy.Records.Record;
 
+public abstract class Constraint 
+{
+	public abstract boolean matches(Record record);
 }

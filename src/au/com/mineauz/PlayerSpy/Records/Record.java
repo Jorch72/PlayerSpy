@@ -77,6 +77,8 @@ public abstract class Record
 	}
 	protected abstract int getContentSize(boolean absolute);
 	
+	public abstract String getDescription();
+	
 	private RecordType mType;
 	private long mTimestamp;
 }
