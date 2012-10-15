@@ -1,5 +1,6 @@
 package au.com.mineauz.PlayerSpy;
 
+import java.io.File;
 import java.util.TimeZone;
 
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -36,6 +37,11 @@ public class Config extends AutoConfig
 	
 	@ConfigField(comment = "You can set the language playerspy uses for displaying and reading item/block/entity names", category="general")
 	public String language = "en_US";
+	
+	public Config(File file)
+	{
+		super(file);
+	}
 	
 	protected void onPreSave()
 	{

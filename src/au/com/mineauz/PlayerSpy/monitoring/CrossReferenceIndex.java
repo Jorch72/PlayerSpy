@@ -1,9 +1,9 @@
 package au.com.mineauz.PlayerSpy.monitoring;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map.Entry;
 import java.sql.*;
 
 import org.bukkit.Bukkit;
@@ -226,8 +226,13 @@ public class CrossReferenceIndex
 			mSelectSessionStatement.setInt(2, index);
 			ResultSet rs = mSelectSessionStatement.executeQuery();
 			if(!rs.next())
+			{
+				rs.close();
 				return false;
-			int sessionId = rs.getInt(1); 
+			}
+			int sessionId = rs.getInt(1);
+			rs.close();
+			
 			LogUtil.finer("Session ID = " + sessionId);
 			
 			mAddChunkStatement.clearBatch();
@@ -280,8 +285,13 @@ public class CrossReferenceIndex
 			ResultSet rs = mSelectSessionStatement.executeQuery();
 			
 			if(!rs.next())
+			{
+				rs.close();
 				return false;
+			}
+				
 			int sessionId = rs.getInt(1); 
+			rs.close();
 			
 			mDeleteSessionStatement.setInt(1, sessionId);
 			mDeleteSessionStatement.execute();
@@ -316,8 +326,13 @@ public class CrossReferenceIndex
 			ResultSet rs = mSelectSessionStatement.executeQuery();
 			
 			if(!rs.next())
+			{
+				rs.close();
 				return false;
+			}
 			int sessionId = rs.getInt(1);
+			rs.close();
+			
 			
 			LogUtil.finer("Session Id = " + sessionId);
 			LogUtil.finer("Updating Basic Session Info");
@@ -344,7 +359,11 @@ public class CrossReferenceIndex
 						break;
 					}
 				}
+				
+				if(chunks.isEmpty())
+					break;
 			}
+			existingChunks.close();
 			
 			// Add the chunks
 			mAddChunkStatement.clearBatch();
@@ -395,8 +414,12 @@ public class CrossReferenceIndex
 			mSelectSessionStatement.setInt(2, oldIndex);
 			ResultSet rs = mSelectSessionStatement.executeQuery();
 			if(!rs.next())
+			{
+				rs.close();
 				return false;
+			}
 			int sessionId = rs.getInt(1); 
+			rs.close();
 			
 			mUpdateSessionIndexStatement.setInt(1,newIndex);
 			mUpdateSessionIndexStatement.setInt(2,sessionId);
@@ -416,7 +439,7 @@ public class CrossReferenceIndex
 	 * @param chunk The chunk to check for
 	 * @return A list of SessionInFile objects that contain the session and the logfile. You should call releaseLastLogs() when you are done with the results
 	 */
-	public synchronized List<SessionInFile> getSessionsFor(Chunk chunk)
+	public synchronized Results getSessionsFor(Chunk chunk)
 	{
 		try
 		{
@@ -426,16 +449,17 @@ public class CrossReferenceIndex
 			
 			ResultSet rs = mSelectSessionByChunkStatement.executeQuery();
 			ArrayList<SessionInFile> results = new ArrayList<CrossReferenceIndex.SessionInFile>();
-			releaseLastLogs();
+			
+			HashMap<Integer, LogFile> openedLogs = new HashMap<Integer, LogFile>();
 			
 			while(rs.next())
 			{
 				// Columns are: SESSION_ID, FILE_ID, SESSION_INDEX, START_DATE, END_DATE
 				int fileId = rs.getInt(2);
 				LogFile log = null;
-				if(mOpenedLogs.containsKey(fileId))
+				if(openedLogs.containsKey(fileId))
 				{
-					log = mOpenedLogs.get(fileId);
+					log = openedLogs.get(fileId);
 				}
 				else
 				{
@@ -462,7 +486,7 @@ public class CrossReferenceIndex
 					}
 					fileRs.close();
 					
-					mOpenedLogs.put(fileId, log);
+					openedLogs.put(fileId, log);
 				}
 				
 				// Because inconistant state can happen though crashes. Just good to make sure
@@ -477,12 +501,12 @@ public class CrossReferenceIndex
 			
 			rs.close();
 			
-			return results;
+			return new Results(results, openedLogs.values());
 		}
 		catch(SQLException e)
 		{
 			LogUtil.severe(e.getMessage());
-			return new ArrayList<CrossReferenceIndex.SessionInFile>();
+			return new Results(new ArrayList<CrossReferenceIndex.SessionInFile>(), new ArrayList<LogFile>());
 		}
 	}
 	/**
@@ -492,7 +516,7 @@ public class CrossReferenceIndex
 	 * @param endTime The latest date you with to check for
 	 * @return A list of SessionInFile objects that contain the session and the logfile. You should call releaseLastLogs() when you are done with the results 
 	 */
-	public synchronized List<SessionInFile> getSessionsFor(Chunk chunk, long startTime, long endTime)
+	public synchronized Results getSessionsFor(Chunk chunk, long startTime, long endTime)
 	{
 		try
 		{
@@ -510,16 +534,16 @@ public class CrossReferenceIndex
 			
 			ResultSet rs = mSelectSessionByChunkBetweenTimeStatement.executeQuery();
 			ArrayList<SessionInFile> results = new ArrayList<CrossReferenceIndex.SessionInFile>();
-			releaseLastLogs();
+			HashMap<Integer, LogFile> openedLogs = new HashMap<Integer, LogFile>();
 			
 			while(rs.next())
 			{
 				// Columns are: SESSION_ID, FILE_ID, SESSION_INDEX, START_DATE, END_DATE
 				int fileId = rs.getInt(2);
 				LogFile log = null;
-				if(mOpenedLogs.containsKey(fileId))
+				if(openedLogs.containsKey(fileId))
 				{
-					log = mOpenedLogs.get(fileId);
+					log = openedLogs.get(fileId);
 				}
 				else
 				{
@@ -546,7 +570,7 @@ public class CrossReferenceIndex
 					}
 					fileRs.close();
 					
-					mOpenedLogs.put(fileId, log);
+					openedLogs.put(fileId, log);
 				}
 				
 				// Because inconistant state can happen though crashes. Just good to make sure
@@ -561,12 +585,12 @@ public class CrossReferenceIndex
 			
 			rs.close();
 			
-			return results;
+			return new Results(results, openedLogs.values());
 		}
 		catch(SQLException e)
 		{
 			LogUtil.severe(e.getMessage());
-			return new ArrayList<CrossReferenceIndex.SessionInFile>();
+			return new Results(new ArrayList<CrossReferenceIndex.SessionInFile>(), new ArrayList<LogFile>());
 		}
 	}
 	/**
@@ -575,7 +599,7 @@ public class CrossReferenceIndex
 	 * @param endTime The latest date to check for
 	 * @return A list of SessionInFile objects that contain the session and the logfile. You should call releaseLastLogs() when you are done with the results
 	 */
-	public synchronized List<SessionInFile> getSessionsFor(long startTime, long endTime)
+	public synchronized Results getSessionsFor(long startTime, long endTime)
 	{
 		try
 		{
@@ -590,16 +614,16 @@ public class CrossReferenceIndex
 			
 			ResultSet rs = mSelectSessionBetweenTimeStatement.executeQuery();
 			ArrayList<SessionInFile> results = new ArrayList<CrossReferenceIndex.SessionInFile>();
-			releaseLastLogs();
+			HashMap<Integer, LogFile> openedLogs = new HashMap<Integer, LogFile>();
 			
 			while(rs.next())
 			{
 				// Columns are: SESSION_ID, FILE_ID, SESSION_INDEX, START_DATE, END_DATE
 				int fileId = rs.getInt(2);
 				LogFile log = null;
-				if(mOpenedLogs.containsKey(fileId))
+				if(openedLogs.containsKey(fileId))
 				{
-					log = mOpenedLogs.get(fileId);
+					log = openedLogs.get(fileId);
 				}
 				else
 				{
@@ -626,7 +650,7 @@ public class CrossReferenceIndex
 					}
 					fileRs.close();
 					
-					mOpenedLogs.put(fileId, log);
+					openedLogs.put(fileId, log);
 				}
 				
 				// Because inconistant state can happen though crashes. Just good to make sure
@@ -641,36 +665,44 @@ public class CrossReferenceIndex
 			
 			rs.close();
 			
-			return results;
+			return new Results(results, openedLogs.values());
 		}
 		catch(SQLException e)
 		{
 			LogUtil.severe(e.getMessage());
-			return new ArrayList<CrossReferenceIndex.SessionInFile>();
+			return new Results(new ArrayList<CrossReferenceIndex.SessionInFile>(), new ArrayList<LogFile>());
 		}
 	}
 	
-	/**
-	 * Closes or decreases reference counts of opened logs from the getSessionsFor() methods
-	 */
-	@Deprecated
-	public synchronized void releaseLastLogs()
-	{
-		for(Entry<Integer, LogFile> ent : mOpenedLogs.entrySet())
-		{
-			if(ent.getValue().getName().startsWith(LogFileRegistry.cGlobalFilePrefix))
-				LogFileRegistry.unloadLogFile(Bukkit.getWorld(ent.getValue().getName().substring(LogFileRegistry.cGlobalFilePrefix.length())));
-			else
-				LogFileRegistry.unloadLogFile(Bukkit.getOfflinePlayer(ent.getValue().getName()));
-		}
-		
-		mOpenedLogs.clear();
-	}
-	
-	private HashMap<Integer, LogFile> mOpenedLogs = new HashMap<Integer, LogFile>();
 	public static class SessionInFile
 	{
 		public IndexEntry Session;
 		public LogFile Log;
+	}
+	
+	public static class Results
+	{
+		public Results(List<SessionInFile> sessions, Collection<LogFile> openedLogs)
+		{
+			foundSessions = sessions;
+			mOpenedLogs = openedLogs;
+		}
+		
+		public List<SessionInFile> foundSessions;
+		
+		private Collection<LogFile> mOpenedLogs;
+		public void release()
+		{
+			for(LogFile log : mOpenedLogs)
+			{
+				if(log.getName().startsWith(LogFileRegistry.cGlobalFilePrefix))
+					LogFileRegistry.unloadLogFile(Bukkit.getWorld(log.getName().substring(LogFileRegistry.cGlobalFilePrefix.length())));
+				else
+					LogFileRegistry.unloadLogFile(Bukkit.getOfflinePlayer(log.getName()));
+			}
+			
+			mOpenedLogs.clear();
+		}
+		
 	}
 }

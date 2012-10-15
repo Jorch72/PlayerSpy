@@ -28,7 +28,7 @@ public class CauseState extends State
 		}
 		else if(word.startsWith("#"))
 		{
-			Cause c = Cause.globalCause(Bukkit.getWorlds().get(0), word.substring(1));
+			Cause c = Cause.globalCause(Bukkit.getWorlds().get(0), word);
 			output.push(c);
 		}
 		else

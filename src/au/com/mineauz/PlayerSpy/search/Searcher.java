@@ -1,7 +1,6 @@
 package au.com.mineauz.PlayerSpy.search;
 
 import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -93,7 +92,7 @@ public class Searcher
 		else
 			title = "Block history";
 		
-		Date lastDate = new Date(0);
+		long lastDate = 0;
 		Pager pager = new Pager(title, (who instanceof Player ? 10 : 40));
 		int lastPageCount = 0;
 		for(Pair<Record,Integer> result : results.allRecords)
@@ -104,28 +103,30 @@ public class Searcher
 				continue;
 			
 			// Do date stuff
-			Date date = new Date(result.getArg1().getTimestamp());
-			Date dateOnly = Utility.getDatePortion(date);
-			date.setTime(date.getTime() - dateOnly.getTime());
+			long date = result.getArg1().getTimestamp();
+			
+			long dateOnly = Utility.getDatePortion(date);
+			date = Utility.getTimePortion(date);
+			
 			// Output the date if it has changed
-			if(lastDate.getTime() != dateOnly.getTime() || pager.getPageCount() != lastPageCount)
+			if(lastDate != dateOnly || pager.getPageCount() != lastPageCount)
 			{
-				if(dateOnly.getTime() == Utility.getDatePortion(new Date()).getTime())
+				if(dateOnly == Utility.getDatePortion(System.currentTimeMillis()))
 					pager.addItem(ChatColor.GREEN + "Today");
 				else
 				{
 					DateFormat fmt = DateFormat.getDateInstance(DateFormat.FULL);
-					pager.addItem(ChatColor.GREEN + fmt.format(dateOnly));
+					fmt.setTimeZone(SpyPlugin.getSettings().timezone);
+					pager.addItem(ChatColor.GREEN + fmt.format(new Date(dateOnly)));
 				}
 				lastDate = dateOnly;
 				
 				lastPageCount = pager.getPageCount();
 			}
-			SimpleDateFormat fmt = new SimpleDateFormat("hh:mma");
 			
 			Cause cause = results.causes.get(result.getArg2());
 			
-			String output = String.format(ChatColor.GREEN + " %7s " + ChatColor.RESET, fmt.format(date)) + String.format(msg, ChatColor.RED + cause.friendlyName() + ChatColor.RESET);
+			String output = String.format(ChatColor.GREEN + " %7s " + ChatColor.RESET, Utility.formatTime(date, "hh:mma")) + String.format(msg, ChatColor.RED + cause.friendlyName() + ChatColor.RESET);
 			
 			pager.addItem(output);
 		}

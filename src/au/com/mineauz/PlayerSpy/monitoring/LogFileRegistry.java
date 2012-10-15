@@ -200,5 +200,24 @@ public class LogFileRegistry
 	{
 		return name.replaceAll("[:/\\\\%\\.]", "");
 	}
+	/**
+	 * Forcefully unloads all opened log files 
+	 */
+	public static void unloadAll()
+	{
+		for(LogFile log : mLoadedLogs.values())
+		{
+			while(log.isLoaded())
+				log.close(true);
+		}
+		mLoadedLogs.clear();
+		
+		for(LogFile log : mLoadedGlobalLogs.values())
+		{
+			while(log.isLoaded())
+				log.close(true);
+		}
+		mLoadedGlobalLogs.clear();
+	}
 	
 }

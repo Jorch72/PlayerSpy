@@ -1,7 +1,5 @@
 package au.com.mineauz.PlayerSpy;
 
-import java.sql.Date;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map.Entry;
@@ -39,7 +37,7 @@ public class PlaybackContext
 			public Void call() throws Exception 
 			{
 				// Seek callback
-				mDisplay.notifyViewers("at " + ChatColor.GREEN + new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date(mPrimaryController.getPlaybackDate())));
+				mDisplay.notifyViewers("at " + ChatColor.GREEN + Utility.formatTime(mPrimaryController.getPlaybackDate(), "dd/MM/yy HH:mm:ss"));
 				
 				if(!mIndexShadowPlayerMap.containsKey(0))
 				{
@@ -136,6 +134,24 @@ public class PlaybackContext
 			{
 				// TODO: Display more relavent detail
 				mDisplay.notifyViewers("Unable to find any results");
+				return null;
+			}
+		}, new Callable<Void>() {
+			
+			@Override
+			public Void call() throws Exception
+			{
+				// Deep mode switch
+				mDisplay.notifyViewers("Playback will now be normal.");
+				return null;
+			}
+		}, new Callable<Void>() {
+			
+			@Override
+			public Void call() throws Exception
+			{
+				// Shallow mode switch
+				mDisplay.notifyViewers("Playback will now be limited as recording was switched to shallow mode.");
 				return null;
 			}
 		});
@@ -482,7 +498,7 @@ public class PlaybackContext
 			{
 				if(arecord.getDamage() == -1)
 				{
-					LogUtil.finest("Kill");
+					//LogUtil.finest("Kill");
 					// Remove it
 					mDisplay.removeShadowMob(mStoredIdEntityIdMap.get(arecord.getDamagee().getEntityId()));
 					mIndexShadowMobMap.remove(id);
@@ -676,7 +692,7 @@ public class PlaybackContext
 		{
 		case ItemPickup:
 		{
-			LogUtil.finest("Preparing for item pickup @" + id);
+			//LogUtil.finest("Preparing for item pickup @" + id);
 			ItemPickupRecord irecord = (ItemPickupRecord)record;
 			EntityItem item = Utility.makeEntityItem(irecord.getLocation(), irecord.getItemStack());
 			//item.id = PlaybackDisplay.getNextEntityId();

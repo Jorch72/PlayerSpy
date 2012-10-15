@@ -14,14 +14,14 @@ import org.bukkit.entity.Item;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.painting.PaintingBreakByEntityEvent;
+import org.bukkit.event.painting.PaintingPlaceEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerShearEntityEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -256,20 +256,12 @@ public class ShallowMonitor
 		logRecord(new InteractRecord(Action.RIGHT_CLICK_AIR,null, null, event.getRightClicked()));
 	}
 	
-	public void onPlayerRespawn(PlayerRespawnEvent event)
-	{
-		
-	}
-	
 	public void onPlayerShearEntity(PlayerShearEntityEvent event)
 	{
-		
+		logRecord(new RightClickActionRecord(RightClickActionRecord.Action.Shears, event.getPlayer().getItemInHand(), event.getEntity()));
 	}
 	
-	public void onPlayerFish(PlayerFishEvent event)
-	{
-		
-	}
+	
 	
 	public void onPlayerDeath(PlayerDeathEvent event)
 	{
@@ -335,5 +327,14 @@ public class ShallowMonitor
 	public void onEggThrow() 
 	{
 		logRecord(new RightClickActionRecord(RightClickActionRecord.Action.ProjectileFire, new ItemStack(Material.EGG), null));
+	}
+	
+	public void onPlacePainting(PaintingPlaceEvent event)
+	{	
+		logRecord(new PaintingChangeRecord(event.getPainting(), true));
+	}
+	public void onBreakPainting(PaintingBreakByEntityEvent event)
+	{	
+		logRecord(new PaintingChangeRecord(event.getPainting(), false));
 	}
 }

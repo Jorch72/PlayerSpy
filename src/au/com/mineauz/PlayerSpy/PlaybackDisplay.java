@@ -409,6 +409,9 @@ public class PlaybackDisplay implements Listener
 	}
 	public void doHeadLook(EntityLiving ent)
 	{
+		if(ent instanceof EntityShadowPlayer && !mShadowPlayers.contains(ent))
+			addShadowPlayer((EntityShadowPlayer)ent);
+		
 		Packet32EntityLook look = new Packet32EntityLook(ent.id, (byte)(ent.as * 256D / 360D), (byte)(ent.aT * 256D / 360D));
 		Packet35EntityHeadRotation head = new Packet35EntityHeadRotation(ent.id, (byte)(ent.as * 256D / 360D));
 		
@@ -433,7 +436,7 @@ public class PlaybackDisplay implements Listener
 	{
 		if(mShadowItems.contains(item))
 		{
-			LogUtil.finest("@" + player.id + " pickup " + item.id);
+			//LogUtil.finest("@" + player.id + " pickup " + item.id);
 			Packet22Collect packet = new Packet22Collect(item.id, player.id);
 			sendPacket(packet,player.world.getWorld());
 			// Dont add it to the removed items list becuase collect also removes it

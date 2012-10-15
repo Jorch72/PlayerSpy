@@ -15,6 +15,7 @@ import org.bukkit.Location;
 import org.bukkit.World;
 
 
+@SuppressWarnings( "unused" )
 public class InterlinkFile 
 {
 	public static class Predicate

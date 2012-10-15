@@ -18,6 +18,10 @@ permissions:
       playerspy.playback: true
       playerspy.list: true
       playerspy.help: true
+      playerspy.purge: true
+      playerspy.inspect: true
+      playerspy.search: true
+      playerspy.reload: true
   playerspy.spy:
     default: op
     description: Allows a player to record the movements and activities of a player.
@@ -39,3 +43,6 @@ permissions:
   playerspy.search:
     default: op
     description: Allows a player to search through the logs
+  playerspy.reload:
+    default: op
+    description: Allows a player to reload the config file

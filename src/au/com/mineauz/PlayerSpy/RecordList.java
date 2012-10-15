@@ -348,4 +348,17 @@ public class RecordList extends ArrayList<Record>
 		
 		return size;
 	}
+	
+	public boolean getDeep()
+	{
+		for(Record record : this)
+		{
+			if(record instanceof SessionInfoRecord)
+			{
+				return ((SessionInfoRecord)record).isDeep();
+			}
+		}
+		
+		return false;
+	}
 }

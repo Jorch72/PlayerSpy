@@ -15,6 +15,7 @@ public class IndexEntry
 	public long TotalSize;
 	public boolean Compressed;
 	
+	
 	public boolean write(RandomAccessFile file)
 	{
 		try

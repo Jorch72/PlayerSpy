@@ -15,11 +15,11 @@ public class TimeOnlyDA extends DataAssembler
 		Date date = (Date)objects.pop();
 		
 		// it only has the time portion, so add the date portion to it
-		Date datePart = Utility.getDatePortion(new Date());
+		long datePart = Utility.getDatePortion(System.currentTimeMillis());
 		
-		datePart.setTime(datePart.getTime() + date.getTime());
+		datePart += date.getTime();
 		
-		return datePart;
+		return new Date(datePart);
 	}
 
 }

@@ -5,7 +5,6 @@ import net.minecraft.server.ItemStack;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import au.com.mineauz.PlayerSpy.FLLTest;
 import au.com.mineauz.PlayerSpy.StringTranslator;
 import au.com.mineauz.PlayerSpy.Utility;
 

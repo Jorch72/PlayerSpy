@@ -4,6 +4,7 @@ import java.sql.Date;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -202,6 +203,7 @@ public class Util
 			int hour,minute,second;
 			
 			GregorianCalendar cal = new GregorianCalendar();
+			cal.setTimeZone(SpyPlugin.getSettings().timezone);
 			
 			if(m.group(8) != null)
 			{
@@ -330,7 +332,19 @@ public class Util
 				}
 				
 				
-				time = new GregorianCalendar(year, month-1, day, hour, minute, second).getTimeInMillis();
+				//time = second * 1000 + minute * 60000 + hour * 360000 + day * 86400000 +
+				cal.setTimeZone(SpyPlugin.getSettings().timezone);
+				cal.set(Calendar.YEAR, year);
+				cal.set(Calendar.MONTH, month-1);
+				cal.set(Calendar.DAY_OF_MONTH, day);
+				cal.set(Calendar.HOUR_OF_DAY, hour);
+				cal.set(Calendar.MINUTE, minute);
+				cal.set(Calendar.SECOND, second);
+				cal.set(Calendar.MILLISECOND, 0);
+
+				SimpleDateFormat fmt = new SimpleDateFormat("dd/MM/yy hh:mm:ss a");
+				fmt.setTimeZone(TimeZone.getTimeZone("GMT"));
+				time = cal.getTimeInMillis();
 			}
 			
 			// Do modification to it

@@ -28,7 +28,16 @@ public class BlockConstraint extends Constraint
 		if(change.wasPlaced() != placed)
 			return false;
 		
-		if(change.getBlock().getType().equals(material.getArg1()) && change.getBlock().getData() == material.getArg2())
+		if(material.getArg1() == Material.AIR)
+			return true;
+		
+		if(!change.getBlock().getType().equals(material.getArg1()))
+			return false;
+		
+		if(material.getArg2() == -1)
+			return true;
+		
+		if(change.getBlock().getData() == material.getArg2())
 			return true;
 		
 		return false;

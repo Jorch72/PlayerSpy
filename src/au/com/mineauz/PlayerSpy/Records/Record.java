@@ -47,6 +47,10 @@ public abstract class Record
 	{
 		return mTimestamp;
 	}
+	public void setTimestamp( long timestamp )
+	{
+		mTimestamp = timestamp;
+	}
 	public RecordType getType()
 	{
 		return mType;
@@ -81,5 +85,6 @@ public abstract class Record
 	
 	private RecordType mType;
 	private long mTimestamp;
+	
 }
 

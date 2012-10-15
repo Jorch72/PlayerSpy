@@ -1,5 +1,6 @@
 package au.com.mineauz.PlayerSpy.monitoring;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,7 +39,7 @@ public class GlobalMonitor implements Listener
 	private HashMap<World, HashMap<String, RecordList>> mBuffers = new HashMap<World, HashMap<String,RecordList>>();
 	private HashMap<Cause, Pair<RecordList,Cause>> mPendingRecords = new HashMap<Cause, Pair<RecordList,Cause>>();
 	
-	
+	private PersistantData mPersist;
 
 	private SpreadTracker mSpreadTracker = new SpreadTracker();
 	private CauseFinder mCauseFinder = new CauseFinder();
@@ -54,8 +55,21 @@ public class GlobalMonitor implements Listener
 	{
 		LogUtil.finer("Staring global monitor");
 	
+		mPersist = new PersistantData(new File(SpyPlugin.getInstance().getDataFolder(),"persist.yml"));
+		if(!mPersist.load())
+			throw new RuntimeException("Unable to load persist file");
+		mPersist.save();
+
+		for(OfflinePlayer player : mPersist.activeMonitorTargets)
+			attachDeepInternal(player);
+		
 		for(Player player : Bukkit.getOnlinePlayers())
+		{
+			if(mPersist.activeMonitorTargets.contains(player))
+				continue;
+			
 			attachShallow(player);
+		}
 		
 		for(World world : Bukkit.getWorlds())
 		{
@@ -116,7 +130,7 @@ public class GlobalMonitor implements Listener
 		mon.shutdown();
 	}
 	
-	public void attachDeep(OfflinePlayer player)
+	private void attachDeepInternal(OfflinePlayer player)
 	{
 		try
 		{
@@ -139,6 +153,12 @@ public class GlobalMonitor implements Listener
 			LogUtil.severe(e.getMessage());
 		}
 	}
+	public void attachDeep(OfflinePlayer player)
+	{
+		attachDeepInternal(player);
+		mPersist.activeMonitorTargets.add(player);
+		mPersist.save();
+	}
 	public void removeDeep(OfflinePlayer player)
 	{
 		if(!mDeepLogs.containsKey(player))
@@ -154,6 +174,9 @@ public class GlobalMonitor implements Listener
 		{
 			deep.shutdown();
 		}
+		
+		mPersist.activeMonitorTargets.remove(player);
+		mPersist.save();
 	}
 	
 	/**
@@ -180,6 +203,12 @@ public class GlobalMonitor implements Listener
 	{
 		ArrayList<ShallowMonitor> monitors = new ArrayList<ShallowMonitor>();
 		monitors.addAll(mShallowLogs.values());
+		monitors.addAll(mDeepLogs.values());
+		return monitors;
+	}
+	public List<DeepMonitor> getAllDeepMonitors()
+	{
+		ArrayList<DeepMonitor> monitors = new ArrayList<DeepMonitor>();
 		monitors.addAll(mDeepLogs.values());
 		return monitors;
 	}
@@ -403,10 +432,37 @@ public class GlobalMonitor implements Listener
 	private void onPlayerInteract(PlayerInteractEvent event)
 	{
 		mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
-		ShallowMonitor mon = getMonitor(event.getPlayer());
 		
-		if(mon != null)
-			mon.onPlayerInteract(event);
+		if(event.getAction() == Action.PHYSICAL && event.getClickedBlock().getType() == Material.SOIL)
+		{
+			if(event.getClickedBlock().getRelative(BlockFace.UP).getType() == Material.CROPS)
+			{
+				BlockChangeRecord record = new BlockChangeRecord(event.getClickedBlock().getRelative(BlockFace.UP), null, false);
+				ShallowMonitor mon = getMonitor(event.getPlayer());
+				
+				if(mon != null)
+					mon.logRecord(record);
+			}
+		}
+		if(event.hasBlock() &&
+			event.getClickedBlock().getType() == Material.STONE_BUTTON || 
+			event.getClickedBlock().getType() == Material.STONE_PLATE || 
+			event.getClickedBlock().getType() == Material.WOOD_PLATE || 
+			event.getClickedBlock().getType() == Material.LEVER || 
+			event.getClickedBlock().getType() == Material.CAKE_BLOCK || 
+			event.getClickedBlock().getType() == Material.DRAGON_EGG || 
+			event.getClickedBlock().getType() == Material.DIODE_BLOCK_OFF || 
+			event.getClickedBlock().getType() == Material.DIODE_BLOCK_ON || 
+			event.getClickedBlock().getType() == Material.FENCE_GATE || 
+			event.getClickedBlock().getType() == Material.WOODEN_DOOR || 
+			event.getClickedBlock().getType() == Material.TRAP_DOOR ||
+			event.getClickedBlock().getType() == Material.TRIPWIRE)
+		{
+			ShallowMonitor mon = getMonitor(event.getPlayer());
+			
+			if(mon != null)
+				mon.onPlayerInteract(event);
+		}
 	}
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onPlayerInteractEntity(PlayerInteractEntityEvent event)
@@ -421,7 +477,7 @@ public class GlobalMonitor implements Listener
 	private void onPlayerRespawn(PlayerRespawnEvent event)
 	{
 		mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
-		ShallowMonitor mon = getMonitor(event.getPlayer());
+		DeepMonitor mon = getDeepMonitor(event.getPlayer());
 		
 		if(mon != null)
 			mon.onPlayerRespawn(event);
@@ -439,7 +495,7 @@ public class GlobalMonitor implements Listener
 	private void onPlayerFish(PlayerFishEvent event)
 	{
 		mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
-		ShallowMonitor mon = getMonitor(event.getPlayer());
+		DeepMonitor mon = getDeepMonitor(event.getPlayer());
 		
 		if(mon != null)
 			mon.onPlayerFish(event);
@@ -964,6 +1020,60 @@ public class GlobalMonitor implements Listener
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onExplosionPrime(ExplosionPrimeEvent event)
 	{
-		LogUtil.info("Explosion Prime at " + Utility.locationToStringShort(event.getEntity().getLocation()) + " by " + event.getEntityType().getName());
+	}
+	
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	private void onPlayerEnterBed(PlayerBedEnterEvent event)
+	{
+		DeepMonitor mon = getDeepMonitor(event.getPlayer());
+		if(mon != null)
+			mon.onSleep(event.getBed().getLocation(), true);
+	}
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	private void onPlayerExitBed(PlayerBedLeaveEvent event)
+	{
+		DeepMonitor mon = getDeepMonitor(event.getPlayer());
+		if(mon != null)
+			mon.onSleep(event.getPlayer().getLocation(), false);
+	}
+	
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	private void onPlayerHeldItemChange(PlayerItemHeldEvent event)
+	{
+		DeepMonitor mon = getDeepMonitor(event.getPlayer());
+		if(mon != null)
+			mon.onHeldItemChange(event.getNewSlot());
+	}
+	
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	private void onPlayerSprint(PlayerToggleSprintEvent event)
+	{
+		DeepMonitor mon = getDeepMonitor(event.getPlayer());
+		if(mon != null)
+			mon.onPlayerSprintToggle(event.isSprinting());
+	}
+	
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	private void onPlayerSneak(PlayerToggleSneakEvent event)
+	{
+		DeepMonitor mon = getDeepMonitor(event.getPlayer());
+		if(mon != null)
+			mon.onPlayerSneakToggle(event.isSneaking());
+	}
+	
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	private void onPlayerAnimation(PlayerAnimationEvent event)
+	{
+		DeepMonitor mon = getDeepMonitor(event.getPlayer());
+		if(mon != null)
+			mon.onPlayerAnimationEvent(event);
+	}
+	
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	private void onPlayerTeleport(PlayerTeleportEvent event)
+	{
+		DeepMonitor mon = getDeepMonitor(event.getPlayer());
+		if(mon != null)
+			mon.onTeleport(event.getTo(), event.getCause());
 	}
 }

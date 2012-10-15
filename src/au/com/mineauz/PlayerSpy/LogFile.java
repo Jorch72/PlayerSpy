@@ -323,20 +323,8 @@ public class LogFile
 					public void run() 
 					{
 						mIsClosing = true;
-						try 
-						{
-							// Add the close task and wait for it
-							Future<?> future = mAsyncService.submit(new CloseTask());
-							future.get();
-						} 
-						catch (InterruptedException e1) 
-						{
-							e1.printStackTrace();
-						} 
-						catch (ExecutionException e) 
-						{
-							e.printStackTrace();
-						}
+						LogUtil.finer("Submitting the close task");
+						mAsyncService.submit(new CloseTask());
 					}
 				}, SpyPlugin.getSettings().logTimeout / 50L);
 			}
@@ -509,7 +497,7 @@ public class LogFile
 	{
 		for(IndexEntry entry : mIndex)
 		{
-			if(entry.StartTimestamp > date)
+			if(entry.StartTimestamp > date && getOwnerTag(entry) == null)
 				return entry.StartTimestamp;
 		}
 		
@@ -520,7 +508,7 @@ public class LogFile
 		for(int i = mIndex.size()-1; i >=0 ; --i)
 		{
 			IndexEntry entry = mIndex.get(i);
-			if(entry.EndTimestamp > date)
+			if(entry.EndTimestamp > date && getOwnerTag(entry) == null)
 				return entry.EndTimestamp;
 		}
 		
@@ -614,7 +602,10 @@ public class LogFile
 			   (endDate >= entry.StartTimestamp && endDate <= entry.EndTimestamp) ||
 			   (entry.StartTimestamp >= startDate && entry.StartTimestamp < endDate) ||
 			   (entry.EndTimestamp > startDate && entry.EndTimestamp < endDate))
-				relevantEntries.add(entry);
+			{
+				if(getOwnerTag(entry) == null)
+					relevantEntries.add(entry);
+			}
 		}
 		LogUtil.finer("  " + relevantEntries.size() + " Matching Sessions");
 		// Now load up the records
@@ -695,7 +686,9 @@ public class LogFile
 					{
 						LogUtil.warning("Corruption in " + mPlayerName + ".tracdata session " +mIndex.indexOf(session) + " found. Attempting to fix");
 						lastWorld = Bukkit.getWorlds().get(0);
-						records.add(new WorldChangeRecord(lastWorld));
+						Record worldRecord = new WorldChangeRecord(lastWorld);
+						worldRecord.setTimestamp(record.getTimestamp());
+						records.add(worldRecord);
 						
 						// Ditch the first record since it is useless
 						continue;

@@ -8,6 +8,8 @@ import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.Pager;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
+import au.com.mineauz.PlayerSpy.monitoring.DeepMonitor;
+import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
 
 public class ListCommand implements ICommand
 {
@@ -46,15 +48,15 @@ public class ListCommand implements ICommand
 		
 		Pager pager = new Pager("All Recordings", (sender instanceof Player ? 8 : 15));
 		
-		List<String> monitors = SpyPlugin.getInstance().getMonitorTargets();
+		List<DeepMonitor> monitors = GlobalMonitor.instance.getAllDeepMonitors();
 		List<String> playbacks = SpyPlugin.getInstance().getPlaybackTargets();
 		
-		for(String target : monitors)
+		for(DeepMonitor monitor : monitors)
 		{
-			if(playbacks.contains(target))
-				pager.addItem(target + ChatColor.LIGHT_PURPLE + " [Timeshifting]");
+			if(playbacks.contains(monitor.getMonitorTarget().getName()))
+				pager.addItem(monitor.getMonitorTarget().getName() + ChatColor.LIGHT_PURPLE + " [Timeshifting]");
 			else
-				pager.addItem(target + ChatColor.RED + " [Recording]");
+				pager.addItem(monitor.getMonitorTarget().getName() + ChatColor.RED + " [Recording]");
 		}
 		
 		for(String target : playbacks)

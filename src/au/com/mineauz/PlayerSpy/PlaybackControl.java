@@ -13,6 +13,7 @@ import au.com.mineauz.PlayerSpy.LogTasks.SearchForDamageTask;
 import au.com.mineauz.PlayerSpy.LogTasks.SearchForEventTask;
 import au.com.mineauz.PlayerSpy.LogTasks.SearchForItemTask;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
+import au.com.mineauz.PlayerSpy.Records.SessionInfoRecord;
 
 public class PlaybackControl 
 {
@@ -24,7 +25,7 @@ public class PlaybackControl
 		Buffering
 	}
 	
-	public PlaybackControl(RecordBuffer buffer, Callable<Void> seekCallback, Callable<Void> finishCallback, Callable<Void> searchFailCallback)
+	public PlaybackControl(RecordBuffer buffer, Callable<Void> seekCallback, Callable<Void> finishCallback, Callable<Void> searchFailCallback, Callable<Void> deepModeSwitchCallback, Callable<Void> shallowModeSwitchCallback)
 	{
 		mBuffer = buffer;
 		mIsPlaying = false;
@@ -38,6 +39,10 @@ public class PlaybackControl
 		mSeekCallback = seekCallback;
 		mFinishCallback = finishCallback;
 		mSearchFailCallback = searchFailCallback;
+		mDeepModeSwitchCallback = deepModeSwitchCallback;
+		mShallowModeSwitchCallback = shallowModeSwitchCallback;
+		
+		mDeepMode = true;
 	}
 
 	public void close()
@@ -128,9 +133,28 @@ public class PlaybackControl
 		// Check to see if that date is loaded at the moment
 		if(date >= mBuffer.currentBuffer().getStartTimestamp() && date <= mBuffer.currentBuffer().getEndTimestamp())
 		{
+			int oldIndex = getBufferIndex();
+			
 			mAbsoluteIndex = mBuffer.relativeOffset() + mBuffer.currentBuffer().getNextRecordAfter(date);
 			mPlaybackDate = mBuffer.currentBuffer().get(getBufferIndex()).getTimestamp();
-			LogUtil.finest("Seeking inside current buffer");
+			
+			boolean latestState = mDeepMode;
+			// Check for deep/shallow mode change
+			for(int i = oldIndex; i < getBufferIndex(); ++i)
+			{
+				if(mBuffer.currentBuffer().get(i) instanceof SessionInfoRecord)
+				{
+					latestState = ((SessionInfoRecord)mBuffer.currentBuffer().get(i)).isDeep();
+				}
+			}
+			
+			if(!latestState && mDeepMode)
+				onShallowModeSwitch();
+			else if(latestState && !mDeepMode)
+				onDeepModeSwitch();
+			
+			mDeepMode = latestState;
+			
 			onSeek();
 			return true;
 		}
@@ -200,6 +224,16 @@ public class PlaybackControl
 				else
 					mPlaybackDate = mBuffer.currentBuffer().getEndTimestamp();
 				
+				String debug = Utility.formatTime(mPlaybackDate, "dd/mm/yy hh:mm:ss a");
+				LogUtil.info("Seeked to " + debug);
+				boolean deep = mBuffer.currentBuffer().getDeep();
+				
+				if(!mDeepMode && deep)
+					onDeepModeSwitch();
+				else if(mDeepMode && !deep)
+					onShallowModeSwitch();
+				
+				mDeepMode = deep;
 				onSeek();
 			}
 		}
@@ -267,13 +301,23 @@ public class PlaybackControl
 						{
 							if(mBuffer.currentBuffer().get(i).getTimestamp() > mPlaybackDate + timeDiff)
 								break;
-							
+
+							if(mBuffer.currentBuffer().get(i) instanceof SessionInfoRecord)
+							{
+								boolean newState = ((SessionInfoRecord)mBuffer.currentBuffer().get(i)).isDeep();
+								
+								if(!newState && mDeepMode)
+									onShallowModeSwitch();
+								else if(newState && !mDeepMode)
+									onDeepModeSwitch();
+								
+								mDeepMode = newState;
+							}
 								
 							mAbsoluteIndex = i + mBuffer.relativeOffset();
-							//mPlaybackDate = mBuffer.currentBuffer().get(i).getTimestamp();
 						}
+
 						mPlaybackDate += timeDiff;
-						//LogUtil.("Running. Date: " + Util.dateToString(mPlaybackDate) + " @" + mAbsoluteIndex);
 					}
 				}
 			}
@@ -379,6 +423,32 @@ public class PlaybackControl
 		}
 	}
 	
+	private void onDeepModeSwitch()
+	{
+		try
+		{
+			if(mDeepModeSwitchCallback != null)
+				mDeepModeSwitchCallback.call();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+	
+	private void onShallowModeSwitch()
+	{
+		try
+		{
+			if(mShallowModeSwitchCallback != null)
+				mShallowModeSwitchCallback.call();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+	
 	private float mPlaybackSpeed = 1F;
 	private RecordBuffer mBuffer;
 	private boolean mIsPlaying;
@@ -389,10 +459,13 @@ public class PlaybackControl
 	private long mPlaybackDate;
 	private long mActualDate;
 	private int mAbsoluteIndex;
+	private boolean mDeepMode;
 	
 	private Callable<Void> mSeekCallback;
 	private Callable<Void> mFinishCallback;
 	private Callable<Void> mSearchFailCallback;
+	private Callable<Void> mDeepModeSwitchCallback;
+	private Callable<Void> mShallowModeSwitchCallback;
 	
 	private Future<Long> mSearchTask;
 }

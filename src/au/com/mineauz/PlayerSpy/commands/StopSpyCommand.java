@@ -5,7 +5,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 
-import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
 
 public class StopSpyCommand implements ICommand
@@ -58,11 +57,6 @@ public class StopSpyCommand implements ICommand
 				sender.sendMessage(ChatColor.GREEN + player.getName() + " is no longer being closely monitored");
 			}
 		}
-		// Remove the monitor
-		if(SpyPlugin.getInstance().removeMonitor(args[0]))
-			sender.sendMessage("Stopped recording " + args[0]);
-		else
-			sender.sendMessage(args[0] + " is not currently being recorded");
 		
 		return true;
 	}

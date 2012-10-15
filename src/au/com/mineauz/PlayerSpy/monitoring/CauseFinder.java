@@ -153,9 +153,9 @@ public class CauseFinder
 		{
 			Pair<Long, Cause> answer = null;
 			
-			List<SessionInFile> results = CrossReferenceIndex.instance.getSessionsFor(mSearchLocation.getChunk());
+			CrossReferenceIndex.Results results = CrossReferenceIndex.instance.getSessionsFor(mSearchLocation.getChunk());
 			
-			for(SessionInFile result : results)
+			for(SessionInFile result : results.foundSessions)
 			{
 				if(answer != null && result.Session.EndTimestamp < answer.getArg1())
 					continue; // Dont bother searching old data
@@ -206,7 +206,7 @@ public class CauseFinder
 				}
 			}
 			
-			CrossReferenceIndex.instance.releaseLastLogs();
+			results.release();
 			
 			LogUtil.finest("BlockSearchTask finished");
 			if(answer == null)

@@ -1,7 +1,6 @@
 package au.com.mineauz.PlayerSpy.inspect;
 
 import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -10,9 +9,7 @@ import java.util.ListIterator;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.Cause;
 import au.com.mineauz.PlayerSpy.Pair;
@@ -94,21 +91,8 @@ public class InspectBlockTask implements Task<Void>
 			InteractRecord interact = (InteractRecord)record;
 			if(interact.hasBlock() && interact.getBlock().getLocation().equals(mLocation))
 			{
-				if(interact.getBlock().getType() == Material.STONE_BUTTON || 
-					interact.getBlock().getType() == Material.STONE_PLATE || 
-					interact.getBlock().getType() == Material.WOOD_PLATE || 
-					interact.getBlock().getType() == Material.LEVER || 
-					interact.getBlock().getType() == Material.CAKE_BLOCK || 
-					interact.getBlock().getType() == Material.DRAGON_EGG || 
-					interact.getBlock().getType() == Material.DIODE_BLOCK_OFF || 
-					interact.getBlock().getType() == Material.DIODE_BLOCK_ON || 
-					interact.getBlock().getType() == Material.FENCE_GATE || 
-					interact.getBlock().getType() == Material.WOODEN_DOOR || 
-					interact.getBlock().getType() == Material.TRAP_DOOR)
-				{
-					insertRecord(cause, record);
-					return true;
-				}
+				insertRecord(cause, record);
+				return true;
 			}
 		}
 		return false;
@@ -151,8 +135,8 @@ public class InspectBlockTask implements Task<Void>
 		
 		
 		// Check stuff saved to disk
-		List<SessionInFile> allSessions = CrossReferenceIndex.instance.getSessionsFor(mLocation.getChunk());
-		for(SessionInFile fileSession : allSessions)
+		CrossReferenceIndex.Results allSessions = CrossReferenceIndex.instance.getSessionsFor(mLocation.getChunk());
+		for(SessionInFile fileSession : allSessions.foundSessions)
 		{
 			// Dont check ones that clearly have nothing of interest 
 			if(mostRecent.size() >= SpyPlugin.getSettings().inspectCount && fileSession.Session.EndTimestamp < mostRecent.get(mostRecent.size()-1).getArg2().getTimestamp())
@@ -179,11 +163,12 @@ public class InspectBlockTask implements Task<Void>
 			
 			processRecords(cause, source);
 		}
+		allSessions.release();
 		
 		// Format the results into a neat list and display
 		ArrayList<String> output = new ArrayList<String>();
 		
-		Date lastDate = new Date(0);
+		long lastDate = 0;
 		output.add(ChatColor.GOLD + "[PlayerSpy] " + ChatColor.WHITE + "Block changes " + Utility.locationToStringShort(mLocation));
 		if(mostRecent.size() == 0)
 			output.add(ChatColor.GREEN + "  No changes to the block detected");
@@ -191,49 +176,30 @@ public class InspectBlockTask implements Task<Void>
 		{
 			for(int i = 0; i < mostRecent.size(); i++)
 			{
-				Date date = new Date(mostRecent.get(i).getArg2().getTimestamp());
-				//date.setTime(date.getTime() + SpyPlugin.getSettings().timezone.getOffset(date.getTime()));
-				Date dateOnly = Utility.getDatePortion(date);
-				//Date timeOnly = new Date(date.getTime() - dateOnly.getTime());
-				date.setTime(date.getTime() - dateOnly.getTime());
+				String msg = mostRecent.get(i).getArg2().getDescription();
+				if(msg == null)
+					continue;
+				
+				long date = mostRecent.get(i).getArg2().getTimestamp();
+				long dateOnly = Utility.getDatePortion(date);
+				date = Utility.getTimePortion(date);
+				
 				// Output the date if it has changed
-				if(lastDate.getTime() != dateOnly.getTime())
+				if(lastDate != dateOnly)
 				{
-					if(dateOnly.getTime() == Utility.getDatePortion(new Date()).getTime())
+					if(dateOnly == Utility.getDatePortion(System.currentTimeMillis()))
 						output.add(" " + ChatColor.GREEN + "Today");
 					else
 					{
-						DateFormat fmt = DateFormat.getDateInstance(DateFormat.MEDIUM);
-						output.add(" " + ChatColor.GREEN + fmt.format(dateOnly));
+						DateFormat fmt = DateFormat.getDateInstance(DateFormat.FULL);
+						fmt.setTimeZone(SpyPlugin.getSettings().timezone);
+						output.add(" " + ChatColor.GREEN + fmt.format(new Date(dateOnly)));
 					}
 					lastDate = dateOnly;
 				}
-				SimpleDateFormat fmt = new SimpleDateFormat("hh:mma");
 				
-				if(mostRecent.get(i).getArg2().getType() == RecordType.BlockChange)
-				{
-					BlockChangeRecord record = (BlockChangeRecord)mostRecent.get(i).getArg2();
-					
-					String blockName = Utility.formatItemName(new ItemStack(record.getBlock().getType(),1, record.getBlock().getData()));
-					output.add("  " + ChatColor.GREEN + fmt.format(date) + ChatColor.WHITE + ": " + ChatColor.RED + blockName +ChatColor.WHITE + " " + (record.wasPlaced() ? "placed by " : "removed by ") + ChatColor.DARK_AQUA + mostRecent.get(i).getArg1().friendlyName());
-				}
-				else if(mostRecent.get(i).getArg2().getType() == RecordType.ItemTransaction)
-				{
-					InventoryTransactionRecord record = (InventoryTransactionRecord)mostRecent.get(i).getArg2();
-					String blockName = Utility.formatItemName(new ItemStack(record.getInventoryInfo().getBlock().getType(),1, record.getInventoryInfo().getBlock().getData()));
-
-					String itemName = Utility.formatItemName(record.getItem());
-					int amount = record.getItem().getAmount();
-					
-					output.add("  " + ChatColor.GREEN + fmt.format(date) + ChatColor.WHITE + ": " + "(" + (record.isTaking() ? ChatColor.RED + "-" + amount : ChatColor.GREEN + "+" + amount) + ChatColor.RESET + ") " + itemName + (record.isTaking() ? " from " : " to ") + ChatColor.RED + blockName +ChatColor.WHITE + " by " + ChatColor.DARK_AQUA + mostRecent.get(i).getArg1().friendlyName());
-				}
-				else if(mostRecent.get(i).getArg2().getType() == RecordType.Interact)
-				{
-					InteractRecord record = (InteractRecord)mostRecent.get(i).getArg2();
-					String blockName = Utility.formatItemName(new ItemStack(record.getBlock().getType(),1, record.getBlock().getData()));
-					
-					output.add("  " + ChatColor.GREEN + fmt.format(date) + ChatColor.WHITE + ": " + ChatColor.RED + blockName +ChatColor.WHITE + " used by " + ChatColor.DARK_AQUA + mostRecent.get(i).getArg1().friendlyName());
-				}
+				output.add(String.format(ChatColor.GREEN + "  %7s " + ChatColor.RESET, Utility.formatTime(date, "hh:mma")) + String.format(msg, ChatColor.RED + mostRecent.get(i).getArg1().friendlyName() + ChatColor.RESET));
+				
 			}
 		}
 		

@@ -5,6 +5,7 @@ import java.text.ParseException;
 import java.util.Calendar;
 import java.util.HashMap;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.conversations.Conversable;
@@ -16,6 +17,7 @@ import org.bukkit.conversations.StringPrompt;
 import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Util;
+import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 
 public class PurgeCommand implements ICommand
 {
@@ -164,7 +166,7 @@ public class PurgeCommand implements ICommand
 			}
 		}
 		
-		LogFile log = SpyPlugin.getInstance().loadLog(playerName);
+		LogFile log = LogFileRegistry.getLogFile(Bukkit.getOfflinePlayer(playerName));
 		
 		if(log == null)
 		{
@@ -233,13 +235,14 @@ public class PurgeCommand implements ICommand
 					((CommandSender)context.getForWhom()).sendMessage("Now purging all data for " + ChatColor.YELLOW + (String)context.getSessionData("player") + ChatColor.RESET + "? (type yes or no)");
 				
 				log.purgeRecordsAsync(start, end);
+				// TODO: Close the log when its done
 				
 				return Prompt.END_OF_CONVERSATION;
 			}
 			else if(input.equalsIgnoreCase("no") || input.equalsIgnoreCase("n"))
 			{
 				LogFile log = (LogFile)context.getSessionData("log");
-				log.closeAsync(true);
+				LogFileRegistry.getLogFile(Bukkit.getOfflinePlayer(log.getName()));
 				return Prompt.END_OF_CONVERSATION;
 			}
 			else
