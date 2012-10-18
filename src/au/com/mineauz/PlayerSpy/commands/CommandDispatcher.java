@@ -1,7 +1,9 @@
 package au.com.mineauz.PlayerSpy.commands;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
 
 import org.bukkit.ChatColor;
@@ -9,6 +11,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.command.TabCompleter;
 
 /**
  * This allows sub commands to be handled in a clean easily expandable way.
@@ -20,7 +23,7 @@ import org.bukkit.command.ConsoleCommandSender;
  * @author Schmoller
  *
  */
-public class CommandDispatcher implements CommandExecutor
+public class CommandDispatcher implements CommandExecutor, TabCompleter
 {
 	static
 	{
@@ -139,6 +142,74 @@ AliasCheck:	for(Entry<String, ICommand> ent : mCommands.entrySet())
 		
 		sender.sendMessage(usage);
 	}
-
+	
 	private static HashMap<String, ICommand> mCommands;
+
+	@Override
+	public List<String> onTabComplete( CommandSender sender, Command command, String label, String[] args )
+	{
+		List<String> results = new ArrayList<String>();
+		if(args.length == 1) // Tab completing the sub command
+		{
+			for(ICommand registeredCommand : mCommands.values())
+			{
+				if(registeredCommand.getName().toLowerCase().startsWith(args[0].toLowerCase()))
+					results.add(registeredCommand.getName());
+			}
+		}
+		else
+		{
+			// Find the command to use
+			String subCommand = args[0].toLowerCase();
+			String[] subArgs = (args.length > 1 ? Arrays.copyOfRange(args, 1, args.length) : new String[0]);
+			
+			ICommand com = null;
+			if(mCommands.containsKey(subCommand))
+			{
+				com = mCommands.get(subCommand);
+			}
+			else
+			{
+				// Check aliases
+	AliasCheck:	for(Entry<String, ICommand> ent : mCommands.entrySet())
+				{
+					if(ent.getValue().getAliases() != null)
+					{
+						String[] aliases = ent.getValue().getAliases();
+						for(String alias : aliases)
+						{
+							if(subCommand.equalsIgnoreCase(alias))
+							{
+								com = ent.getValue();
+								break AliasCheck;
+							}
+						}
+					}
+				}
+			}
+			
+			// Was not found
+			if(com == null)
+			{
+				return results;
+			}
+			
+			// Check that the sender is correct
+			if(!com.canBeConsole() && sender instanceof ConsoleCommandSender)
+			{
+				return results;
+			}
+			
+			// Check that they have permission
+			if(com.getPermission() != null && !sender.hasPermission(com.getPermission()))
+			{
+				return results;
+			}
+			
+			results = com.onTabComplete(sender, subCommand, subArgs);
+			if(results == null)
+				return new ArrayList<String>();
+		}
+		return results;
+	}
 }

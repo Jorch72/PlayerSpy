@@ -45,7 +45,9 @@ public class SpyPlugin extends JavaPlugin
 		Calendar.getInstance().setTimeZone(getSettings().timezone);
 		Calendar.getInstance().add(Calendar.MILLISECOND, (int) getSettings().timeoffset);
 		
-		getCommand("playerspy").setExecutor(new CommandDispatcher());
+		CommandDispatcher dispatch = new CommandDispatcher();
+		getCommand("playerspy").setExecutor(dispatch);
+		getCommand("playerspy").setTabCompleter(dispatch);
 		
 		// Update every tick
 		getServer().getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
@@ -77,8 +79,8 @@ public class SpyPlugin extends JavaPlugin
 		mPlayers.clear();
 		
 		GlobalMonitor.instance.shutdown();
-		CrossReferenceIndex.instance.close();
 		LogFileRegistry.unloadAll();
+		CrossReferenceIndex.instance.close();
 	}
 
 	public synchronized List<String> getPlaybackTargets()

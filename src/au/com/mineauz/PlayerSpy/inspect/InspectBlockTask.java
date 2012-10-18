@@ -14,6 +14,7 @@ import org.bukkit.entity.Player;
 import au.com.mineauz.PlayerSpy.Cause;
 import au.com.mineauz.PlayerSpy.Pair;
 import au.com.mineauz.PlayerSpy.RecordList;
+import au.com.mineauz.PlayerSpy.SafeChunk;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Utility;
 import au.com.mineauz.PlayerSpy.LogTasks.Task;
@@ -108,6 +109,9 @@ public class InspectBlockTask implements Task<Void>
 			}
 		}
 		mostRecent.add(new Pair<Cause, Record>(cause, record));
+		
+		if(mostRecent.size() > SpyPlugin.getSettings().inspectCount)
+			mostRecent.remove(mostRecent.size()-1);
 	}
 	@Override
 	public Void call() 
@@ -135,7 +139,7 @@ public class InspectBlockTask implements Task<Void>
 		
 		
 		// Check stuff saved to disk
-		CrossReferenceIndex.Results allSessions = CrossReferenceIndex.instance.getSessionsFor(mLocation.getChunk());
+		CrossReferenceIndex.Results allSessions = CrossReferenceIndex.instance.getSessionsFor(new SafeChunk(mLocation));
 		for(SessionInFile fileSession : allSessions.foundSessions)
 		{
 			// Dont check ones that clearly have nothing of interest 

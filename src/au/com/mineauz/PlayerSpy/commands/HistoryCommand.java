@@ -1,6 +1,7 @@
 package au.com.mineauz.PlayerSpy.commands;
 
 import java.util.ArrayDeque;
+import java.util.List;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -176,6 +177,28 @@ public class HistoryCommand implements ICommand
 			return false;
 		}
 		
+		// Try page
+		if(args.length == 1)
+		{
+			try
+			{
+				int page = Integer.parseInt(args[0]);
+				
+				if(!Searcher.instance.hasResults(sender, false))
+				{
+					sender.sendMessage(ChatColor.RED + "No results to display because no previous history has been asked for.");
+					return true;
+				}
+				
+				Searcher.instance.displayResults(sender, page-1);
+				return true;
+			}
+			catch(NumberFormatException e)
+			{
+				
+			}
+		}
+		
 		// Collapse the args into a single string
 		String inputString = "";
 		for(int i = 0; i < args.length; i++)
@@ -199,6 +222,11 @@ public class HistoryCommand implements ICommand
 		}
 		
 		return true;
+	}
+	@Override
+	public List<String> onTabComplete( CommandSender sender, String label, String[] args )
+	{
+		return null;
 	}
 	
 }

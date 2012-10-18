@@ -132,8 +132,27 @@ public class Searcher
 		}
 		
 		pager.displayPage(who, page);
-		who.sendMessage(ChatColor.GOLD + "Use '/ps page " + (page + 2) + "' to view the next page");
+		if(page < pager.getPageCount()-1)
+		{
+			if(mCachedResultsAreSearch.get(who))
+				who.sendMessage(ChatColor.GOLD + "Use '/ps search " + (page + 2) + "' to view the next page");
+			else
+				who.sendMessage(ChatColor.GOLD + "Use '/ps history " + (page + 2) + "' to view the next page");
+		}
 		
+	}
+
+	public boolean hasResults( CommandSender sender, boolean isSearch )
+	{
+		if(!mCachedResults.containsKey(sender))
+			return false;
+		
+		if(mCachedResultsAreSearch.get(sender) && isSearch)
+			return true;
+		else if(!mCachedResultsAreSearch.get(sender) && !isSearch)
+			return true;
+		
+		return false;
 	}
 	
 }

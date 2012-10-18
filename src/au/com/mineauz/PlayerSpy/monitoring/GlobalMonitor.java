@@ -1076,4 +1076,6 @@ public class GlobalMonitor implements Listener
 		if(mon != null)
 			mon.onTeleport(event.getTo(), event.getCause());
 	}
+	
+
 }

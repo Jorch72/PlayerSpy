@@ -3,7 +3,6 @@ package au.com.mineauz.PlayerSpy;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.inventory.ItemStack;
@@ -261,54 +260,54 @@ public class RecordList extends ArrayList<Record>
 		return get(size()-1).getTimestamp();
 	}
 	
-	public List<Chunk> getAllChunks()
+	public List<SafeChunk> getAllChunks()
 	{
-		ArrayList<Chunk> chunks = new ArrayList<Chunk>();
+		ArrayList<SafeChunk> chunks = new ArrayList<SafeChunk>();
 		for(Record record : this)
 		{
-			Chunk chunk = null;
+			SafeChunk chunk = null;
 			if(record instanceof ILocationAware)
 			{
 				if(((ILocationAware)record).getLocation().getWorld() == null)
 					LogUtil.info("Null world found" + record.toString());
-				chunk = ((ILocationAware)record).getLocation().getChunk();
+				chunk = new SafeChunk(((ILocationAware)record).getLocation());
 			}
 			else if(record instanceof BlockChangeRecord)
-				chunk = ((BlockChangeRecord)record).getInitialBlock().getLocation().getChunk();
+				chunk = new SafeChunk(((BlockChangeRecord)record).getInitialBlock().getLocation());
 			else if(record instanceof AttackRecord)
-				chunk = ((AttackRecord)record).getDamagee().getLocation().getChunk();
+				chunk = new SafeChunk(((AttackRecord)record).getDamagee().getLocation());
 			else if(record instanceof DamageRecord)
 			{
 				if(((DamageRecord)record).getDamager() == null)
 					continue;
-				chunk = ((DamageRecord)record).getDamager().getLocation().getChunk();
+				chunk = new SafeChunk(((DamageRecord)record).getDamager().getLocation());
 			}
 			else if(record instanceof InteractRecord)
 			{
 				if(((InteractRecord)record).getBlock() != null)
-					chunk = ((InteractRecord)record).getBlock().getLocation().getChunk();
+					chunk = new SafeChunk(((InteractRecord)record).getBlock().getLocation());
 				else if(((InteractRecord)record).getEntity() != null)
-					chunk = ((InteractRecord)record).getEntity().getLocation().getChunk();
+					chunk = new SafeChunk(((InteractRecord)record).getEntity().getLocation());
 				else
 					continue;
 			}
 			else if(record instanceof ItemPickupRecord)
-				chunk = ((ItemPickupRecord)record).getLocation().getChunk();
+				chunk = new SafeChunk(((ItemPickupRecord)record).getLocation());
 			else if(record instanceof RightClickActionRecord)
 			{
 				if(((RightClickActionRecord)record).getEntity() != null)
-					chunk = ((RightClickActionRecord)record).getEntity().getLocation().getChunk();
+					chunk = new SafeChunk(((RightClickActionRecord)record).getEntity().getLocation());
 			}
 			else if(record instanceof SleepRecord)
-				chunk = ((SleepRecord)record).getBedLocation().getChunk();
+				chunk = new SafeChunk(((SleepRecord)record).getBedLocation());
 			else if(record instanceof VehicleMountRecord)
-				chunk = ((VehicleMountRecord)record).getVehicle().getLocation().getChunk();
+				chunk = new SafeChunk(((VehicleMountRecord)record).getVehicle().getLocation());
 			else if(record instanceof InventoryTransactionRecord)
 			{
 				if(((InventoryTransactionRecord)record).getInventoryInfo().getBlock() != null)
-					chunk = ((InventoryTransactionRecord)record).getInventoryInfo().getBlock().getLocation().getChunk();
+					chunk = new SafeChunk(((InventoryTransactionRecord)record).getInventoryInfo().getBlock().getLocation());
 				else if(((InventoryTransactionRecord)record).getInventoryInfo().getEntity() != null)
-					chunk = ((InventoryTransactionRecord)record).getInventoryInfo().getEntity().getLocation().getChunk();
+					chunk = new SafeChunk(((InventoryTransactionRecord)record).getInventoryInfo().getEntity().getLocation());
 				else
 					continue;
 			}

@@ -1,9 +1,10 @@
 package au.com.mineauz.PlayerSpy.commands;
 
-import java.text.DateFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -14,9 +15,9 @@ import org.bukkit.conversations.ConversationFactory;
 import org.bukkit.conversations.Prompt;
 import org.bukkit.conversations.StringPrompt;
 
-import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Util;
+import au.com.mineauz.PlayerSpy.LogTasks.PurgeTask;
 import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 
 public class PurgeCommand implements ICommand
@@ -42,7 +43,7 @@ public class PurgeCommand implements ICommand
 	@Override
 	public String getUsageString(String label) 
 	{
-		return label + ChatColor.GOLD + " <player> " + ChatColor.GREEN + "[before <datetime> | after <datetime> | between <datetime> <datetime>]";
+		return label + ChatColor.GOLD + " (<player>|<world>|all) " + ChatColor.GREEN + "[before <datetime> | after <datetime> | between <datetime> <datetime>]";
 	}
 
 	@Override
@@ -59,20 +60,26 @@ public class PurgeCommand implements ICommand
 		long startDate = 0;
 		long endDate = Calendar.getInstance().getTimeInMillis();
 		
+		HashMap<Object,Object> sdata = new HashMap<Object, Object>();
+		
+		
 		// Date modifiers
 		if(args.length > 2)
 		{
 			if(args[1].equalsIgnoreCase("before"))
 			{
-				DateFormat fmt = DateFormat.getDateTimeInstance();
 				String temp = "";
 				boolean success = false;
 				for(int i = 2; i < args.length; ++i)
 				{
+					SimpleDateFormat fmt = new SimpleDateFormat("dd/MM/yy HH:mm:ss");
+					fmt.setTimeZone(SpyPlugin.getSettings().timezone);
+					
 					temp += (i != 2 ? " " : "") + args[i];
 					try
 					{
-						startDate = fmt.parse(temp).getTime();
+						endDate = fmt.parse(temp).getTime();
+						sdata.put("to", endDate);
 						success = true;
 						break;
 					}
@@ -90,7 +97,9 @@ public class PurgeCommand implements ICommand
 			}
 			else if(args[1].equalsIgnoreCase("after"))
 			{
-				DateFormat fmt = DateFormat.getDateTimeInstance();
+				SimpleDateFormat fmt = new SimpleDateFormat("dd/MM/yy HH:mm:ss");
+				fmt.setTimeZone(SpyPlugin.getSettings().timezone);
+				
 				String temp = "";
 				boolean success = false;
 				for(int i = 2; i < args.length; ++i)
@@ -98,7 +107,9 @@ public class PurgeCommand implements ICommand
 					temp += (i != 2 ? " " : "") + args[i];
 					try
 					{
-						endDate = fmt.parse(temp).getTime();
+						startDate = fmt.parse(temp).getTime();
+						sdata.put("from", startDate);
+
 						success = true;
 						break;
 					}
@@ -116,7 +127,9 @@ public class PurgeCommand implements ICommand
 			}
 			else if(args[1].equalsIgnoreCase("between"))
 			{
-				DateFormat fmt = DateFormat.getDateTimeInstance();
+				SimpleDateFormat fmt = new SimpleDateFormat("dd/MM/yy HH:mm:ss");
+				fmt.setTimeZone(SpyPlugin.getSettings().timezone);
+				
 				String temp = "";
 				boolean success = false;
 				int i;
@@ -150,6 +163,8 @@ public class PurgeCommand implements ICommand
 					try
 					{
 						endDate = fmt.parse(temp).getTime();
+						sdata.put("from", startDate);
+						sdata.put("to", endDate);
 						success = true;
 						break;
 					}
@@ -166,25 +181,28 @@ public class PurgeCommand implements ICommand
 			}
 		}
 		
-		LogFile log = LogFileRegistry.getLogFile(Bukkit.getOfflinePlayer(playerName));
-		
-		if(log == null)
+
+		boolean allLogs = false;
+		if(playerName.equalsIgnoreCase("all"))
 		{
-			sender.sendMessage(ChatColor.RED + "There is no data for " + playerName);
-			return true;
+			allLogs = true;
 		}
-		
-		if((startDate < log.getStartDate() && endDate < log.getStartDate()) || (startDate > log.getEndDate() && endDate > log.getEndDate()))
+		else 
 		{
-			sender.sendMessage(ChatColor.RED + "There is no data to purge there");
-			return true;
+			if(!LogFileRegistry.hasLogFile(Bukkit.getWorld(playerName)))
+			{
+				if(!LogFileRegistry.hasLogFile(Bukkit.getOfflinePlayer(playerName)))
+				{
+					return false;
+				}
+			}
+			else
+				playerName = LogFileRegistry.cGlobalFilePrefix + playerName;
 		}
 		
 		// Ask for confirm
-		HashMap<Object,Object> sdata = new HashMap<Object, Object>();
-		sdata.put("log", log);
-		sdata.put("from", startDate);
-		sdata.put("to", endDate);
+		sdata.put("owner", playerName.toLowerCase());
+		sdata.put("all", allLogs);
 		
 		ConversationFactory factory = new ConversationFactory(SpyPlugin.getInstance())
 			.withTimeout(10)
@@ -202,18 +220,33 @@ public class PurgeCommand implements ICommand
 		@Override
 		public String getPromptText(ConversationContext context) 
 		{
-			LogFile log = (LogFile)context.getSessionData("log");
-			long start = (Long)context.getSessionData("from");
-			long end = (Long)context.getSessionData("to");
+			String owner = (String)context.getSessionData("owner");
+			boolean allLogs = (Boolean)context.getSessionData("all");
+			Long start = (Long)context.getSessionData("from");
+			Long end = (Long)context.getSessionData("to");
 			
-			if(start >= log.getStartDate() && start < log.getEndDate() && end >= log.getStartDate() && end < log.getEndDate())
-				return "Are you sure you want to purge all data for " + ChatColor.YELLOW + log.getName() + ChatColor.RESET + " between " + ChatColor.GREEN + Util.dateToString(start) + ChatColor.RESET + " and " + ChatColor.GREEN + Util.dateToString(start) + ChatColor.RESET + "? (type yes or no)";
-			else if(start >= log.getStartDate() && start < log.getEndDate())
-				return "Are you sure you want to purge all data for " + ChatColor.YELLOW + log.getName() + ChatColor.RESET + " from " + ChatColor.GREEN + Util.dateToString(start) + ChatColor.RESET + "? (type yes or no)";
-			else if(end >= log.getStartDate() && end < log.getEndDate())
-				return "Are you sure you want to purge all data for " + ChatColor.YELLOW + log.getName() + ChatColor.RESET + " before " + ChatColor.GREEN + Util.dateToString(end) + ChatColor.RESET + "? (type yes or no)";
+			if(allLogs)
+			{
+				if(start != null && end != null)
+					return "Are you sure you want to purge " + ChatColor.BOLD + "all" + ChatColor.RESET + " data between " + ChatColor.GREEN + Util.dateToString(start) + ChatColor.RESET + " and " + ChatColor.GREEN + Util.dateToString(start) + ChatColor.RESET + "? (type yes or no)";
+				else if(start != null)
+					return "Are you sure you want to purge " + ChatColor.BOLD + "all" + ChatColor.RESET + " data after " + ChatColor.GREEN + Util.dateToString(start) + ChatColor.RESET + "? (type yes or no)";
+				else if(end != null)
+					return "Are you sure you want to purge " + ChatColor.BOLD + "all" + ChatColor.RESET + " data before " + ChatColor.GREEN + Util.dateToString(end) + ChatColor.RESET + "? (type yes or no)";
+				else
+					return "Are you sure you want to purge " + ChatColor.BOLD + "all" + ChatColor.RESET + " data? (type yes or no)";
+			}
 			else
-				return "Are you sure you want to purge all data for " + ChatColor.YELLOW + log.getName() + ChatColor.RESET + "? (type yes or no)";
+			{
+				if(start != null && end != null)
+					return "Are you sure you want to purge all data for " + ChatColor.YELLOW + owner + ChatColor.RESET + " between " + ChatColor.GREEN + Util.dateToString(start) + ChatColor.RESET + " and " + ChatColor.GREEN + Util.dateToString(start) + ChatColor.RESET + "? (type yes or no)";
+				else if(start != null)
+					return "Are you sure you want to purge all data for " + ChatColor.YELLOW + owner + ChatColor.RESET + " after " + ChatColor.GREEN + Util.dateToString(start) + ChatColor.RESET + "? (type yes or no)";
+				else if(end != null)
+					return "Are you sure you want to purge all data for " + ChatColor.YELLOW + owner + ChatColor.RESET + " before " + ChatColor.GREEN + Util.dateToString(end) + ChatColor.RESET + "? (type yes or no)";
+				else
+					return "Are you sure you want to purge all data for " + ChatColor.YELLOW + owner + ChatColor.RESET + "? (type yes or no)";
+			}
 		}
 
 		@Override
@@ -221,33 +254,33 @@ public class PurgeCommand implements ICommand
 		{
 			if(input.equalsIgnoreCase("yes") || input.equalsIgnoreCase("y"))
 			{
-				LogFile log = (LogFile)context.getSessionData("log");
-				long start = (Long)context.getSessionData("from");
-				long end = (Long)context.getSessionData("to");
+				String owner = (String)context.getSessionData("owner");
+				boolean allLogs = (Boolean)context.getSessionData("all");
+				Long start = (Long)context.getSessionData("from");
+				Long end = (Long)context.getSessionData("to");
+
+				if(start == null)
+					start = 0L;
+				if(end == null)
+					end = Long.MAX_VALUE;
 				
-				if(start >= log.getStartDate() && start < log.getEndDate() && end >= log.getStartDate() && end < log.getEndDate())
-					((CommandSender)context.getForWhom()).sendMessage("Now purging all data for " + ChatColor.YELLOW + (String)context.getSessionData("player") + ChatColor.RESET + " between " + ChatColor.GREEN + Util.dateToString(start) + ChatColor.RESET + " and " + ChatColor.GREEN + Util.dateToString(start) + ChatColor.RESET + "? (type yes or no)");
-				else if(start >= log.getStartDate() && start < log.getEndDate())
-					((CommandSender)context.getForWhom()).sendMessage("Now purging all data for " + ChatColor.YELLOW + (String)context.getSessionData("player") + ChatColor.RESET + " from " + ChatColor.GREEN + Util.dateToString(start) + ChatColor.RESET + "? (type yes or no)");
-				else if(end >= log.getStartDate() && end < log.getEndDate())
-					((CommandSender)context.getForWhom()).sendMessage("Now purging all data for " + ChatColor.YELLOW + (String)context.getSessionData("player") + ChatColor.RESET + " before " + ChatColor.GREEN + Util.dateToString(end) + ChatColor.RESET + "? (type yes or no)");
-				else
-					((CommandSender)context.getForWhom()).sendMessage("Now purging all data for " + ChatColor.YELLOW + (String)context.getSessionData("player") + ChatColor.RESET + "? (type yes or no)");
-				
-				log.purgeRecordsAsync(start, end);
-				// TODO: Close the log when its done
+				PurgeTask task = new PurgeTask((CommandSender)context.getForWhom(), owner, allLogs, start,end);
+				SpyPlugin.getExecutor().submit(task);
 				
 				return Prompt.END_OF_CONVERSATION;
 			}
 			else if(input.equalsIgnoreCase("no") || input.equalsIgnoreCase("n"))
 			{
-				LogFile log = (LogFile)context.getSessionData("log");
-				LogFileRegistry.getLogFile(Bukkit.getOfflinePlayer(log.getName()));
 				return Prompt.END_OF_CONVERSATION;
 			}
 			else
 				return this;
 		}
 		
+	}
+	@Override
+	public List<String> onTabComplete( CommandSender sender, String label, String[] args )
+	{
+		return null;
 	}
 }

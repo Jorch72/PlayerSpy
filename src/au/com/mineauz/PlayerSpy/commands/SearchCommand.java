@@ -1,6 +1,7 @@
 package au.com.mineauz.PlayerSpy.commands;
 
 import java.util.ArrayDeque;
+import java.util.List;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -226,7 +227,7 @@ public class SearchCommand implements ICommand
 	@Override
 	public String getUsageString(String label) 
 	{
-		return label + " for <args>. See docs for more info";
+		return label + " <args>. See docs for more info";
 	}
 
 	@Override
@@ -237,6 +238,29 @@ public class SearchCommand implements ICommand
 	{
 		if(args.length == 0)
 			return false;
+		
+		// Try page
+		if(args.length == 1)
+		{
+			try
+			{
+				int page = Integer.parseInt(args[0]);
+				
+				if(!Searcher.instance.hasResults(sender, true))
+				{
+					sender.sendMessage(ChatColor.RED + "No results to display because no search has been done.");
+					return true;
+				}
+				
+				Searcher.instance.displayResults(sender, page-1);
+				return true;
+			}
+			catch(NumberFormatException e)
+			{
+				
+			}
+		}
+		
 		// Collapse the args into a single string
 		String inputString = "";
 		for(int i = 0; i < args.length; i++)
@@ -272,6 +296,11 @@ public class SearchCommand implements ICommand
 			sender.sendMessage(ChatColor.RED + e.getMessage());
 		}
 		return true;
+	}
+	@Override
+	public List<String> onTabComplete( CommandSender sender, String label, String[] args )
+	{
+		return null;
 	}
 
 }

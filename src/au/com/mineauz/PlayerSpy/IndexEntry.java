@@ -6,7 +6,7 @@ import java.io.RandomAccessFile;
 // Represents a session declaration
 public class IndexEntry
 {
-	public static final int cSize = 27;
+	public static final int[] cSize = new int[] {0, 27, 35};
 	
 	public long StartTimestamp;
 	public long EndTimestamp;
@@ -14,9 +14,10 @@ public class IndexEntry
 	public long Location;
 	public long TotalSize;
 	public boolean Compressed;
+	public int Id;
+	public int OwnerTagId = -1;
 	
-	
-	public boolean write(RandomAccessFile file)
+	public boolean write(int version, RandomAccessFile file)
 	{
 		try
 		{
@@ -26,6 +27,11 @@ public class IndexEntry
 			file.writeInt((int)Location);
 			file.writeInt((int)TotalSize);
 			file.writeByte(Compressed == true ? 1 : 0);
+			if(version == 2)
+			{
+				file.writeInt(Id);
+				file.writeInt(OwnerTagId);
+			}
 			
 			return true;
 		}
@@ -34,7 +40,7 @@ public class IndexEntry
 			return false;
 		}
 	}
-	public boolean read(RandomAccessFile file)
+	public boolean read(int version, RandomAccessFile file)
 	{
 		try
 		{
@@ -44,6 +50,11 @@ public class IndexEntry
 			Location = (long)file.readInt();
 			TotalSize = (long)file.readInt();
 			Compressed = (file.readByte() == 0 ? false : true);
+			if(version == 2)
+			{
+				Id = file.readInt();
+				OwnerTagId = file.readInt();
+			}
 
 			return true;
 		}
@@ -51,5 +62,18 @@ public class IndexEntry
 		{
 			return false;
 		}
+	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof IndexEntry))
+			return false;
+		
+		IndexEntry other = (IndexEntry)obj;
+		
+		if(Id == other.Id && OwnerTagId == other.OwnerTagId)
+			return true;
+		return false;
 	}
 }

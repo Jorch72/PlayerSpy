@@ -24,11 +24,15 @@ public class PriorityExecutor implements Executor
 	{
 		public ExecutorService executor;
 		public ArrayDeque<SubmittedTask> taskQueue;
+		public boolean isExecuting = false;
 		
 		public synchronized void scheduleNext()
 		{
 			if(taskQueue.isEmpty())
+			{
+				isExecuting = false;
 				return;
+			}
 			
 			// Get the next task to do
 			SubmittedTask nextTask = taskQueue.poll();
@@ -36,12 +40,16 @@ public class PriorityExecutor implements Executor
 				nextTask = taskQueue.poll();
 
 			if(nextTask.future.isCancelled() || nextTask.future.isDone())
+			{
+				isExecuting = false;
 				return;
+			}
 			
 			final Future<?> future = nextTask.future;
 			
 			LogUtil.finest("Executing task " + nextTask.task.getClass().getSimpleName());
 			
+			isExecuting = true;
 			executor.execute(new Runnable() 
 			{
 				@Override
@@ -50,7 +58,13 @@ public class PriorityExecutor implements Executor
 					try
 					{
 						((FutureTask<?>)future).run();
+						((FutureTask<?>)future).get();
+						
 						//toExecute.get();
+					}
+					catch(Exception e)
+					{
+						e.printStackTrace();
 					}
 					finally
 					{
@@ -106,7 +120,7 @@ public class PriorityExecutor implements Executor
 		return false;
 	}
 
-	public <T> Future<T> submit(Task<T> task) 
+	public synchronized <T> Future<T> submit(Task<T> task) 
 	{
 		int taskId = task.getTaskTargetId();
 
@@ -117,7 +131,7 @@ public class PriorityExecutor implements Executor
 		int i = 0;
 		for(ThreadInfo info : mThreadPool)
 		{
-			int weight = info.taskQueue.size();
+			int weight = info.taskQueue.size() + (info.isExecuting ? 1 : 0);
 			
 			for(SubmittedTask sTask : info.taskQueue)
 			{

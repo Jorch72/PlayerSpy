@@ -83,4 +83,10 @@ public class ListCommand implements ICommand
 		return true;
 	}
 
+	@Override
+	public List<String> onTabComplete( CommandSender sender, String label, String[] args )
+	{
+		return null;
+	}
+
 }

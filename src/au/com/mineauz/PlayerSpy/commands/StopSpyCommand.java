@@ -1,11 +1,15 @@
 package au.com.mineauz.PlayerSpy.commands;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 
 import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
+import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 
 public class StopSpyCommand implements ICommand
 {
@@ -59,6 +63,41 @@ public class StopSpyCommand implements ICommand
 		}
 		
 		return true;
+	}
+
+	@Override
+	public List<String> onTabComplete( CommandSender sender, String label, String[] args )
+	{
+		ArrayList<String> results = new ArrayList<String>();
+		
+		if(args.length == 0)
+		{
+			// Get the first player that has a log file
+
+			for(OfflinePlayer player : Bukkit.getOfflinePlayers())
+			{
+				if(LogFileRegistry.hasLogFile(player))
+				{
+					results.add(player.getName());
+					break;
+				}
+			}
+		}
+		else if(args.length == 1)
+		{
+			// Get all the matching players that have log files
+			String searchTerm = args[0].toLowerCase();
+
+			for(OfflinePlayer player : Bukkit.getOfflinePlayers())
+			{
+				if(player.getName().toLowerCase().startsWith(searchTerm))
+				{
+					if(LogFileRegistry.hasLogFile(player))
+						results.add(player.getName());
+				}
+			}
+		}
+		return results;
 	}
 
 }

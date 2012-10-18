@@ -7,13 +7,13 @@ import java.util.List;
 import java.sql.*;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 
 import au.com.mineauz.PlayerSpy.IndexEntry;
 import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.LogUtil;
+import au.com.mineauz.PlayerSpy.SafeChunk;
 
 /**
  * The cross reference index provides information on the location of specific data.
@@ -35,15 +35,13 @@ public class CrossReferenceIndex
 	private PreparedStatement mAddSessionStatement;
 	private PreparedStatement mAddChunkStatement;
 	private PreparedStatement mUpdateSessionStatement;
-	private PreparedStatement mUpdateSessionIndexStatement;
-	private PreparedStatement mDeleteFileStatement;
+		private PreparedStatement mDeleteFileStatement;
 	private PreparedStatement mDeleteSessionStatement;
 	//private PreparedStatement mDeleteChunkStatement;
 	private PreparedStatement mSelectFileStatement;
 	private PreparedStatement mSelectFileByIDStatement;
 	//private PreparedStatement mSelectSessionByIDStatement;
-	private PreparedStatement mSelectSessionStatement;
-	private PreparedStatement mSelectSessionByChunkStatement;
+		private PreparedStatement mSelectSessionByChunkStatement;
 	private PreparedStatement mSelectSessionByChunkBetweenTimeStatement;
 	private PreparedStatement mSelectSessionBetweenTimeStatement;
 	//private PreparedStatement mSelectSessionEarlierThanTimeStatement;
@@ -57,9 +55,37 @@ public class CrossReferenceIndex
 		mKnownFileIDs = new HashMap<LogFile, Integer>();
 	}
 	
+	private void tryRollback()
+	{
+		try
+		{
+			mDatabaseConnection.rollback();
+		}
+		catch(SQLException e)
+		{
+			e.printStackTrace();
+		}
+	}
+	
 	public void close()
 	{
 		try {
+			mAddFileStatement.close();
+			mAddSessionStatement.close();
+			mAddChunkStatement.close();
+			mUpdateSessionStatement.close();
+			mDeleteFileStatement.close();
+			mDeleteSessionStatement.close();
+			
+			mSelectFileStatement.close();
+			mSelectFileByIDStatement.close();
+			
+			mSelectSessionByChunkStatement.close();
+			mSelectSessionByChunkBetweenTimeStatement.close();
+			
+			mSelectSessionBetweenTimeStatement.close();
+			mSelectChunksBySessionStatement.close();
+			
 			mDatabaseConnection.commit();
 			mDatabaseConnection.close();
 		} catch (SQLException e) {
@@ -78,7 +104,7 @@ public class CrossReferenceIndex
 			// Begin building the sql statements to use
 			Statement create = mDatabaseConnection.createStatement();
 			create.executeUpdate("CREATE TABLE IF NOT EXISTS FileMap (FILE_ID INTEGER PRIMARY KEY ASC AUTOINCREMENT, PLAYER VARCHAR)");
-			create.executeUpdate("CREATE TABLE IF NOT EXISTS SessionMap (SESSION_ID INTEGER PRIMARY KEY ASC AUTOINCREMENT, FILE_ID INTEGER REFERENCES FileMap(FILE_ID) ON DELETE CASCADE, SESSION_INDEX INTEGER, START_DATE INTEGER, END_DATE INTEGER)");
+			create.executeUpdate("CREATE TABLE IF NOT EXISTS SessionMap (SESSION_ID INTEGER PRIMARY KEY, FILE_ID INTEGER REFERENCES FileMap(FILE_ID) ON DELETE CASCADE, START_DATE INTEGER, END_DATE INTEGER)");
 			create.executeUpdate("CREATE TABLE IF NOT EXISTS Chunks (X INTEGER, Z INTEGER, WORLD INTEGER, SESSION_ID INTEGER REFERENCES SessionMap(SESSION_ID) ON DELETE CASCADE)");
 
 			create.close();
@@ -86,11 +112,10 @@ public class CrossReferenceIndex
 			
 			
 			mAddFileStatement = mDatabaseConnection.prepareStatement("INSERT INTO FileMap (PLAYER) VALUES (?);");
-			mAddSessionStatement = mDatabaseConnection.prepareStatement("INSERT INTO SessionMap (FILE_ID, SESSION_INDEX, START_DATE, END_DATE) VALUES (?,?,?,?);");
+			mAddSessionStatement = mDatabaseConnection.prepareStatement("INSERT INTO SessionMap (SESSION_ID, FILE_ID, START_DATE, END_DATE) VALUES (?,?,?,?);");
 			mAddChunkStatement = mDatabaseConnection.prepareStatement("INSERT INTO Chunks VALUES (?,?,?,?);");
 			
-			mUpdateSessionStatement = mDatabaseConnection.prepareStatement("UPDATE SessionMap SET SESSION_INDEX = ?, START_DATE = ?, END_DATE = ? WHERE SESSION_ID = ?;");
-			mUpdateSessionIndexStatement = mDatabaseConnection.prepareStatement("UPDATE SessionMap SET SESSION_INDEX = ? WHERE SESSION_ID = ?");
+			mUpdateSessionStatement = mDatabaseConnection.prepareStatement("UPDATE SessionMap SET START_DATE = ?, END_DATE = ? WHERE SESSION_ID = ?;");
 			mDeleteFileStatement = mDatabaseConnection.prepareStatement("DELETE FROM FileMap WHERE FILE_ID = ?;");
 			mDeleteSessionStatement = mDatabaseConnection.prepareStatement("DELETE FROM SessionMap WHERE SESSION_ID = ?;");
 			//mDeleteChunkStatement = mDatabaseConnection.prepareStatement("DELETE FROM Chunks WHERE X = ? AND Z = ? AND WORLD = ? AND SESSION_ID = ?;");
@@ -98,10 +123,9 @@ public class CrossReferenceIndex
 			mSelectFileStatement = mDatabaseConnection.prepareStatement("SELECT * FROM FileMap WHERE PLAYER = ?;");
 			mSelectFileByIDStatement = mDatabaseConnection.prepareStatement("SELECT * FROM FileMap WHERE FILE_ID = ?;");
 			//mSelectSessionByIDStatement = mDatabaseConnection.prepareStatement("SELECT * FROM SessionMap WHERE SESSION_ID = ?;");
-			mSelectSessionStatement = mDatabaseConnection.prepareStatement("SELECT * FROM SessionMap WHERE FILE_ID = ? AND SESSION_INDEX = ?;");
-			mSelectSessionByChunkStatement = mDatabaseConnection.prepareStatement("SELECT SessionMap.SESSION_ID, SessionMap.FILE_ID, SessionMap.SESSION_INDEX, SessionMap.START_DATE, SessionMap.END_DATE FROM Chunks JOIN SessionMap ON Chunks.SESSION_ID = SessionMap.SESSION_ID WHERE Chunks.X = ? AND Chunks.Z = ? AND Chunks.WORLD = ?;");
-			mSelectSessionByChunkBetweenTimeStatement = mDatabaseConnection.prepareStatement("SELECT SessionMap.SESSION_ID, SessionMap.FILE_ID, SessionMap.SESSION_INDEX, SessionMap.START_DATE, SessionMap.END_DATE FROM Chunks JOIN SessionMap ON Chunks.SESSION_ID = SessionMap.SESSION_ID WHERE Chunks.X = ? AND Chunks.Z = ? AND Chunks.WORLD = ? AND ((SessionMap.START_DATE >= ? AND SessionMap.START_DATE <= ?) OR (SessionMap.END_DATE >= ? AND SessionMap.END_DATE <= ?) OR (SessionMap.START_DATE < ? AND SessionMap.END_DATE > ?) OR (SessionMap.START_DATE < ? AND SessionMap.END_DATE > ?));");
-			mSelectSessionBetweenTimeStatement = mDatabaseConnection.prepareStatement("SELECT  SESSION_ID, FILE_ID, SESSION_INDEX, START_DATE, END_DATE FROM SessionMap WHERE (START_DATE >= ? AND START_DATE <= ?) OR (END_DATE >= ? AND END_DATE <= ?) OR (START_DATE < ? AND END_DATE > ?) OR (START_DATE < ? AND END_DATE > ?);");
+			mSelectSessionByChunkStatement = mDatabaseConnection.prepareStatement("SELECT SessionMap.SESSION_ID, SessionMap.FILE_ID, SessionMap.START_DATE, SessionMap.END_DATE FROM Chunks JOIN SessionMap ON Chunks.SESSION_ID = SessionMap.SESSION_ID WHERE Chunks.X = ? AND Chunks.Z = ? AND Chunks.WORLD = ?;");
+			mSelectSessionByChunkBetweenTimeStatement = mDatabaseConnection.prepareStatement("SELECT SessionMap.SESSION_ID, SessionMap.FILE_ID, SessionMap.START_DATE, SessionMap.END_DATE FROM Chunks JOIN SessionMap ON Chunks.SESSION_ID = SessionMap.SESSION_ID WHERE Chunks.X = ? AND Chunks.Z = ? AND Chunks.WORLD = ? AND ((SessionMap.START_DATE >= ? AND SessionMap.START_DATE <= ?) OR (SessionMap.END_DATE >= ? AND SessionMap.END_DATE <= ?) OR (SessionMap.START_DATE < ? AND SessionMap.END_DATE > ?) OR (SessionMap.START_DATE < ? AND SessionMap.END_DATE > ?));");
+			mSelectSessionBetweenTimeStatement = mDatabaseConnection.prepareStatement("SELECT  SESSION_ID, FILE_ID, START_DATE, END_DATE FROM SessionMap WHERE (START_DATE >= ? AND START_DATE <= ?) OR (END_DATE >= ? AND END_DATE <= ?) OR (START_DATE < ? AND END_DATE > ?) OR (START_DATE < ? AND END_DATE > ?);");
 			//mSelectSessionLaterThanTimeStatement = mDatabaseConnection.prepareStatement("SELECT * FROM SessionMap WHERE END_DATE > ? ORDER BY END_DATE DESC;");
 			//mSelectSessionContainsTimeStatement = mDatabaseConnection.prepareStatement("SELECT * FROM SessionMap WHERE ? BETWEEN START_DATE AND END_DATE ORDER BY END_DATE DESC;");
 			mSelectChunksBySessionStatement = mDatabaseConnection.prepareStatement("SELECT * FROM Chunks WHERE SESSION_ID = ?");
@@ -110,12 +134,12 @@ public class CrossReferenceIndex
 		}
 		catch(ClassNotFoundException e)
 		{
-			LogUtil.severe(e.getMessage());
+			e.printStackTrace();
 			return false;
 		} 
 		catch (SQLException e) 
 		{
-			LogUtil.severe(e.getMessage());
+			e.printStackTrace();
 			return false;
 		}
 	}
@@ -136,6 +160,8 @@ public class CrossReferenceIndex
 		}
 		catch(SQLException e)
 		{
+			e.printStackTrace();
+			tryRollback();
 			return false;
 		}
 	}
@@ -149,7 +175,10 @@ public class CrossReferenceIndex
 			mSelectFileStatement.setString(1, log.getName());
 			ResultSet rs = mSelectFileStatement.executeQuery();
 			if(!rs.next())
+			{
+				rs.close();
 				return -1;
+			}
 			int fileId = rs.getInt(1);
 			mKnownFileIDs.put(log, fileId);
 			rs.close();
@@ -157,19 +186,11 @@ public class CrossReferenceIndex
 		}
 		catch(SQLException e)
 		{
-			LogUtil.severe(e.getMessage());
+			e.printStackTrace();
 			return -1;
 		}
 	}
-	/**
-	 * Gets the world as a hash. Used for storing which world something is in rather than the using the name string
-	 * @param world
-	 * @return
-	 */
-	private synchronized int getWorldHash(World world)
-	{
-		return world.getName().hashCode();
-	}
+
 	public synchronized boolean removeLogFile(LogFile log)
 	{
 		try
@@ -188,7 +209,8 @@ public class CrossReferenceIndex
 		}
 		catch(SQLException e)
 		{
-			LogUtil.severe(e.getMessage());
+			e.printStackTrace();
+			tryRollback();
 		}
 		
 		return false;
@@ -200,7 +222,7 @@ public class CrossReferenceIndex
 	 * @param chunks The chunks in the session
 	 * @return True if the session was added
 	 */
-	public synchronized boolean addSession(LogFile log, IndexEntry entry, List<Chunk> chunks)
+	public synchronized boolean addSession(LogFile log, IndexEntry entry, List<SafeChunk> chunks)
 	{
 		try
 		{
@@ -209,43 +231,27 @@ public class CrossReferenceIndex
 			if(fileId == -1)
 				return false;
 			
-			int index = log.getSessions().indexOf(entry);
-			if(index == -1)
-				return false;
 			LogUtil.finer("Adding session to reference");
-			mAddSessionStatement.setInt(1, fileId);
-			mAddSessionStatement.setInt(2, index);
+			mAddSessionStatement.setInt(1, entry.Id);
+			mAddSessionStatement.setInt(2, fileId);
 			mAddSessionStatement.setLong(3, entry.StartTimestamp);
 			mAddSessionStatement.setLong(4, entry.EndTimestamp);
 			
 			mAddSessionStatement.executeUpdate();
 			
-			LogUtil.finer("Finding Session ID");
-			// Find the session id
-			mSelectSessionStatement.setInt(1, fileId);
-			mSelectSessionStatement.setInt(2, index);
-			ResultSet rs = mSelectSessionStatement.executeQuery();
-			if(!rs.next())
-			{
-				rs.close();
-				return false;
-			}
-			int sessionId = rs.getInt(1);
-			rs.close();
-			
-			LogUtil.finer("Session ID = " + sessionId);
+			LogUtil.finer("Session ID = " + entry.Id);
 			
 			mAddChunkStatement.clearBatch();
 			int count = 0;
-			for(Chunk chunk : chunks)
+			for(SafeChunk chunk : chunks)
 			{
 				if(chunk == null)
 					continue;
 				count++;
-				mAddChunkStatement.setInt(1, chunk.getX());
-				mAddChunkStatement.setInt(2, chunk.getZ());
-				mAddChunkStatement.setInt(3, getWorldHash(chunk.getWorld()));
-				mAddChunkStatement.setInt(4, sessionId);
+				mAddChunkStatement.setInt(1, chunk.X);
+				mAddChunkStatement.setInt(2, chunk.Z);
+				mAddChunkStatement.setInt(3, chunk.WorldHash);
+				mAddChunkStatement.setInt(4, entry.Id);
 				mAddChunkStatement.addBatch();
 			}
 			LogUtil.finer("Adding " + count + " Chunks");
@@ -256,7 +262,8 @@ public class CrossReferenceIndex
 		}
 		catch(SQLException e)
 		{
-			LogUtil.severe(e.getMessage());
+			e.printStackTrace();
+			tryRollback();
 		}
 		return false;
 	}
@@ -274,26 +281,7 @@ public class CrossReferenceIndex
 			if(fileId == -1)
 				return false;
 			
-			int index = log.getSessions().indexOf(entry);
-			
-			if(index == -1)
-				return false;
-			
-			// Find the session id
-			mSelectSessionStatement.setInt(1, fileId);
-			mSelectSessionStatement.setInt(2, index);
-			ResultSet rs = mSelectSessionStatement.executeQuery();
-			
-			if(!rs.next())
-			{
-				rs.close();
-				return false;
-			}
-				
-			int sessionId = rs.getInt(1); 
-			rs.close();
-			
-			mDeleteSessionStatement.setInt(1, sessionId);
+			mDeleteSessionStatement.setInt(1, entry.Id);
 			mDeleteSessionStatement.execute();
 			
 			mDatabaseConnection.commit();
@@ -301,7 +289,8 @@ public class CrossReferenceIndex
 		}
 		catch(SQLException e)
 		{
-			LogUtil.severe(e.getMessage());
+			e.printStackTrace();
+			tryRollback();
 			return false;
 		}
 	}
@@ -311,49 +300,29 @@ public class CrossReferenceIndex
 	 * @param entry The session
 	 * @return True if the update was successful
 	 */
-	public synchronized boolean updateSession(LogFile log, IndexEntry entry, List<Chunk> chunks)
+	public synchronized boolean updateSession(LogFile log, IndexEntry entry, List<SafeChunk> chunks)
 	{
 		try
 		{
-			
-			int fileId = getFileId(log);
-			int index = log.getSessions().indexOf(entry);
-			
-			LogUtil.finer("Finding Session ID");
-			// Find the session id
-			mSelectSessionStatement.setInt(1, fileId);
-			mSelectSessionStatement.setInt(2, index);
-			ResultSet rs = mSelectSessionStatement.executeQuery();
-			
-			if(!rs.next())
-			{
-				rs.close();
-				return false;
-			}
-			int sessionId = rs.getInt(1);
-			rs.close();
-			
-			
-			LogUtil.finer("Session Id = " + sessionId);
+			LogUtil.finer("Session Id = " + entry.Id);
 			LogUtil.finer("Updating Basic Session Info");
-			mUpdateSessionStatement.setInt(1, index);
-			mUpdateSessionStatement.setLong(2, entry.StartTimestamp);
-			mUpdateSessionStatement.setLong(3, entry.EndTimestamp);
-			mUpdateSessionStatement.setInt(4, sessionId);
+			mUpdateSessionStatement.setLong(1, entry.StartTimestamp);
+			mUpdateSessionStatement.setLong(2, entry.EndTimestamp);
+			mUpdateSessionStatement.setInt(3, entry.Id);
 			
 			mUpdateSessionStatement.executeUpdate();
 			
 			// Find what chunks are new
 			LogUtil.finer("Finding New Chunks");
-			mSelectChunksBySessionStatement.setInt(1, sessionId);
+			mSelectChunksBySessionStatement.setInt(1, entry.Id);
 			ResultSet existingChunks = mSelectChunksBySessionStatement.executeQuery();
 
 			while(existingChunks.next())
 			{
 				// Columns are: X, Z, WORLD, SESSION_ID
-				for(Chunk chunk : chunks)
+				for(SafeChunk chunk : chunks)
 				{
-					if(chunk.getX() == existingChunks.getInt(1) && chunk.getZ() == existingChunks.getInt(2) && getWorldHash(chunk.getWorld()) == existingChunks.getInt(3))
+					if(chunk.X == existingChunks.getInt(1) && chunk.Z == existingChunks.getInt(2) && chunk.WorldHash == existingChunks.getInt(3))
 					{
 						chunks.remove(chunk);
 						break;
@@ -368,13 +337,13 @@ public class CrossReferenceIndex
 			// Add the chunks
 			mAddChunkStatement.clearBatch();
 			int count = 0;
-			for(Chunk chunk : chunks)
+			for(SafeChunk chunk : chunks)
 			{
 				count++;
-				mAddChunkStatement.setInt(1, chunk.getX());
-				mAddChunkStatement.setInt(2, chunk.getZ());
-				mAddChunkStatement.setInt(3, getWorldHash(chunk.getWorld()));
-				mAddChunkStatement.setInt(4, sessionId);
+				mAddChunkStatement.setInt(1, chunk.X);
+				mAddChunkStatement.setInt(2, chunk.Z);
+				mAddChunkStatement.setInt(3, chunk.WorldHash);
+				mAddChunkStatement.setInt(4, entry.Id);
 				mAddChunkStatement.addBatch();
 			}
 			LogUtil.finer("Adding " + count + " new chunks");
@@ -386,51 +355,9 @@ public class CrossReferenceIndex
 		}
 		catch(SQLException e)
 		{
-			SQLException ex = e;
-			do
-			{
-				LogUtil.severe(ex.getMessage());
-				
-			} while((ex = ex.getNextException()) != null);
-			
-			return false;
-		}
-	}
-	/**
-	 * Updates the session index
-	 * @param log The logfile the session is in
-	 * @param oldIndex The index it was before the move
-	 * @param newIndex The index it is now
-	 * @return True if the update was successful
-	 */
-	public synchronized boolean moveSession(LogFile log, int oldIndex, int newIndex)
-	{
-		try
-		{
-			int fileId = getFileId(log);
-			
-			// Find the session id
-			mSelectSessionStatement.setInt(1, fileId);
-			mSelectSessionStatement.setInt(2, oldIndex);
-			ResultSet rs = mSelectSessionStatement.executeQuery();
-			if(!rs.next())
-			{
-				rs.close();
-				return false;
-			}
-			int sessionId = rs.getInt(1); 
-			rs.close();
-			
-			mUpdateSessionIndexStatement.setInt(1,newIndex);
-			mUpdateSessionIndexStatement.setInt(2,sessionId);
-			mUpdateSessionIndexStatement.executeUpdate();
-			
-			mDatabaseConnection.commit();
-			return true;
-		}
-		catch(SQLException e)
-		{
-			LogUtil.severe(e.getMessage());
+			e.printStackTrace();
+			tryRollback();
+
 			return false;
 		}
 	}
@@ -439,13 +366,13 @@ public class CrossReferenceIndex
 	 * @param chunk The chunk to check for
 	 * @return A list of SessionInFile objects that contain the session and the logfile. You should call releaseLastLogs() when you are done with the results
 	 */
-	public synchronized Results getSessionsFor(Chunk chunk)
+	public synchronized Results getSessionsFor(SafeChunk chunk)
 	{
 		try
 		{
-			mSelectSessionByChunkStatement.setInt(1, chunk.getX());
-			mSelectSessionByChunkStatement.setInt(2, chunk.getZ());
-			mSelectSessionByChunkStatement.setInt(3, getWorldHash(chunk.getWorld()));
+			mSelectSessionByChunkStatement.setInt(1, chunk.X);
+			mSelectSessionByChunkStatement.setInt(2, chunk.Z);
+			mSelectSessionByChunkStatement.setInt(3, chunk.WorldHash);
 			
 			ResultSet rs = mSelectSessionByChunkStatement.executeQuery();
 			ArrayList<SessionInFile> results = new ArrayList<CrossReferenceIndex.SessionInFile>();
@@ -489,14 +416,11 @@ public class CrossReferenceIndex
 					openedLogs.put(fileId, log);
 				}
 				
-				// Because inconistant state can happen though crashes. Just good to make sure
-				if(log.getSessions().size() > rs.getInt(3))
-				{
-					SessionInFile res = new SessionInFile();
-					res.Log = log;
-					res.Session = log.getSessions().get(rs.getInt(3));
+				SessionInFile res = new SessionInFile();
+				res.Log = log;
+				res.Session = log.getSessionById(rs.getInt(1));
+				if(res.Session != null)
 					results.add(res);
-				}
 			}
 			
 			rs.close();
@@ -505,7 +429,7 @@ public class CrossReferenceIndex
 		}
 		catch(SQLException e)
 		{
-			LogUtil.severe(e.getMessage());
+			e.printStackTrace();
 			return new Results(new ArrayList<CrossReferenceIndex.SessionInFile>(), new ArrayList<LogFile>());
 		}
 	}
@@ -516,13 +440,13 @@ public class CrossReferenceIndex
 	 * @param endTime The latest date you with to check for
 	 * @return A list of SessionInFile objects that contain the session and the logfile. You should call releaseLastLogs() when you are done with the results 
 	 */
-	public synchronized Results getSessionsFor(Chunk chunk, long startTime, long endTime)
+	public synchronized Results getSessionsFor(SafeChunk chunk, long startTime, long endTime)
 	{
 		try
 		{
-			mSelectSessionByChunkBetweenTimeStatement.setInt(1, chunk.getX());
-			mSelectSessionByChunkBetweenTimeStatement.setInt(2, chunk.getZ());
-			mSelectSessionByChunkBetweenTimeStatement.setInt(3, getWorldHash(chunk.getWorld()));
+			mSelectSessionByChunkBetweenTimeStatement.setInt(1, chunk.X);
+			mSelectSessionByChunkBetweenTimeStatement.setInt(2, chunk.Z);
+			mSelectSessionByChunkBetweenTimeStatement.setInt(3, chunk.WorldHash);
 			mSelectSessionByChunkBetweenTimeStatement.setLong(4, startTime);
 			mSelectSessionByChunkBetweenTimeStatement.setLong(5, endTime);
 			mSelectSessionByChunkBetweenTimeStatement.setLong(6, startTime);
@@ -573,14 +497,11 @@ public class CrossReferenceIndex
 					openedLogs.put(fileId, log);
 				}
 				
-				// Because inconistant state can happen though crashes. Just good to make sure
-				if(log.getSessions().size() > rs.getInt(3))
-				{
-					SessionInFile res = new SessionInFile();
-					res.Log = log;
-					res.Session = log.getSessions().get(rs.getInt(3));
+				SessionInFile res = new SessionInFile();
+				res.Log = log;
+				res.Session = log.getSessionById(rs.getInt(1));
+				if(res.Session != null)
 					results.add(res);
-				}
 			}
 			
 			rs.close();
@@ -589,7 +510,7 @@ public class CrossReferenceIndex
 		}
 		catch(SQLException e)
 		{
-			LogUtil.severe(e.getMessage());
+			e.printStackTrace();
 			return new Results(new ArrayList<CrossReferenceIndex.SessionInFile>(), new ArrayList<LogFile>());
 		}
 	}
@@ -653,14 +574,11 @@ public class CrossReferenceIndex
 					openedLogs.put(fileId, log);
 				}
 				
-				// Because inconistant state can happen though crashes. Just good to make sure
-				if(log.getSessions().size() > rs.getInt(3))
-				{
-					SessionInFile res = new SessionInFile();
-					res.Log = log;
-					res.Session = log.getSessions().get(rs.getInt(3));
+				SessionInFile res = new SessionInFile();
+				res.Log = log;
+				res.Session = log.getSessionById(rs.getInt(1));
+				if(res.Session != null)
 					results.add(res);
-				}
 			}
 			
 			rs.close();
@@ -669,7 +587,7 @@ public class CrossReferenceIndex
 		}
 		catch(SQLException e)
 		{
-			LogUtil.severe(e.getMessage());
+			e.printStackTrace();
 			return new Results(new ArrayList<CrossReferenceIndex.SessionInFile>(), new ArrayList<LogFile>());
 		}
 	}

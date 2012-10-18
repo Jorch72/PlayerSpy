@@ -1,5 +1,7 @@
 package au.com.mineauz.PlayerSpy.commands;
 
+import java.util.List;
+
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -43,6 +45,12 @@ public class InspectCommand implements ICommand
 		Inspector.instance.toggleInspect((Player)sender);
 		
 		return true;
+	}
+
+	@Override
+	public List<String> onTabComplete( CommandSender sender, String label, String[] args )
+	{
+		return null;
 	}
 
 }

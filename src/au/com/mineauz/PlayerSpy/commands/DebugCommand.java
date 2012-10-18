@@ -1,5 +1,7 @@
 package au.com.mineauz.PlayerSpy.commands;
 
+import java.util.List;
+
 import net.minecraft.server.ItemStack;
 
 import org.bukkit.command.CommandSender;
@@ -49,6 +51,12 @@ public class DebugCommand implements ICommand
 		sender.sendMessage(StringTranslator.translateName(stack.getItem().c(stack)));
 		
 		return true;
+	}
+
+	@Override
+	public List<String> onTabComplete( CommandSender sender, String label, String[] args )
+	{
+		return null;
 	}
 
 }

@@ -1,5 +1,7 @@
 package au.com.mineauz.PlayerSpy.commands;
 
+import java.util.List;
+
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
@@ -50,6 +52,12 @@ public class ReloadCommand implements ICommand
 		sender.sendMessage(ChatColor.GREEN + "PlayerSpy configuration reloaded.");
 		
 		return true;
+	}
+
+	@Override
+	public List<String> onTabComplete( CommandSender sender, String label, String[] args )
+	{
+		return null;
 	}
 
 }

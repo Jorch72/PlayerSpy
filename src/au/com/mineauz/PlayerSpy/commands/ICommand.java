@@ -1,5 +1,7 @@
 package au.com.mineauz.PlayerSpy.commands;
 
+import java.util.List;
+
 import org.bukkit.command.CommandSender;
 
 public interface ICommand 
@@ -39,4 +41,13 @@ public interface ICommand
 	 * @return True if this command was executed. False otherwise
 	 */
 	public boolean onCommand(CommandSender sender, String label, String[] args);
+	
+	/**
+	 * Called when tab complete is used on this command. 
+	 * @param sender The sender of the tab complete
+	 * @param label The command name or the alias that was used to specity this command
+	 * @param args The current arguments entered.
+	 * @return A list of all results or null
+	 */
+	public List<String> onTabComplete(CommandSender sender, String label, String[] args);
 }

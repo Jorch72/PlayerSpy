@@ -182,6 +182,8 @@ public class LogFileRegistry
 	 */
 	public static boolean hasLogFile(OfflinePlayer player)
 	{
+		if(player == null)
+			return false;
 		return new File(mLogsRoot, sanitiseName(player.getName()) + cFileExt).exists();
 	}
 	/**
@@ -190,6 +192,8 @@ public class LogFileRegistry
 	 */
 	public static boolean hasLogFile(World world)
 	{
+		if(world == null)
+			return false;
 		return new File(mLogsRoot, cGlobalFilePrefix + sanitiseName(world.getName()) + cFileExt).exists();
 	}
 	
@@ -207,6 +211,9 @@ public class LogFileRegistry
 	{
 		for(LogFile log : mLoadedLogs.values())
 		{
+			if(log.isTimingOut())
+				log.addReference(); // Cancel the timeout
+			
 			while(log.isLoaded())
 				log.close(true);
 		}
@@ -214,6 +221,8 @@ public class LogFileRegistry
 		
 		for(LogFile log : mLoadedGlobalLogs.values())
 		{
+			if(log.isTimingOut())
+				log.addReference(); // Cancel the timeout
 			while(log.isLoaded())
 				log.close(true);
 		}
