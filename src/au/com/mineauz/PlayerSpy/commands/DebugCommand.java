@@ -47,8 +47,22 @@ public class DebugCommand implements ICommand
 	public boolean onCommand(CommandSender sender, String label, String[] args) 
 	{
 		Player player = (Player)sender;
-		ItemStack stack  = Utility.convertToNative(player.getItemInHand());
-		sender.sendMessage(StringTranslator.translateName(stack.getItem().c(stack)));
+		
+		if(args.length == 0)
+		{
+			ItemStack stack  = Utility.convertToNative(player.getItemInHand());
+			sender.sendMessage(StringTranslator.translateName(stack.getItem().c(stack)));
+		}
+		else
+		{
+			String name = args[0];
+			org.bukkit.inventory.ItemStack result = Utility.matchName(name);
+			if(result == null)
+				sender.sendMessage("No results");
+			else
+				sender.sendMessage(Utility.formatItemName(result));
+		}
+		
 		
 		return true;
 	}

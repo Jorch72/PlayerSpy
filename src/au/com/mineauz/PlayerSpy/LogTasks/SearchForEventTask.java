@@ -1,12 +1,10 @@
 package au.com.mineauz.PlayerSpy.LogTasks;
 
-import java.util.concurrent.Callable;
-
 import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 
-public class SearchForEventTask implements Callable<Long>
+public class SearchForEventTask implements Task<Long>
 {
 	private final RecordType mRecordType;
 	private final long mSearchStartDate;
@@ -73,5 +71,11 @@ public class SearchForEventTask implements Callable<Long>
 		
 		// No record was found
 		return 0L;
+	}
+
+	@Override
+	public int getTaskTargetId()
+	{
+		return mLogFile.getName().hashCode();
 	}
 }

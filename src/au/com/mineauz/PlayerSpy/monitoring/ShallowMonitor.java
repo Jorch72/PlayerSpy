@@ -50,7 +50,7 @@ public class ShallowMonitor
 	public ShallowMonitor(OfflinePlayer player)
 	{
 		mPlayer = player;
-		mLog = LogFileRegistry.getLogFile(player);
+		mLog = LogFileRegistry.getLogFileDelayLoad(player);
 		if(mLog == null)
 			mLog = LogFileRegistry.createLogFile(player);
 
@@ -58,6 +58,8 @@ public class ShallowMonitor
 			throw new ExceptionInInitializerError(player.getName() + " has no log and it cannot be created.");
 		
 		mBuffers.put(null, new RecordList());
+		
+		logRecord(new SessionInfoRecord(this instanceof DeepMonitor));
 	}
 	@SuppressWarnings("unchecked")
 	public ShallowMonitor(ShallowMonitor other)
@@ -109,6 +111,9 @@ public class ShallowMonitor
 	 */
 	private void flush(String cause)
 	{
+		if(!mLog.isLoaded())
+			return; // Cant flush if logs not loaded :S
+		
 		RecordList buffer = mBuffers.get(cause);
 		if(buffer.size() > 0)
 		{
@@ -125,6 +130,9 @@ public class ShallowMonitor
 	}
 	private void flushAll()
 	{
+		if(!mLog.isLoaded())
+			return; // Cant flush if logs not loaded :S
+		
 		for(Entry<String, RecordList> ent : mBuffers.entrySet())
 		{
 			if(ent.getValue().size() == 0)
@@ -301,20 +309,20 @@ public class ShallowMonitor
 	}
 	public void onBlockPlace(Block block, BlockState replaced)
 	{
-		logRecord(new BlockChangeRecord(replaced.getBlock(), block, true));
+		logRecord(new BlockChangeRecord(replaced, block.getState(), true));
 	}
 	public void onBlockBreak(Block block)
 	{
-		logRecord(new BlockChangeRecord(block, null, false));
+		logRecord(new BlockChangeRecord(block.getState(), null, false));
 	}
 	public void onBucketFill(Block block, ItemStack resultant)
 	{
 		if(block != null)
-			logRecord(new BlockChangeRecord(block, null, false));
+			logRecord(new BlockChangeRecord(block.getState(), null, false));
 	}
 	public void onBucketEmpty(Block block, ItemStack resultant)
 	{
-		logRecord(new BlockChangeRecord(null, block, true));
+		logRecord(new BlockChangeRecord(null, block.getState(), true));
 	}
 	public void onItemDrop(ItemStack item)
 	{

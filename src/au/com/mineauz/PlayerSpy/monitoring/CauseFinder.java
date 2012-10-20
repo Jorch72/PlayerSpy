@@ -88,7 +88,10 @@ public class CauseFinder
 		
 		// Now see if we have an answer
 		if(answer != null)
+		{
+			LogUtil.fine("already had cause");
 			return answer.getArg2();
+		}
 		else
 		{
 			// It has not immediatly been found, send off to a worker thread to find the cause

@@ -1,12 +1,10 @@
 package au.com.mineauz.PlayerSpy.LogTasks;
 
-import java.util.concurrent.Callable;
-
 import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.RecordList;
 
-public class LoadRecordsAsyncTask implements Callable<RecordList>
+public class LoadRecordsAsyncTask implements Task<RecordList>
 {
 	private final LogFile mLogFile;
 	private final long mStartDate;
@@ -53,6 +51,11 @@ public class LoadRecordsAsyncTask implements Callable<RecordList>
 		}
 		LogUtil.finer("LoadRecordsAsyncTask completed");
 		return results;
+	}
+	@Override
+	public int getTaskTargetId()
+	{
+		return mLogFile.getName().hashCode();
 	}
 
 }

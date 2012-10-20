@@ -4,9 +4,11 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.PlaybackContext;
 import au.com.mineauz.PlayerSpy.Util;
+import au.com.mineauz.PlayerSpy.Utility;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 
 public class FindCommand extends Command 
@@ -24,12 +26,14 @@ public class FindCommand extends Command
 		{
 			boolean gained = (args[0].compareToIgnoreCase("gained") == 0);
 			// Find the item specified in arg1
-			Material mat = Util.parseItem(args[1]);
-			if(mat == null)
+			//Material mat = Util.parseItem(args[1]);
+			ItemStack item = Utility.matchName(args[1]);
+			if(item == null)
 			{
 				sender.sendMessage(ChatColor.RED + "'" + args[1] + "' is not a valid item type");
 				return false;
 			}
+			Material mat = item.getType();
 			
 			if(args.length >= 3)
 			{
@@ -93,10 +97,16 @@ public class FindCommand extends Command
 		{
 			boolean mined = (args[0].compareToIgnoreCase("mined") == 0);
 			// Find the block specified in arg1
-			Material mat = Util.parseBlock(args[1]);
-			if(mat == null || !mat.isBlock())
+			ItemStack item = Utility.matchName(args[1]);
+			if(item == null)
 			{
-				sender.sendMessage( ChatColor.RED + "'" + args[1] + "' is not a valid block type");
+				sender.sendMessage(ChatColor.RED + "'" + args[1] + "' is not a valid block type");
+				return false;
+			}
+			Material mat = item.getType();
+			if(!mat.isBlock())
+			{
+				sender.sendMessage(ChatColor.RED + "'" + args[1] + "' is not a valid block type");
 				return false;
 			}
 			

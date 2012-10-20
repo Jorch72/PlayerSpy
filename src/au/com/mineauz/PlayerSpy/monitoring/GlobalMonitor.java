@@ -3,6 +3,7 @@ package au.com.mineauz.PlayerSpy.monitoring;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -28,8 +29,9 @@ import au.com.mineauz.PlayerSpy.Records.LogoffRecord.LogoffType;
 
 public class GlobalMonitor implements Listener
 {
-	private HashMap<OfflinePlayer, ShallowMonitor> mShallowLogs;
-	private HashMap<OfflinePlayer, DeepMonitor> mDeepLogs;
+	private HashMap<OfflinePlayer, ShallowMonitor> mShallowMonitors;
+	private HashMap<OfflinePlayer, Pair<ShallowMonitor, Long>> mOfflineMonitors;
+	private HashMap<OfflinePlayer, DeepMonitor> mDeepMonitors;
 
 	private ItemFlowTracker mItemTracker;
 	public static final GlobalMonitor instance = new GlobalMonitor();
@@ -46,8 +48,9 @@ public class GlobalMonitor implements Listener
 	
 	private GlobalMonitor()
 	{
-		mShallowLogs = new HashMap<OfflinePlayer, ShallowMonitor>();
-		mDeepLogs = new HashMap<OfflinePlayer, DeepMonitor>();
+		mShallowMonitors = new HashMap<OfflinePlayer, ShallowMonitor>();
+		mOfflineMonitors = new HashMap<OfflinePlayer, Pair<ShallowMonitor,Long>>();
+		mDeepMonitors = new HashMap<OfflinePlayer, DeepMonitor>();
 		
 	}
 	
@@ -101,32 +104,57 @@ public class GlobalMonitor implements Listener
 		mGlobalLogs.clear();
 		mBuffers.clear();
 		
-		for(DeepMonitor monitor : mDeepLogs.values())
+		for(DeepMonitor monitor : mDeepMonitors.values())
 			monitor.shutdown();
 		
-		for(ShallowMonitor monitor : mShallowLogs.values())
+		for(ShallowMonitor monitor : mShallowMonitors.values())
 			monitor.shutdown();
 		
-		mDeepLogs.clear();
-		mShallowLogs.clear();
+		for(Pair<ShallowMonitor, Long> monitor : mOfflineMonitors.values())
+			monitor.getArg1().shutdown();
+		
+		mDeepMonitors.clear();
+		mShallowMonitors.clear();
+		mOfflineMonitors.clear();
+		
 		LogFile.sNoTimeoutOverride = false;
 	}
 	public void update()
 	{
 		mSpreadTracker.doUpdate();
 		mCauseFinder.update();
+		
+		Iterator<Entry<OfflinePlayer, Pair<ShallowMonitor, Long>>> it = mOfflineMonitors.entrySet().iterator();
+		while(it.hasNext())
+		{
+			Entry<OfflinePlayer, Pair<ShallowMonitor, Long>> entry = it.next();
+			// Check the time
+			if(System.currentTimeMillis() >= entry.getValue().getArg2() + SpyPlugin.getSettings().logTimeout)
+			{
+				// Time it out
+				entry.getValue().getArg1().shutdown();
+				it.remove();
+			}
+		}
 	}
 	private void attachShallow(Player player)
 	{
 		LogUtil.finer("Attaching shallow monitor to " + player.getName());
-		mShallowLogs.put(player, new ShallowMonitor(player));
+		
+		if(mOfflineMonitors.containsKey(player))
+		{
+			mShallowMonitors.put(player, mOfflineMonitors.get(player).getArg1());
+			mOfflineMonitors.remove(player);
+		}
+		else
+			mShallowMonitors.put(player, new ShallowMonitor(player));
 	}
 	private void removeShallow(Player player)
 	{
-		if(!mShallowLogs.containsKey(player))
+		if(!mShallowMonitors.containsKey(player))
 			return;
 		
-		ShallowMonitor mon = mShallowLogs.remove(player);
+		ShallowMonitor mon = mShallowMonitors.remove(player);
 		mon.shutdown();
 	}
 	
@@ -135,9 +163,9 @@ public class GlobalMonitor implements Listener
 		try
 		{
 			DeepMonitor monitor = null;
-			if(mShallowLogs.containsKey(player))
+			if(mShallowMonitors.containsKey(player))
 			{
-				monitor = new DeepMonitor(mShallowLogs.remove(player));
+				monitor = new DeepMonitor(mShallowMonitors.remove(player));
 			}
 			else
 			{
@@ -146,7 +174,7 @@ public class GlobalMonitor implements Listener
 			
 			LogUtil.fine("Attaching Deep Monitor to " + player.getName());
 			monitor.logRecord(new SessionInfoRecord(true));
-			mDeepLogs.put(player, monitor);
+			mDeepMonitors.put(player, monitor);
 		}
 		catch(ExceptionInInitializerError e)
 		{
@@ -161,15 +189,15 @@ public class GlobalMonitor implements Listener
 	}
 	public void removeDeep(OfflinePlayer player)
 	{
-		if(!mDeepLogs.containsKey(player))
+		if(!mDeepMonitors.containsKey(player))
 			return;
 		
 		LogUtil.fine("Removing Deep Monitor from " + player.getName());
-		DeepMonitor deep = mDeepLogs.remove(player);
+		DeepMonitor deep = mDeepMonitors.remove(player);
 		deep.logRecord(new SessionInfoRecord(false));
 		
 		if(player.isOnline())
-			mShallowLogs.put(player, new ShallowMonitor(deep));
+			mShallowMonitors.put(player, new ShallowMonitor(deep));
 		else
 		{
 			deep.shutdown();
@@ -185,11 +213,18 @@ public class GlobalMonitor implements Listener
 	 */
 	public ShallowMonitor getMonitor(OfflinePlayer player)
 	{
-		ShallowMonitor mon = mShallowLogs.get(player);
+		ShallowMonitor mon = mShallowMonitors.get(player);
 		if(mon != null)
 			return mon;
 		
-		return mDeepLogs.get(player);
+		Pair<ShallowMonitor,Long> offlineMon = mOfflineMonitors.get(player);
+		if(offlineMon != null)
+		{
+			offlineMon.setArg2(System.currentTimeMillis());
+			return offlineMon.getArg1();
+		}
+		
+		return mDeepMonitors.get(player);
 	}
 	/**
 	 * Gets the monitor currently watching player. It will only return deep monitors.
@@ -197,19 +232,23 @@ public class GlobalMonitor implements Listener
 	 */
 	public DeepMonitor getDeepMonitor(OfflinePlayer player)
 	{
-		return mDeepLogs.get(player);
+		return mDeepMonitors.get(player);
 	}
 	public List<ShallowMonitor> getAllMonitors()
 	{
 		ArrayList<ShallowMonitor> monitors = new ArrayList<ShallowMonitor>();
-		monitors.addAll(mShallowLogs.values());
-		monitors.addAll(mDeepLogs.values());
+		monitors.addAll(mShallowMonitors.values());
+		for(Pair<ShallowMonitor, Long> value : mOfflineMonitors.values() )
+		{
+			monitors.add(value.getArg1());
+		}
+		monitors.addAll(mDeepMonitors.values());
 		return monitors;
 	}
 	public List<DeepMonitor> getAllDeepMonitors()
 	{
 		ArrayList<DeepMonitor> monitors = new ArrayList<DeepMonitor>();
-		monitors.addAll(mDeepLogs.values());
+		monitors.addAll(mDeepMonitors.values());
 		return monitors;
 	}
 
@@ -295,7 +334,12 @@ public class GlobalMonitor implements Listener
 			}
 			else
 			{
-				// TODO: Offline monitor
+				ShallowMonitor monitor = new ShallowMonitor(cause.getCausingPlayer());
+				mOfflineMonitors.put(cause.getCausingPlayer(), new Pair<ShallowMonitor, Long>(monitor, System.currentTimeMillis()));
+				LogUtil.fine("Loading offline monitor for " + cause.getCausingPlayer().getName());
+				
+				for(Record record : records)
+					monitor.logRecord(record, cause.getExtraCause());
 			}
 		}
 	}
@@ -309,17 +353,17 @@ public class GlobalMonitor implements Listener
 	
 	public void delayLogBlockChange(final Block block, final Cause cause, final Cause backupCause)
 	{
-		final MaterialData material = block.getState().getData().clone();
+		final BlockState state = block.getState();
 		
 		Bukkit.getScheduler().scheduleSyncDelayedTask(SpyPlugin.getInstance(), new Runnable() {
 			
 			@Override
 			public void run() 
 			{
-				MaterialData newMaterial = block.getLocation().getBlock().getState().getData().clone();
-				if(material.equals(newMaterial))
+				BlockState newState = block.getLocation().getBlock().getState();
+				if(state.getData().equals(newState.getData()))
 					return;
-				BlockChangeRecord record = new BlockChangeRecord(material, newMaterial, block.getLocation(), (material.getItemType() == Material.AIR ? true : false));
+				BlockChangeRecord record = new BlockChangeRecord(state, newState, (state.getData().getItemType() == Material.AIR ? true : false));
 				logRecord(record, cause, backupCause);
 			}
 		});
@@ -363,7 +407,7 @@ public class GlobalMonitor implements Listener
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onPlayerJoin(PlayerJoinEvent event)
 	{
-		if(!mDeepLogs.containsKey(event.getPlayer()))
+		if(!mDeepMonitors.containsKey(event.getPlayer()))
 			attachShallow(event.getPlayer());
 		
 		ShallowMonitor mon = getMonitor(event.getPlayer());
@@ -437,7 +481,7 @@ public class GlobalMonitor implements Listener
 		{
 			if(event.getClickedBlock().getRelative(BlockFace.UP).getType() == Material.CROPS)
 			{
-				BlockChangeRecord record = new BlockChangeRecord(event.getClickedBlock().getRelative(BlockFace.UP), null, false);
+				BlockChangeRecord record = new BlockChangeRecord(event.getClickedBlock().getRelative(BlockFace.UP).getState(), null, false);
 				ShallowMonitor mon = getMonitor(event.getPlayer());
 				
 				if(mon != null)
@@ -512,7 +556,7 @@ public class GlobalMonitor implements Listener
 	@EventHandler(ignoreCancelled = true)
 	private void onPlayerMove(PlayerMoveEvent event)
 	{
-		DeepMonitor mon = mDeepLogs.get(event.getPlayer());
+		DeepMonitor mon = mDeepMonitors.get(event.getPlayer());
 		if(mon != null)
 			mon.onMove(event.getPlayer().getLocation(), event.getPlayer().getEyeLocation());
 	}
@@ -521,14 +565,24 @@ public class GlobalMonitor implements Listener
 	{
 		if(event.getEntity() instanceof Player)
 		{
+			// Target was player
 			ShallowMonitor mon = getMonitor((Player)event.getEntity());
 		
+			// Record damage to the player
 			if(mon != null)
+			{
 				mon.onDamage(event.getDamager(), null, event.getDamage());
 			
+				if(event.getDamager() instanceof Projectile)
+				{
+					mon.onDamage(((Projectile)event.getDamager()).getShooter(), null, event.getDamage());
+				}
+			}
+			
+			// Record attacks from the player
 			if(event.getDamager() instanceof Player)
 			{
-				mon = getMonitor((Player)event.getEntity());
+				mon = getMonitor((Player)event.getDamager());
 				
 				if(mon != null)
 					mon.onAttack(event.getEntity(), event.getDamage());
@@ -544,23 +598,25 @@ public class GlobalMonitor implements Listener
 		}
 		else
 		{
+			// Non player required deep mode
+			
 			if(event.getDamager() != null)
 			{
 				// Record direct attack
 				if(event.getDamager() instanceof Player)
 				{
-					//ShallowMonitor mon = getMonitor((Player)event.getEntity());
+					DeepMonitor mon = getDeepMonitor((Player)event.getDamager());
 					
-					//if(mon != null)
-						//mon.onAttack(event.getEntity(), event.getDamage());
+					if(mon != null)
+						mon.onAttack(event.getEntity(), event.getDamage());
 				}
 				// Record attack through projectile
-				else if(event.getDamager() instanceof Projectile)
+				else if(event.getDamager() instanceof Projectile && ((Projectile)event.getDamager()).getShooter() instanceof Player )
 				{
-					//ShallowMonitor mon = getMonitor((Player)((Projectile)event.getDamager()).getShooter());
+					DeepMonitor mon = getDeepMonitor((Player)((Projectile)event.getDamager()).getShooter());
 					
-					//if(mon != null)
-						//mon.onAttack(event.getEntity(), event.getDamage());
+					if(mon != null)
+						mon.onAttack(event.getEntity(), event.getDamage());
 				}
 			}
 		}
@@ -720,7 +776,7 @@ public class GlobalMonitor implements Listener
 	{
 		Cause cause = Cause.globalCause(event.getBlock().getWorld(), "#" + event.getEntity().getType().getName().toLowerCase());
 		
-		BlockChangeRecord record = new BlockChangeRecord(null, event.getBlock(), true); 
+		BlockChangeRecord record = new BlockChangeRecord(null, event.getBlock().getState(), true); 
 		logRecord(record, cause, null);
 	}
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -747,19 +803,19 @@ public class GlobalMonitor implements Listener
 	{
 		if(event.getEntityType() == EntityType.PRIMED_TNT)
 		{
-			//Location loc = ((TNTPrimed)event.getEntity()).getLocation();
 			RecordList records = new RecordList();
 			for(Block block : event.blockList())
 			{
-				BlockChangeRecord record = new BlockChangeRecord(block, null, false);
+				BlockChangeRecord record = new BlockChangeRecord(block.getState(), null, false);
 				records.add(record);
 			}
-			// TODO: See if we can track the entity back to its creation and search there
-			// NOTE: Due to the massive problems with asking for tonnes of cause lookups, i have disabled it for now
-			//Cause cause = mCauseFinder.getCauseFor(loc);
-			//Cause defaultCause = Cause.globalCause(event.getLocation().getWorld(),"#tnt");
-			Cause cause = Cause.globalCause(event.getLocation().getWorld(), "#tnt");
-			logRecords(records, cause, null);
+			Cause cause = mCauseFinder.getCauseFor(event.getLocation());
+			Cause defaultCause = Cause.globalCause(event.getLocation().getWorld(),"#tnt");
+			
+			if(cause.isPlayer() && cause.getExtraCause() == null)
+				cause.update(Cause.playerCause(cause.getCausingPlayer(), "#tnt"));
+			
+			logRecords(records,cause,defaultCause);
 		}
 		else
 		{
@@ -778,7 +834,7 @@ public class GlobalMonitor implements Listener
 			
 			RecordList records = new RecordList();
 			for(Block block : event.blockList())
-				records.add(new BlockChangeRecord(block, null, false));
+				records.add(new BlockChangeRecord(block.getState(), null, false));
 
 			logRecords(records, cause, null);
 		}
@@ -825,7 +881,7 @@ public class GlobalMonitor implements Listener
 			return;
 		}
 		
-		BlockChangeRecord record = new BlockChangeRecord(event.getBlock(), event.getNewState().getBlock(), false);
+		BlockChangeRecord record = new BlockChangeRecord(event.getBlock().getState(), event.getNewState(), false);
 		logRecord(record, cause, backupCause);
 	}
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -851,14 +907,14 @@ public class GlobalMonitor implements Listener
 			cause.update(Cause.playerCause(cause.getCausingPlayer(), "#fire"));
 		
 		// Log it
-		BlockChangeRecord record = new BlockChangeRecord(event.getBlock(),null, false);
+		BlockChangeRecord record = new BlockChangeRecord(event.getBlock().getState(),null, false);
 		logRecord(record, cause, null);
 	}
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onLeavesDecay(LeavesDecayEvent event)
 	{
 		Cause cause = Cause.globalCause(event.getBlock().getWorld(), "#decay");
-		BlockChangeRecord record = new BlockChangeRecord(event.getBlock(),null, false);
+		BlockChangeRecord record = new BlockChangeRecord(event.getBlock().getState(),null, false);
 		logRecord(record, cause, null);
 	}
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -881,9 +937,9 @@ public class GlobalMonitor implements Listener
 					cause = mSpreadTracker.getCause(event.getToBlock().getLocation());
 				
 				Cause backupCause = null;
-				if(event.getBlock().getType() == Material.LAVA)
+				if(event.getBlock().getType() == Material.LAVA || event.getBlock().getType() == Material.STATIONARY_LAVA)
 					backupCause = Cause.globalCause(event.getBlock().getWorld(), "#lava");
-				else if(event.getBlock().getType() == Material.WATER)
+				else if(event.getBlock().getType() == Material.WATER || event.getBlock().getType() == Material.STATIONARY_WATER)
 					backupCause = Cause.globalCause(event.getBlock().getWorld(), "#water");
 				else
 					backupCause = Cause.globalCause(event.getBlock().getWorld(), "#fluid"); // Mods i guess?
@@ -1014,7 +1070,15 @@ public class GlobalMonitor implements Listener
 			if(event.getCause().isUnknown())
 				logRecords(records.getArg1(), records.getArg2(), records.getArg2());
 			else
-				logRecords(records.getArg1(), event.getCause(), records.getArg2());
+			{
+				Cause cause = event.getCause();
+				if(event.getCause().getExtraCause() == null && records.getArg2().getExtraCause() != null)
+				{
+					// Update it to include that
+					cause = Cause.playerCause(cause.getCausingPlayer(), records.getArg2().getExtraCause());
+				}
+				logRecords(records.getArg1(), cause, records.getArg2());
+			}
 		}
 	}
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

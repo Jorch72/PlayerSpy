@@ -15,7 +15,7 @@ public class LogFileRegistry
 	public static final String cFileExt = ".trackdata";
 	public static final String cGlobalFilePrefix = "__";
 	
-	private static HashMap<OfflinePlayer, LogFile> mLoadedLogs = new HashMap<OfflinePlayer, LogFile>();
+	private static HashMap<String, LogFile> mLoadedLogs = new HashMap<String, LogFile>();
 	
 	private static HashMap<World, LogFile> mLoadedGlobalLogs = new HashMap<World, LogFile>();
 	
@@ -41,10 +41,10 @@ public class LogFileRegistry
 	 */
 	public static LogFile getLogFile(OfflinePlayer player)
 	{
-		if(mLoadedLogs.containsKey(player))
+		if(mLoadedLogs.containsKey(player.getName()))
 		{
-			LogFile log = mLoadedLogs.get(player);
-			if(log.isLoaded())
+			LogFile log = mLoadedLogs.get(player.getName());
+			if(log.isLoaded() || log.isTimingOut())
 			{
 				log.addReference();
 				return log;
@@ -62,7 +62,30 @@ public class LogFileRegistry
 			return null;
 		}
 		
-		mLoadedLogs.put(player, log);
+		mLoadedLogs.put(player.getName(), log);
+		return log;
+	}
+	
+	public static LogFile getLogFileDelayLoad( OfflinePlayer player )
+	{
+		if(mLoadedLogs.containsKey(player.getName()))
+		{
+			LogFile log = mLoadedLogs.get(player.getName());
+			if(log.isLoaded() || log.isTimingOut())
+			{
+				log.addReference();
+				return log;
+			}
+		}
+		
+		File file = new File(mLogsRoot, sanitiseName(player.getName()) + cFileExt);
+		if(!file.exists())
+			return null;
+		
+		LogFile log = new LogFile();
+		log.loadAsync(file.getAbsolutePath());
+		
+		mLoadedLogs.put(player.getName(), log);
 		return log;
 	}
 	/**
@@ -112,7 +135,7 @@ public class LogFileRegistry
 		if(log == null)
 			return null;
 		
-		mLoadedLogs.put(player, log);
+		mLoadedLogs.put(player.getName(), log);
 		return log;
 	}
 	/**
@@ -141,16 +164,17 @@ public class LogFileRegistry
 	 */
 	public static boolean unloadLogFile(OfflinePlayer player)
 	{
-		LogFile log = mLoadedLogs.get(player);
+		LogFile log = mLoadedLogs.get(player.getName());
 		
 		if(log == null)
 			return false;
 		
 		log.close(false);
 
-		if(!log.isLoaded())
+		if(!log.isLoaded() && !log.isTimingOut())
 		{
-			return mLoadedLogs.remove(player) != null;
+			LogUtil.info("removed");
+			return mLoadedLogs.remove(player.getName()) != null;
 		}
 		
 		return true;
@@ -168,7 +192,7 @@ public class LogFileRegistry
 		
 		log.close(false);
 
-		if(!log.isLoaded())
+		if(!log.isLoaded() && !log.isTimingOut())
 		{
 			return mLoadedGlobalLogs.remove(world) != null;
 		}
@@ -228,5 +252,6 @@ public class LogFileRegistry
 		}
 		mLoadedGlobalLogs.clear();
 	}
+	
 	
 }

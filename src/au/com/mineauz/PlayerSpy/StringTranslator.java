@@ -56,4 +56,9 @@ public class StringTranslator
 		String result = sCurrentStringTable.get(key + ".name"); 
 		return (result != null ? result : "");
 	}
+	
+	public static HashMap<String, String> getStringTable()
+	{
+		return sCurrentStringTable;
+	}
 }

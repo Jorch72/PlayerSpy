@@ -3,9 +3,10 @@ package au.com.mineauz.PlayerSpy.fsa;
 import java.util.ArrayDeque;
 
 import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.Pair;
-import au.com.mineauz.PlayerSpy.Util;
+import au.com.mineauz.PlayerSpy.Utility;
 
 public class BlockIdState extends State
 {
@@ -26,9 +27,11 @@ public class BlockIdState extends State
 			metaString = null;
 		}
 		
-		Material mat = Util.parseBlock(idString);
-		
-		if(mat == null)
+		Material mat = null;
+		ItemStack item = Utility.matchName(idString);
+		if(item != null)
+			mat = item.getType();
+		else
 			// Try to parse by integer id
 		{
 			try

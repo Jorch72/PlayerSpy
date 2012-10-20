@@ -123,7 +123,7 @@ public class PlaybackContext
 			public Void call() throws Exception 
 			{
 				// Finish Callback
-				mDisplay.notifyViewers("Playback has finished.");
+				mDisplay.notifyViewers("Playback has run out of data to display. Please seek to another time or exit.");
 				return null;
 			}
 			
@@ -516,8 +516,10 @@ public class PlaybackContext
 			break;
 		}
 		case BlockChange:
+		{
 			mDisplay.doBlockChange(((BlockChangeRecord)record).getFinalBlock());
 			break;
+		}
 		case ChatCommand:
 			mDisplay.notifyViewers(forPlayer.name + ": " + ((ChatCommandRecord)record).getMessage());
 			break;
@@ -706,10 +708,11 @@ public class PlaybackContext
 		{
 			BlockChangeRecord brecord = (BlockChangeRecord)record;
 			
-			StoredBlock existing = new StoredBlock(brecord.getInitialBlock().getLocation().getBlock());
+			StoredBlock existing = new StoredBlock(brecord.getBlock().getLocation().getBlock());
+			StoredBlock block = brecord.getInitialBlock();
 			
 			mIndexBlockMap.put(id, existing);
-			mDisplay.doBlockChange(brecord.getInitialBlock());
+			mDisplay.doBlockChange(block);
 			break;
 		}
 		case Attack:
@@ -731,6 +734,7 @@ public class PlaybackContext
 					{
 						if(ent.getValue() == mob)
 						{
+							LogUtil.info("found");
 							mIndexShadowMobMap.remove(ent.getKey());
 							mIndexShadowMobMap.put(id, mob);
 							break;
@@ -761,6 +765,7 @@ public class PlaybackContext
 						{
 							if(ent.getValue() == mob)
 							{
+								LogUtil.info("found");
 								mIndexShadowMobMap.remove(ent.getKey());
 								mIndexShadowMobMap.put(id, mob);
 								break;

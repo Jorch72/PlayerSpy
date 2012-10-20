@@ -1,7 +1,5 @@
 package au.com.mineauz.PlayerSpy.LogTasks;
 
-import java.util.concurrent.Callable;
-
 import org.bukkit.Material;
 
 import au.com.mineauz.PlayerSpy.LogFile;
@@ -10,7 +8,7 @@ import au.com.mineauz.PlayerSpy.StoredBlock;
 import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 
-public class SearchForBlockChangeTask implements Callable<Long>
+public class SearchForBlockChangeTask implements Task<Long>
 {
 	private final Material mBlockType;
 	private final boolean mMined;
@@ -121,5 +119,11 @@ public class SearchForBlockChangeTask implements Callable<Long>
 			return true;
 		
 		return false;
+	}
+
+	@Override
+	public int getTaskTargetId()
+	{
+		return mLogFile.getName().hashCode();
 	}
 }

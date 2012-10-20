@@ -1,7 +1,5 @@
 package au.com.mineauz.PlayerSpy.LogTasks;
 
-import java.util.concurrent.Callable;
-
 import org.bukkit.Material;
 
 import au.com.mineauz.PlayerSpy.InventorySlot;
@@ -12,7 +10,7 @@ import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
 
-public class SearchForItemTask implements Callable<Long>
+public class SearchForItemTask implements Task<Long>
 {
 	private final Material mItemType;
 	private final boolean mGained;
@@ -198,5 +196,11 @@ public class SearchForItemTask implements Callable<Long>
 			}
 		}
 		return false;
+	}
+
+	@Override
+	public int getTaskTargetId()
+	{
+		return mLogFile.getName().hashCode();
 	}
 }

@@ -46,4 +46,19 @@ public class LogUtil
 		if(mLogger != null)
 			mLogger.finest(text);
 	}
+	
+	public static synchronized void aquire(String lockName)
+	{
+		if(mLogger != null)
+		{
+			finest(Thread.currentThread().getName() + " aquired " + lockName + " lock");
+		}
+	}
+	public static synchronized void unaquire(String lockName)
+	{
+		if(mLogger != null)
+		{
+			finest(Thread.currentThread().getName() + " unaquired " + lockName + " lock");
+		}
+	}
 }

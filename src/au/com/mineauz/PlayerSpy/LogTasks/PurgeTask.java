@@ -83,6 +83,11 @@ public class PurgeTask  implements Task<Boolean>
 			{
 				if(!log.purgeRecords(mFromDate,mToDate))
 					mCaller.sendMessage(ChatColor.RED + "  Purge failed on " + log.getName());
+				else
+				{
+					if(!log.compactLog())
+						mCaller.sendMessage(ChatColor.RED + "  Compact failed on " + log.getName());
+				}
 			}
 			else
 			{
@@ -96,6 +101,11 @@ public class PurgeTask  implements Task<Boolean>
 			
 			if(!log.purgeRecords(mFromDate,mToDate))
 				mCaller.sendMessage(ChatColor.RED + "  Purge failed on " + log.getName());
+			else
+			{
+				if(!log.compactLog())
+					mCaller.sendMessage(ChatColor.RED + "  Compact failed on " + log.getName());
+			}
 
 			log.close(false);
 		}

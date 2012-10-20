@@ -43,6 +43,8 @@ public class PlaybackControl
 		mShallowModeSwitchCallback = shallowModeSwitchCallback;
 		
 		mDeepMode = true;
+		
+		mLastRequestFailed = true;
 	}
 
 	public void close()
@@ -130,6 +132,7 @@ public class PlaybackControl
 	
 	public boolean seek(long date)
 	{
+		mLastRequestFailed = false;
 		// Check to see if that date is loaded at the moment
 		if(date >= mBuffer.currentBuffer().getStartTimestamp() && date <= mBuffer.currentBuffer().getEndTimestamp())
 		{
@@ -276,8 +279,16 @@ public class PlaybackControl
 			if(!mIsSeeking)
 			{
 				// Try to get more data if needed
-				if(mBuffer.shouldRequestMore(getBufferIndex(), true))
-					mBuffer.shiftBuffer(true);
+				if(!mLastRequestFailed && mBuffer.shouldRequestMore(getBufferIndex(), true))
+				{
+					if(!mBuffer.shiftBuffer(true))
+					{
+						mLastRequestFailed = true;
+						// We are out of data and there is no more to get
+						mIsPlaying = false;
+						onFinish();
+					}
+				}
 				
 				// Do updates
 				if(mIsPlaying)
@@ -333,7 +344,8 @@ public class PlaybackControl
 			mSearchTask = null;
 		}
 		
-		mSearchTask = mBuffer.getLogFile().submitTask(new SearchForBlockChangeTask(mBuffer.getLogFile(), block, mined, date, !before));
+		//mSearchTask = mBuffer.getLogFile().submitTask(new SearchForBlockChangeTask(mBuffer.getLogFile(), block, mined, date, !before));
+		mSearchTask = SpyPlugin.getExecutor().submit(new SearchForBlockChangeTask(mBuffer.getLogFile(), block, mined, date, !before));
 		if(mSearchTask != null)
 			return true;
 		
@@ -348,7 +360,8 @@ public class PlaybackControl
 			mSearchTask = null;
 		}
 		
-		mSearchTask = mBuffer.getLogFile().submitTask(new SearchForItemTask(mBuffer.getLogFile(), item, gained, date, !before));
+		//mSearchTask = mBuffer.getLogFile().submitTask(new SearchForItemTask(mBuffer.getLogFile(), item, gained, date, !before));
+		mSearchTask = SpyPlugin.getExecutor().submit(new SearchForItemTask(mBuffer.getLogFile(), item, gained, date, !before));
 		if(mSearchTask != null)
 			return true;
 		
@@ -363,7 +376,8 @@ public class PlaybackControl
 			mSearchTask = null;
 		}
 		
-		mSearchTask = mBuffer.getLogFile().submitTask(new SearchForEventTask(mBuffer.getLogFile(), type, date, !before));
+		//mSearchTask = mBuffer.getLogFile().submitTask(new SearchForEventTask(mBuffer.getLogFile(), type, date, !before));
+		mSearchTask = SpyPlugin.getExecutor().submit(new SearchForEventTask(mBuffer.getLogFile(), type, date, !before));
 		if(mSearchTask != null)
 			return true;
 		
@@ -377,7 +391,8 @@ public class PlaybackControl
 			mSearchTask = null;
 		}
 		
-		mSearchTask = mBuffer.getLogFile().submitTask(new SearchForDamageTask(mBuffer.getLogFile(), entType, attack, playerName, date, !before));
+		//mSearchTask = mBuffer.getLogFile().submitTask(new SearchForDamageTask(mBuffer.getLogFile(), entType, attack, playerName, date, !before));
+		mSearchTask = SpyPlugin.getExecutor().submit(new SearchForDamageTask(mBuffer.getLogFile(), entType, attack, playerName, date, !before));
 		if(mSearchTask != null)
 			return true;
 		
@@ -452,6 +467,7 @@ public class PlaybackControl
 	private float mPlaybackSpeed = 1F;
 	private RecordBuffer mBuffer;
 	private boolean mIsPlaying;
+	private boolean mLastRequestFailed;
 	
 	private boolean mIsSeeking;
 	private long mSeekDate;

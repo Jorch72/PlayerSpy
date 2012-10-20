@@ -25,6 +25,7 @@ public class PriorityExecutor implements Executor
 		public ExecutorService executor;
 		public ArrayDeque<SubmittedTask> taskQueue;
 		public boolean isExecuting = false;
+		public int executingTargetId = -1;
 		
 		public synchronized void scheduleNext()
 		{
@@ -50,6 +51,8 @@ public class PriorityExecutor implements Executor
 			LogUtil.finest("Executing task " + nextTask.task.getClass().getSimpleName());
 			
 			isExecuting = true;
+			executingTargetId = nextTask.task.getTaskTargetId();
+			
 			executor.execute(new Runnable() 
 			{
 				@Override
@@ -133,12 +136,14 @@ public class PriorityExecutor implements Executor
 		{
 			int weight = info.taskQueue.size() + (info.isExecuting ? 1 : 0);
 			
+			if(info.isExecuting && info.executingTargetId == taskId)
+				weight = -1000;
 			for(SubmittedTask sTask : info.taskQueue)
 			{
 				if(sTask.future.isCancelled())
 					weight--;
 				else if(sTask.task.getTaskTargetId() == taskId)
-					weight = Integer.MIN_VALUE;
+					weight = -1000;
 			}
 			
 			if(weight < bestWeight)

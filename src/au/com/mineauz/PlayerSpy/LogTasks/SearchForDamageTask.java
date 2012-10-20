@@ -1,6 +1,5 @@
 package au.com.mineauz.PlayerSpy.LogTasks;
 
-import java.util.concurrent.Callable;
 
 import org.bukkit.entity.EntityType;
 
@@ -11,7 +10,7 @@ import au.com.mineauz.PlayerSpy.Records.DamageRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 
-public class SearchForDamageTask implements Callable<Long>
+public class SearchForDamageTask implements Task<Long>
 {
 	private final EntityType mEntityType;
 	private final boolean mAttack;
@@ -132,5 +131,11 @@ public class SearchForDamageTask implements Callable<Long>
 		}
 		
 		return false;
+	}
+
+	@Override
+	public int getTaskTargetId()
+	{
+		return mLogFile.getName().hashCode();
 	}
 }

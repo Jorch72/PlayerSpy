@@ -3,6 +3,7 @@ package au.com.mineauz.PlayerSpy;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map.Entry;
 
 import org.bukkit.Location;
@@ -282,5 +283,50 @@ public class Utility
 		SimpleDateFormat fmt = new SimpleDateFormat(format);
 		fmt.setTimeZone(SpyPlugin.getSettings().timezone);
 		return fmt.format(new Date(time));
+	}
+	public static org.bukkit.inventory.ItemStack matchName(String input)
+	{
+		String keyName = null;
+		HashMap<String,String> table = StringTranslator.getStringTable();
+		
+		input = input.replaceAll("_", " ");
+		
+		for(Entry<String,String> entry : table.entrySet())
+		{
+			if(entry.getValue().equalsIgnoreCase(input))
+			{
+				keyName = entry.getKey();
+				break;
+			}
+		}
+		
+		if(keyName == null)
+			return null;
+
+		if(!keyName.contains(".name"))
+			return null;
+		
+		keyName = keyName.substring(0, keyName.indexOf(".name"));
+		// Now search items for a key match
+		for(Item item : Item.byId)
+		{
+			if(item == null)
+				continue;
+			
+			if(item instanceof ItemBlock)
+			{
+				String name = Block.byId[item.id].a(); 
+				if(keyName.equals(name))
+				{
+					return new org.bukkit.inventory.ItemStack(item.id, 1, (short)0);
+				}
+			}
+			else if(keyName.equals(item.getName()))
+			{
+				return new org.bukkit.inventory.ItemStack(item.id, 1, (short)0);
+			}
+		}
+		
+		return null;
 	}
 }

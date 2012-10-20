@@ -1,12 +1,10 @@
 package au.com.mineauz.PlayerSpy.LogTasks;
 
-import java.util.concurrent.Callable;
-
 import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.RecordList;
 
-public class AppendRecordsTask implements Callable<Boolean> 
+public class AppendRecordsTask implements Task<Boolean> 
 {
 	private final RecordList mRecords;
 	private final LogFile mLog;
@@ -44,6 +42,11 @@ public class AppendRecordsTask implements Callable<Boolean>
 		
 		LogUtil.finer("AppendRecordsTask completed");
 		return res;
+	}
+	@Override
+	public int getTaskTargetId()
+	{
+		return mLog.getName().hashCode();
 	}
 	
 	

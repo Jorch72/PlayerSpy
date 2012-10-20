@@ -15,11 +15,12 @@ import au.com.mineauz.PlayerSpy.StoredInventoryInformation.InventoryType;
 import au.com.mineauz.PlayerSpy.StoredItemStack;
 import au.com.mineauz.PlayerSpy.Utility;
 
-public class InventoryTransactionRecord extends Record
+public class InventoryTransactionRecord extends Record implements IRollbackable
 {
 	private ItemStack mItem;
 	private StoredInventoryInformation mInvInfo;
 	private boolean mTake;
+	private boolean mIsRolledBack;
 	
 	public static InventoryTransactionRecord newTakeFromInventory(ItemStack item, Inventory inventory)
 	{
@@ -41,6 +42,7 @@ public class InventoryTransactionRecord extends Record
 	public InventoryTransactionRecord() 
 	{
 		super(RecordType.ItemTransaction);
+		mIsRolledBack = false;
 	}
 
 	/**
@@ -71,6 +73,7 @@ public class InventoryTransactionRecord extends Record
 		stream.writeBoolean(mTake);
 		new StoredItemStack(mItem).writeItemStack(stream);
 		mInvInfo.write(stream, absolute);
+		stream.writeBoolean(mIsRolledBack);
 	}
 
 	@Override
@@ -80,12 +83,13 @@ public class InventoryTransactionRecord extends Record
 		mItem = StoredItemStack.readItemStack(stream).getItem();
 		mInvInfo = new StoredInventoryInformation();
 		mInvInfo.read(stream, currentWorld, absolute);
+		mIsRolledBack = stream.readBoolean();
 	}
 
 	@Override
 	protected int getContentSize(boolean absolute) 
 	{
-		return 1 + new StoredItemStack(mItem).getSize() + mInvInfo.getSize(absolute);
+		return 2 + new StoredItemStack(mItem).getSize() + mInvInfo.getSize(absolute);
 	}
 
 	@Override
@@ -125,5 +129,20 @@ public class InventoryTransactionRecord extends Record
 		
 		result += " by %s";
 		return result;
+	}
+	@Override
+	public boolean canBeRolledBack()
+	{
+		return true;
+	}
+	@Override
+	public boolean wasRolledBack()
+	{
+		return mIsRolledBack;
+	}
+	@Override
+	public void setRolledBack( boolean value )
+	{
+		mIsRolledBack = value;
 	}
 }
