@@ -107,6 +107,27 @@ public class PlaybackDisplay implements Listener
 			cleanupFor(player);
 		}
 	}
+	/**
+	 * Removes all players from being able to see the playback
+	 */
+	public void removeAllViewers()
+	{
+		for(Player player : mViewers)
+		{
+			String message = "[" + ChatColor.GREEN + "Playback" + ChatColor.WHITE + "] ";
+			if(mShadowPlayers.size() > 0)
+				message += "You have been removed from the playback of " + mShadowPlayers.get(0).name;
+			else
+				message += "You have been removed from a playback";
+			
+			player.sendMessage(message);
+			
+			
+			cleanupFor(player);
+		}
+		
+		mViewers.clear();
+	}
 	
 	/**
 	 * Gets the number of players currently able to view this

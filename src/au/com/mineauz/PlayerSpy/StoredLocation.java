@@ -91,7 +91,7 @@ public class StoredLocation
 	}
 	public int getSize(boolean full)
 	{
-		return 14 + (full ? mLocation.getWorld().getName().length() + 2 : 0);
+		return 14 + (full ? Utility.getUTFLength(mLocation.getWorld().getName()) : 0);
 	}
 	
 	private Location mLocation;

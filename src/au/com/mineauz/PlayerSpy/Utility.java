@@ -245,19 +245,24 @@ public class Utility
 	public static String formatItemName( org.bukkit.inventory.ItemStack myItem )
     {
 		ItemStack nativeStack = convertToNative(myItem);
-		return StringTranslator.translateName(nativeStack.getItem().c(nativeStack));
-//        String name = new StringBuilder().append( Character.toUpperCase(myItem.getType().name().charAt(0)) )
-//                .append( myItem.getType().name().substring(1).toLowerCase() ).toString();
-//        name = name.replace('_', ' ');
-//        for ( int i = 0; i < name.length(); i++ )
-//        {
-//            StringBuilder sb = new StringBuilder();
-//            if ( name.charAt( i ) == ' ' && i < name.length() - 1 )
-//            {
-//                name = sb.append( name.substring(0, i + 1) ).append( Character.toUpperCase(name.charAt( i + 1 ) ) ).append(name.substring( i + 2 ) ).toString();
-//            }
-//        }
-//        return name;
+		String result = StringTranslator.translateName(nativeStack.getItem().c(nativeStack));
+		if(result.trim().isEmpty())
+		{
+	        String name = new StringBuilder().append( Character.toUpperCase(myItem.getType().name().charAt(0)) )
+	                .append( myItem.getType().name().substring(1).toLowerCase() ).toString();
+	        name = name.replace('_', ' ');
+	        for ( int i = 0; i < name.length(); i++ )
+	        {
+	            StringBuilder sb = new StringBuilder();
+	            if ( name.charAt( i ) == ' ' && i < name.length() - 1 )
+	            {
+	                name = sb.append( name.substring(0, i + 1) ).append( Character.toUpperCase(name.charAt( i + 1 ) ) ).append(name.substring( i + 2 ) ).toString();
+	            }
+	        }
+	        return name;
+		}
+		else
+			return result;
     }
 	
 	public static String formatName(String playerName, String cause)
@@ -328,5 +333,25 @@ public class Utility
 		}
 		
 		return null;
+	}
+	/**
+	 * Gets the number of bytes that will be written to a stream using writeUTF()
+	 * @param string
+	 * @return
+	 */
+	public static int getUTFLength(String string)
+	{
+		int length = 2;
+		for(int i = 0; i < string.length(); i++)
+		{
+			if(string.charAt(i) >= 0x01 && string.charAt(i) <= 0x7f)
+				length++;
+			else if(string.charAt(i) == 0x00 || (string.charAt(i) >= 0x80 && string.charAt(i) <= 0x7ff))
+				length += 2;
+			else if(string.charAt(i) >= 0x800 && string.charAt(i) <= 0xffff)
+				length += 3;
+		}
+		
+		return length;
 	}
 }

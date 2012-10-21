@@ -141,7 +141,7 @@ public class RecordList extends ArrayList<Record>
 				
 				for(InventorySlot slot : urecord.Slots)
 				{
-					if(slot.Slot > items.length)
+					if(slot.Slot >= items.length)
 						armour[slot.Slot - items.length] = (slot.Item == null ? null : slot.Item.clone());
 					else
 						items[slot.Slot] = (slot.Item == null ? null : slot.Item.clone()); 
@@ -269,7 +269,10 @@ public class RecordList extends ArrayList<Record>
 			if(record instanceof ILocationAware)
 			{
 				if(((ILocationAware)record).getLocation().getWorld() == null)
-					LogUtil.info("Null world found" + record.toString());
+				{
+					//LogUtil.info("Null world found" + record.toString());
+					continue;
+				}
 				chunk = new SafeChunk(((ILocationAware)record).getLocation());
 			}
 			else if(record instanceof BlockChangeRecord)
@@ -297,6 +300,8 @@ public class RecordList extends ArrayList<Record>
 			{
 				if(((RightClickActionRecord)record).getEntity() != null)
 					chunk = new SafeChunk(((RightClickActionRecord)record).getEntity().getLocation());
+				else
+					continue;
 			}
 			else if(record instanceof SleepRecord)
 				chunk = new SafeChunk(((SleepRecord)record).getBedLocation());

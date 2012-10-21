@@ -14,7 +14,7 @@ public class SleepRecord extends Record {
 	public SleepRecord(boolean isSleeping, Location bedLocation) 
 	{
 		super(RecordType.Sleep);
-		
+		mLocation = new StoredLocation(bedLocation);
 	}
 	public SleepRecord()
 	{

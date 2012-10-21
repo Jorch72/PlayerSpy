@@ -61,7 +61,16 @@ public class ListCommand implements ICommand
 		
 		for(String target : playbacks)
 		{
-			if(!monitors.contains(target))
+			boolean ok = true;
+			for(DeepMonitor monitor : monitors)
+			{
+				if(monitor.getMonitorTarget().getName().equals(target))
+				{
+					ok = false;
+					break;
+				}
+			}
+			if(ok)
 				pager.addItem(target + ChatColor.BLUE + " [Playing]");
 		}
 

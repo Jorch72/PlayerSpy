@@ -173,13 +173,13 @@ public class StoredInventoryInformation
 			size += mBlock.getSize(absolute);
 			break;
 		case Enderchest:
-			size += 2 + mPlayerName.length();
+			size += Utility.getUTFLength(mPlayerName);
 			break;
 		case Entity:
 			size += mEntity.getSize();
 			break;
 		case Player:
-			size += 2 + mPlayerName.length();
+			size += Utility.getUTFLength(mPlayerName);
 			break;
 		case None:
 		case Unknown:

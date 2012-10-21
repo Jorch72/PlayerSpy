@@ -173,7 +173,6 @@ public class LogFileRegistry
 
 		if(!log.isLoaded() && !log.isTimingOut())
 		{
-			LogUtil.info("removed");
 			return mLoadedLogs.remove(player.getName()) != null;
 		}
 		

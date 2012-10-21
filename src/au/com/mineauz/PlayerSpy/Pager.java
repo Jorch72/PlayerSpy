@@ -38,4 +38,14 @@ public class Pager
 		}
 		sender.sendMessage(ChatColor.RED + "--------------------------------");
 	}
+	
+	public int getItemCount()
+	{
+		return mItems.size();
+	}
+	
+	public int getItemsPerPage()
+	{
+		return mItemsPerPage;
+	}
 }

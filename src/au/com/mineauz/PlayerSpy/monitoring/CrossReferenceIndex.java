@@ -413,6 +413,9 @@ public class CrossReferenceIndex
 					}
 					fileRs.close();
 					
+					if(log == null)
+						continue;
+					
 					openedLogs.put(fileId, log);
 				}
 				
@@ -493,6 +496,9 @@ public class CrossReferenceIndex
 						log = LogFileRegistry.getLogFile(player);
 					}
 					fileRs.close();
+				
+					if(log == null)
+						continue;
 					
 					openedLogs.put(fileId, log);
 				}
@@ -570,6 +576,9 @@ public class CrossReferenceIndex
 						log = LogFileRegistry.getLogFile(player);
 					}
 					fileRs.close();
+
+					if(log == null)
+						continue;
 					
 					openedLogs.put(fileId, log);
 				}

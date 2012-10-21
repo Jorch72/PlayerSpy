@@ -54,7 +54,7 @@ public class DeathRecord extends Record implements ILocationAware
 	@Override
 	protected int getContentSize(boolean absolute) 
 	{
-		return mLocation.getSize(absolute) + 2 + mReason.length();
+		return mLocation.getSize(absolute) + Utility.getUTFLength(mReason);
 	}
 	@Override
 	public boolean isFullLocation() { return false;	}

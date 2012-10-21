@@ -164,6 +164,8 @@ public class InspectBlockTask implements Task<Void>
 			}
 			
 			RecordList source = fileSession.Log.loadSession(fileSession.Session);
+			if(source.isEmpty())
+				continue;
 			
 			processRecords(cause, source);
 		}

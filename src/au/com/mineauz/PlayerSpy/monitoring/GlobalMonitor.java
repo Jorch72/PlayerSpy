@@ -317,6 +317,12 @@ public class GlobalMonitor implements Listener
 		else if(cause.isGlobal())
 		{
 			HashMap<String, RecordList> buffers = mBuffers.get(cause.getWorld());
+			if(buffers == null)
+			{
+				buffers = new HashMap<String, RecordList>();
+				mBuffers.put(cause.getWorld(), buffers);
+			}
+			
 			if(!buffers.containsKey(cause.getExtraCause()))
 				buffers.put(cause.getExtraCause(), new RecordList());
 			
@@ -479,7 +485,7 @@ public class GlobalMonitor implements Listener
 		
 		if(event.getAction() == Action.PHYSICAL && event.getClickedBlock().getType() == Material.SOIL)
 		{
-			if(event.getClickedBlock().getRelative(BlockFace.UP).getType() == Material.CROPS)
+			if(event.getClickedBlock().getRelative(BlockFace.UP).getType() == Material.CROPS || event.getClickedBlock().getRelative(BlockFace.UP).getType() == Material.MELON_STEM || event.getClickedBlock().getRelative(BlockFace.UP).getType() == Material.PUMPKIN_STEM)
 			{
 				BlockChangeRecord record = new BlockChangeRecord(event.getClickedBlock().getRelative(BlockFace.UP).getState(), null, false);
 				ShallowMonitor mon = getMonitor(event.getPlayer());
@@ -903,7 +909,7 @@ public class GlobalMonitor implements Listener
 		// Make sure there is at least the global #fire cause
 		if(cause == null)
 			cause = Cause.globalCause(event.getBlock().getWorld(), "#fire");
-		if(cause.getExtraCause() == null)
+		if(cause.isPlayer())
 			cause.update(Cause.playerCause(cause.getCausingPlayer(), "#fire"));
 		
 		// Log it

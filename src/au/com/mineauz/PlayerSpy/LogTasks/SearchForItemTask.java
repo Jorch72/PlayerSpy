@@ -177,6 +177,8 @@ public class SearchForItemTask implements Task<Long>
 			UpdateInventoryRecord urecord = (UpdateInventoryRecord)record;
 			for(InventorySlot slot : urecord.Slots)
 			{
+				if(slot.Item == null)
+					continue;
 				if(slot.Item.getType() == mItemType && mGained)
 					return true;
 				else if(!mGained && slot.Item.getType() != mItemType)
@@ -187,7 +189,7 @@ public class SearchForItemTask implements Task<Long>
 							return true;
 						lastInventory.getArmour()[slot.Slot -lastInventory.getItems().length] = slot.Item;
 					}
-					else if(lastInventory.getItems()[slot.Slot].getType() == mItemType)
+					else if(lastInventory.getItems()[slot.Slot] != null && lastInventory.getItems()[slot.Slot].getType() == mItemType)
 						return true;
 					else
 						lastInventory.getItems()[slot.Slot] = slot.Item;

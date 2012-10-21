@@ -47,6 +47,12 @@ public class RecordFilterDA extends DataAssembler
 				objects.push(new RecordTypeConstraint(RecordType.Interact));
 			}
 		}
+		else
+		{
+			objects.push(new RecordTypeConstraint(RecordType.BlockChange));
+			objects.push(new RecordTypeConstraint(RecordType.Interact));
+			objects.push(new RecordTypeConstraint(RecordType.ItemTransaction));
+		}
 		return null;
 	}
 

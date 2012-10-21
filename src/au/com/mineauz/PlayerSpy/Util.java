@@ -1,10 +1,7 @@
 package au.com.mineauz.PlayerSpy;
 
-import java.sql.Date;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
-import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -182,7 +179,7 @@ public class Util
 	}
 	public static String dateToString(long date)
 	{
-		return new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date(date));
+		return Utility.formatTime(date, "dd/MM/yy HH:mm:ss");
 	}
 	public static long parseDate(String date, long current, long start, long end)
 	{
@@ -219,12 +216,15 @@ public class Util
 				else if(m.group(8).equals("today"))
 				{
 					// Only the date part of now
-					time = new GregorianCalendar(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).getTimeInMillis();
+					GregorianCalendar temp = new GregorianCalendar(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
+					temp.setTimeZone(SpyPlugin.getSettings().timezone);
+					time = temp.getTimeInMillis();
 				}
 				else if(m.group(8).equals("yesterday"))
 				{
 					// today - 1 day
 					GregorianCalendar temp = new GregorianCalendar(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
+					temp.setTimeZone(SpyPlugin.getSettings().timezone);
 					temp.add(Calendar.DAY_OF_MONTH, -1);
 					time = temp.getTimeInMillis();
 				}
@@ -342,8 +342,6 @@ public class Util
 				cal.set(Calendar.SECOND, second);
 				cal.set(Calendar.MILLISECOND, 0);
 
-				SimpleDateFormat fmt = new SimpleDateFormat("dd/MM/yy hh:mm:ss a");
-				fmt.setTimeZone(TimeZone.getTimeZone("GMT"));
 				time = cal.getTimeInMillis();
 			}
 			

@@ -4,7 +4,10 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import org.bukkit.ChatColor;
 import org.bukkit.World;
+
+import au.com.mineauz.PlayerSpy.Utility;
 
 public class ChatCommandRecord extends Record 
 {
@@ -42,11 +45,11 @@ public class ChatCommandRecord extends Record
 	@Override
 	protected int getContentSize(boolean absolute) 
 	{
-		return 3 + mMessage.length();
+		return 1 + Utility.getUTFLength(mMessage);
 	}
 	@Override
 	public String getDescription()
 	{
-		return "%s: " + mMessage;
+		return "%s: " + (mPrevented ? ChatColor.STRIKETHROUGH : "") + mMessage + (mPrevented ? ChatColor.RESET : "");
 	}
 }

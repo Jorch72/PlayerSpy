@@ -103,7 +103,7 @@ public class InventoryTransactionRecord extends Record implements IRollbackable
 		String itemName = Utility.formatItemName(mItem);
 		int amount = mItem.getAmount();
 		
-		String result = "(" + (mTake ? ChatColor.RED + "-" : ChatColor.GREEN + "+" ) + amount + ChatColor.RESET + " " + itemName + (mTake ? " from " : " to ");
+		String result = "(" + (mTake ? ChatColor.RED + "-" : ChatColor.GREEN + "+" ) + amount + ChatColor.RESET + ") " + itemName + (mTake ? " from " : " to ");
 		if(mInvInfo.getBlock() != null)
 		{
 			String blockName = Utility.formatItemName(new ItemStack(mInvInfo.getBlock().getType(),1, mInvInfo.getBlock().getData()));

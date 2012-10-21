@@ -86,7 +86,7 @@ public class SpreadTracker
 		// Lookup to see if the source was recorded
 		Location sourceLocation = mMap.get(from);
 		// Map the destination block back to the source block
-		if(sourceLocation != null)
+		if(sourceLocation != null && mSources.containsKey(sourceLocation))
 		{
 			LogUtil.fine("Spreading " + from.getBlock().getType().toString() + " from " + Utility.locationToStringShort(from) + " to " + Utility.locationToStringShort(to) + " thanks to " + mSources.get(sourceLocation));
 			Location loc = to.clone();
@@ -111,9 +111,9 @@ public class SpreadTracker
 	{
 		Location sourceLocation = mMap.get(loc);
 		
-		if(sourceLocation != null)
+		if(sourceLocation != null && mSources.containsKey(sourceLocation))
 		{
-			LogUtil.info("Removing @" + Utility.locationToStringShort(loc));
+			LogUtil.finer("Removing @" + Utility.locationToStringShort(loc));
 			mMap.remove(loc);
 
 			// Remove the scheduled delete
@@ -130,7 +130,7 @@ public class SpreadTracker
 				// remove the source since nothing points to it anymore
 				mReferenceCount.remove(sourceLocation);
 				mSources.remove(sourceLocation);
-				LogUtil.info("Removed source");
+				LogUtil.finer("Removed source");
 			}
 		}
 	}

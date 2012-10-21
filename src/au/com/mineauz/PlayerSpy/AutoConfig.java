@@ -29,7 +29,6 @@ public abstract class AutoConfig
 		FileConfiguration yml = new YamlConfiguration();
 		try
 		{
-			LogUtil.info("Loading config");
 			// Make sure the file exists
 			if(!mFile.exists())
 			{
@@ -164,7 +163,6 @@ public abstract class AutoConfig
 	{
 		try
 		{
-			LogUtil.info("Saving config");
 			onPreSave();
 			
 			YamlConfiguration config = new YamlConfiguration();

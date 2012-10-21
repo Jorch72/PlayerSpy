@@ -39,25 +39,28 @@ public class PlaybackContext
 				// Seek callback
 				mDisplay.notifyViewers("at " + ChatColor.GREEN + Utility.formatTime(mPrimaryController.getPlaybackDate(), "dd/MM/yy HH:mm:ss"));
 				
-				if(!mIndexShadowPlayerMap.containsKey(0))
+				if(mPrimaryController.getBuffer().size() > 0 && mPrimaryController.getBufferIndex() < mPrimaryController.getBuffer().size())
 				{
-					// Add the target to the display
-					Location loc = mPrimaryController.getBuffer().getCurrentLocation(mPrimaryController.getBufferIndex());
-					if(loc == null)
-						loc = mPrimaryController.getBuffer().getFirstLocation();
-					
-					EntityShadowPlayer target = createShadowPlayer(mPrimaryController.getPlayer(), loc);
-					mDisplay.addShadowPlayer(target);
-					mIndexShadowPlayerMap.put(0,target);
-				}
-				else
-				{
-					Location loc = mPrimaryController.getBuffer().getCurrentLocation(mPrimaryController.getBufferIndex());
-					if(loc == null)
-						loc = mPrimaryController.getBuffer().getFirstLocation();
-					
-					EntityShadowPlayer target = mIndexShadowPlayerMap.get(0);
-					Utility.setEntityPosition(target, loc);
+					if(!mIndexShadowPlayerMap.containsKey(0))
+					{
+						// Add the target to the display
+						Location loc = mPrimaryController.getBuffer().getCurrentLocation(mPrimaryController.getBufferIndex());
+						if(loc == null)
+							loc = mPrimaryController.getBuffer().getFirstLocation();
+						
+						EntityShadowPlayer target = createShadowPlayer(mPrimaryController.getPlayer(), loc);
+						mDisplay.addShadowPlayer(target);
+						mIndexShadowPlayerMap.put(0,target);
+					}
+					else
+					{
+						Location loc = mPrimaryController.getBuffer().getCurrentLocation(mPrimaryController.getBufferIndex());
+						if(loc == null)
+							loc = mPrimaryController.getBuffer().getFirstLocation();
+						
+						EntityShadowPlayer target = mIndexShadowPlayerMap.get(0);
+						Utility.setEntityPosition(target, loc);
+					}
 				}
 				
 				// Remove existing items
@@ -194,6 +197,8 @@ public class PlaybackContext
 	{
 		mPrimaryController.close();
 		
+		mDisplay.removeAllViewers();
+		
 		// Remove existing items
 		for(Entry<Integer, EntityItem> ent : mIndexShadowItemMap.entrySet())
 		{
@@ -222,8 +227,6 @@ public class PlaybackContext
 			mDisplay.removeShadowPlayer(ent.getValue());
 		}
 		mIndexShadowPlayerMap.clear();
-		
-		mDisplay.notifyViewers("Playback Unloaded");
 	}
 	
 	/**
@@ -538,7 +541,7 @@ public class PlaybackContext
 			break;
 		}
 		case Death:
-			mDisplay.notifyViewers(ChatColor.YELLOW + forPlayer.name + ((DeathRecord)record).getReason());
+			mDisplay.notifyViewers(ChatColor.YELLOW + ((DeathRecord)record).getReason());
 			mDisplay.removeShadowPlayer(forPlayer);
 			break;
 		case EndOfSession:
@@ -635,7 +638,7 @@ public class PlaybackContext
 		case UpdateInventory:
 			for(InventorySlot slot : ((UpdateInventoryRecord)record).Slots)
 			{
-				if(slot.Slot > forPlayer.inventory.items.length)
+				if(slot.Slot >= forPlayer.inventory.items.length)
 					forPlayer.inventory.armor[slot.Slot - forPlayer.inventory.items.length] = Utility.convertToNative(slot.Item);
 				else
 					forPlayer.inventory.items[slot.Slot] = Utility.convertToNative(slot.Item);
@@ -734,7 +737,6 @@ public class PlaybackContext
 					{
 						if(ent.getValue() == mob)
 						{
-							LogUtil.info("found");
 							mIndexShadowMobMap.remove(ent.getKey());
 							mIndexShadowMobMap.put(id, mob);
 							break;
@@ -765,7 +767,6 @@ public class PlaybackContext
 						{
 							if(ent.getValue() == mob)
 							{
-								LogUtil.info("found");
 								mIndexShadowMobMap.remove(ent.getKey());
 								mIndexShadowMobMap.put(id, mob);
 								break;

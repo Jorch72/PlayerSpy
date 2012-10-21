@@ -6,6 +6,8 @@ import java.io.IOException;
 
 import org.bukkit.World;
 
+import au.com.mineauz.PlayerSpy.Utility;
+
 public class LogoffRecord extends Record
 {
 	public enum LogoffType
@@ -54,7 +56,7 @@ public class LogoffRecord extends Record
 	@Override
 	protected int getContentSize(boolean absolute) 
 	{
-		return 1 + (mLogoffType != LogoffType.Quit ? 2 + mReason.length() : 0);
+		return 1 + (mLogoffType != LogoffType.Quit ? Utility.getUTFLength(mReason) : 0);
 	}
 	@Override
 	public String getDescription()

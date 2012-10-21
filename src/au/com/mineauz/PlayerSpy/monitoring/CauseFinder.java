@@ -121,7 +121,6 @@ public class CauseFinder
 			Entry<Location, Future<Cause>> ent = it.next();
 			if(ent.getValue().isDone())
 			{
-				LogUtil.info("Found a completed task");
 				// Notify that its done
 				try 
 				{

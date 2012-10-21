@@ -29,6 +29,9 @@ public class EntityConstraint extends Constraint
 		if(record.getType() != RecordType.Attack || ((AttackRecord)record).getDamage() != -1)
 			return false;
 		
+		if(entityType == null)
+			return true;
+		
 		if(entityType != ((AttackRecord)record).getDamagee().getEntityType())
 			return false;
 		

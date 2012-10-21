@@ -68,7 +68,7 @@ public class StoredEntity
 	}
 	public int getSize()
 	{
- 		return 6 + mLocation.getSize(true) + (mTypeId == (EntityType.PLAYER.ordinal() | 1024) ? 2 + mPlayerName.length() : 0);
+ 		return 6 + mLocation.getSize(true) + (mTypeId == (EntityType.PLAYER.ordinal() | 1024) ? Utility.getUTFLength(mPlayerName) : 0);
 	}
 	
 	public net.minecraft.server.Entity createEntity()

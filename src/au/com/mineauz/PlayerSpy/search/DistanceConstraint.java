@@ -6,6 +6,7 @@ import au.com.mineauz.PlayerSpy.Records.AttackRecord;
 import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
 import au.com.mineauz.PlayerSpy.Records.ILocationAware;
 import au.com.mineauz.PlayerSpy.Records.InteractRecord;
+import au.com.mineauz.PlayerSpy.Records.InventoryTransactionRecord;
 import au.com.mineauz.PlayerSpy.Records.PaintingChangeRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.VehicleMountRecord;
@@ -88,6 +89,29 @@ public class DistanceConstraint extends Constraint
 			else if(irecord.hasEntity())
 			{
 				Location other = irecord.getEntity().getLocation();
+				if(location.getWorld().equals(other.getWorld()))
+				{
+					if(location.distanceSquared(other) <= (distance * distance))
+						return true;
+				}
+			}
+		}
+		else if(record instanceof InventoryTransactionRecord)
+		{
+			InventoryTransactionRecord irecord = (InventoryTransactionRecord)record;
+			
+			if(irecord.getInventoryInfo().getBlock() != null)
+			{
+				Location other = irecord.getInventoryInfo().getBlock().getLocation();
+				if(location.getWorld().equals(other.getWorld()))
+				{
+					if(location.distanceSquared(other) <= (distance * distance))
+						return true;
+				}
+			}
+			else if(irecord.getInventoryInfo().getEntity() != null)
+			{
+				Location other = irecord.getInventoryInfo().getEntity().getLocation();
 				if(location.getWorld().equals(other.getWorld()))
 				{
 					if(location.distanceSquared(other) <= (distance * distance))

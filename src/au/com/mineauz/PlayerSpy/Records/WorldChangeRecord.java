@@ -50,7 +50,7 @@ public class WorldChangeRecord extends Record {
 	@Override
 	protected int getContentSize(boolean absolute) 
 	{
-		return 2 + mWorld.getName().length();
+		return Utility.getUTFLength(mWorldString);
 	}
 	@Override
 	public String getDescription()

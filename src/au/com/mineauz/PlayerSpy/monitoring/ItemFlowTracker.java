@@ -8,6 +8,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.ItemDespawnEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
@@ -43,11 +44,13 @@ public class ItemFlowTracker implements Listener
 		
 	}
 	
-	@EventHandler
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onInventoryClick(InventoryClickEvent event)
 	{
 		if(!(event.getWhoClicked() instanceof Player))
 			return;
+		
+		scheduleInventoryUpdate(event.getView().getBottomInventory());
 		
 		if(event.getInventory().getType() == InventoryType.CRAFTING || event.getInventory().getType() == InventoryType.CREATIVE)
 			return;
@@ -116,10 +119,8 @@ public class ItemFlowTracker implements Listener
 				mPlayerLastClick.put((Player)event.getWhoClicked(), -999);
 			}
 		}
-		
-		scheduleInventoryUpdate(event.getView().getBottomInventory());
 	}
-	@EventHandler
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onInventoryOpen(InventoryOpenEvent event)
 	{
 		if(!(event.getPlayer() instanceof Player))
@@ -133,7 +134,7 @@ public class ItemFlowTracker implements Listener
 		if(mon != null)
 			mon.beginTransaction(event.getInventory());
 	}
-	@EventHandler
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onInventoryClose(InventoryCloseEvent event)
 	{
 		if(!(event.getPlayer() instanceof Player))
@@ -156,12 +157,25 @@ public class ItemFlowTracker implements Listener
 	{
 		if(!mLastRecordedState.containsKey(inventory))
 		{
-			ItemStack[] items = inventory.getContents().clone();
+			int count = inventory.getContents().length;
+			if(inventory instanceof PlayerInventory)
+				count += ((PlayerInventory)inventory).getArmorContents().length;
+
+			ItemStack[] items = new ItemStack[count];
+			
 			// Deep copy
 			for(int i = 0; i < items.length; i++)
 			{
-				if(items[i] != null)
-					items[i] = items[i].clone();
+				if(i < inventory.getContents().length)
+				{
+					if(inventory.getContents()[i] != null)
+						items[i] = inventory.getContents()[i].clone();
+				}
+				else
+				{
+					if(((PlayerInventory)inventory).getArmorContents()[i-inventory.getContents().length] != null)
+						items[i] = ((PlayerInventory)inventory).getArmorContents()[i-inventory.getContents().length].clone();
+				}
 			}
 			
 			mLastRecordedState.put(inventory, items);
@@ -231,6 +245,52 @@ public class ItemFlowTracker implements Listener
 	private ArrayList<InventorySlot> detectChanges(Inventory current, ItemStack[] stored, boolean diff)
 	{
 		ArrayList<InventorySlot> changes = new ArrayList<InventorySlot>();
+		
+		if(current instanceof PlayerInventory)
+		{
+			int offset = ((PlayerInventory)current).getContents().length;
+			
+			for(int slot = 0; slot < ((PlayerInventory)current).getArmorContents().length; slot++)
+			{
+				ItemStack oldStack = stored[slot + offset];
+				ItemStack newStack = ((PlayerInventory)current).getArmorContents()[slot];
+				
+				// Detect changes
+				boolean changed = false;
+				
+				if((oldStack == null && newStack != null) ||
+				   (oldStack != null && newStack == null))
+					changed = true;
+				else if(oldStack != null && newStack != null)
+				{
+					if(!oldStack.equals(newStack))
+						changed = true;
+				}
+				
+				if(!changed)
+					continue;
+				
+				InventorySlot islot = new InventorySlot();
+				islot.Slot = slot + offset;
+				if(diff)
+				{
+					if(oldStack == null)
+						islot.Item = newStack.clone();
+					else if(newStack == null)
+					{
+						islot.Item = oldStack.clone();
+						islot.Item.setAmount(-islot.Item.getAmount());
+					}
+					else
+					{
+						islot.Item = new ItemStack(oldStack.getType(), newStack.getAmount() - oldStack.getAmount(), oldStack.getDurability());
+					}
+				}
+				else
+					islot.Item = (newStack != null ? newStack.clone() : newStack);
+				changes.add(islot);
+			}
+		}
 		
 		for(int slot = 0; slot < current.getContents().length; slot++)
 		{

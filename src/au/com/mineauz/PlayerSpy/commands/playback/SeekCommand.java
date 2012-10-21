@@ -1,13 +1,11 @@
 package au.com.mineauz.PlayerSpy.commands.playback;
 
-import java.sql.Date;
-import java.text.SimpleDateFormat;
-
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.PlaybackContext;
 import au.com.mineauz.PlayerSpy.Util;
+import au.com.mineauz.PlayerSpy.Utility;
 
 public class SeekCommand extends Command
 {
@@ -16,8 +14,7 @@ public class SeekCommand extends Command
 	{
 		if(args.length == 0)
 		{
-			Date date = new Date(playback.getPlaybackDate());
-			sender.sendMessage("Playback is at " + ChatColor.GREEN + new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(date));
+			sender.sendMessage("Playback is at " + ChatColor.GREEN + Utility.formatTime(playback.getPlaybackDate(), "dd/MM/yy HH:mm:ss"));
 		}
 		else
 		{
@@ -30,8 +27,7 @@ public class SeekCommand extends Command
 			{
 				if(!playback.seek(time))
 				{
-					Date date = new Date(time);
-					sender.sendMessage("There is no session at " + ChatColor.GREEN + new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(date));
+					sender.sendMessage("There is no session at " + ChatColor.GREEN + Utility.formatTime(time, "dd/MM/yy HH:mm:ss"));
 				}
 			}
 			else

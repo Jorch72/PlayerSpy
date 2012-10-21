@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -30,8 +29,8 @@ public class SpyPlugin extends JavaPlugin
 		
 		LogUtil.setLogger(getLogger());
 		//*****DEBUG******
-		getLogger().setLevel(Level.FINEST);
-		getLogger().getParent().getHandlers()[0].setLevel(Level.FINEST);
+		//getLogger().setLevel(Level.FINEST);
+		//getLogger().getParent().getHandlers()[0].setLevel(Level.FINEST);
 		//****END DEBUG****
 		
 		mConfig = new Config(new File(getDataFolder(), "config.yml"));

@@ -94,7 +94,6 @@ public class Searcher
 		
 		long lastDate = 0;
 		Pager pager = new Pager(title, (who instanceof Player ? 10 : 40));
-		int lastPageCount = 0;
 		for(Pair<Record,Integer> result : results.allRecords)
 		{
 			String msg = result.getArg1().getDescription();
@@ -109,7 +108,7 @@ public class Searcher
 			date = Utility.getTimePortion(date);
 			
 			// Output the date if it has changed
-			if(lastDate != dateOnly || pager.getPageCount() != lastPageCount)
+			if(lastDate != dateOnly ||  ((int) Math.ceil((pager.getItemCount()+1) / (float)pager.getItemsPerPage()) != pager.getPageCount()))
 			{
 				if(dateOnly == Utility.getDatePortion(System.currentTimeMillis()))
 					pager.addItem(ChatColor.GREEN + "Today");
@@ -120,8 +119,6 @@ public class Searcher
 					pager.addItem(ChatColor.GREEN + fmt.format(new Date(dateOnly)));
 				}
 				lastDate = dateOnly;
-				
-				lastPageCount = pager.getPageCount();
 			}
 			
 			Cause cause = results.causes.get(result.getArg2());

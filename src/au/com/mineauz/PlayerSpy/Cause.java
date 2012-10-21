@@ -64,7 +64,7 @@ public class Cause
 	 * Gets whether this is an unknown cause
 	 * @return
 	 */
-	public boolean isUnknown() { return mPlayer == null && mExtraCause == null && mId == -1; }
+	public boolean isUnknown() { return !isPlayer() && !isGlobal() && !isPlaceholder(); }
 	
 	/**
 	 * Gets whether this is a player cause

@@ -228,7 +228,7 @@ public class PlaybackControl
 					mPlaybackDate = mBuffer.currentBuffer().getEndTimestamp();
 				
 				String debug = Utility.formatTime(mPlaybackDate, "dd/mm/yy hh:mm:ss a");
-				LogUtil.info("Seeked to " + debug);
+				LogUtil.fine("Seeked to " + debug);
 				boolean deep = mBuffer.currentBuffer().getDeep();
 				
 				if(!mDeepMode && deep)
@@ -284,9 +284,6 @@ public class PlaybackControl
 					if(!mBuffer.shiftBuffer(true))
 					{
 						mLastRequestFailed = true;
-						// We are out of data and there is no more to get
-						mIsPlaying = false;
-						onFinish();
 					}
 				}
 				
