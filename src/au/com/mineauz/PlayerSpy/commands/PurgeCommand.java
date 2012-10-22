@@ -16,8 +16,8 @@ import org.bukkit.conversations.Prompt;
 import org.bukkit.conversations.StringPrompt;
 
 import au.com.mineauz.PlayerSpy.SpyPlugin;
-import au.com.mineauz.PlayerSpy.Util;
 import au.com.mineauz.PlayerSpy.LogTasks.PurgeTask;
+import au.com.mineauz.PlayerSpy.Utilities.Util;
 import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 
 public class PurgeCommand implements ICommand

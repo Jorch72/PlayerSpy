@@ -22,10 +22,10 @@ import org.bukkit.inventory.PlayerInventory;
 
 import au.com.mineauz.PlayerSpy.InventorySlot;
 import au.com.mineauz.PlayerSpy.LogUtil;
-import au.com.mineauz.PlayerSpy.Pair;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
-import au.com.mineauz.PlayerSpy.Utility;
 import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
+import au.com.mineauz.PlayerSpy.Utilities.Pair;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
 /**
  * Keeps track of the flow of items across the server.

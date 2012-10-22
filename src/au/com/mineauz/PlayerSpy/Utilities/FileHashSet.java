@@ -1,10 +1,11 @@
-package au.com.mineauz.PlayerSpy;
+package au.com.mineauz.PlayerSpy.Utilities;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
+
 
 public abstract class FileHashSet<E extends IWritable> implements Set<E> 
 {

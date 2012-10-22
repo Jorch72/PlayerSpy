@@ -6,6 +6,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
+
 public class StoredLocation 
 {
 	public StoredLocation(Location loc)

@@ -7,6 +7,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.InvalidConfigurationException;
 
+import au.com.mineauz.PlayerSpy.Utilities.AutoConfig;
+import au.com.mineauz.PlayerSpy.Utilities.ConfigField;
+
 public class PersistantData extends AutoConfig
 {
 	public PersistantData( File file )

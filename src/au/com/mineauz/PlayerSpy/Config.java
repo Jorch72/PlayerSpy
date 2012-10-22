@@ -5,6 +5,11 @@ import java.util.TimeZone;
 
 import org.bukkit.configuration.InvalidConfigurationException;
 
+import au.com.mineauz.PlayerSpy.Utilities.AutoConfig;
+import au.com.mineauz.PlayerSpy.Utilities.ConfigField;
+import au.com.mineauz.PlayerSpy.Utilities.StringTranslator;
+import au.com.mineauz.PlayerSpy.Utilities.Util;
+
 public class Config extends AutoConfig 
 {
 	@ConfigField(comment = "When set to true, records fluid flow as block changes, and traces the flow to find the cause.", category="tracing")

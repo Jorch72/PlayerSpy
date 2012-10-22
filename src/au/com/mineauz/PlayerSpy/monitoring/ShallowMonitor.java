@@ -28,10 +28,10 @@ import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.LogUtil;
-import au.com.mineauz.PlayerSpy.Pair;
 import au.com.mineauz.PlayerSpy.RecordList;
-import au.com.mineauz.PlayerSpy.Utility;
 import au.com.mineauz.PlayerSpy.Records.*;
+import au.com.mineauz.PlayerSpy.Utilities.Pair;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
 public class ShallowMonitor 
 {

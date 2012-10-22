@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy;
+package au.com.mineauz.PlayerSpy.Utilities;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -14,6 +14,7 @@ import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
+
 
 public abstract class AutoConfig
 {

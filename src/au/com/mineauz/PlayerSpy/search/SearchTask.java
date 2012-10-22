@@ -9,10 +9,10 @@ import java.util.List;
 import org.bukkit.Bukkit;
 
 import au.com.mineauz.PlayerSpy.Cause;
-import au.com.mineauz.PlayerSpy.Pair;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.LogTasks.Task;
 import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
 import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;

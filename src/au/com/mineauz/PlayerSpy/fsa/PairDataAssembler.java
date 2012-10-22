@@ -2,7 +2,7 @@ package au.com.mineauz.PlayerSpy.fsa;
 
 import java.util.ArrayDeque;
 
-import au.com.mineauz.PlayerSpy.Pair;
+import au.com.mineauz.PlayerSpy.Utilities.Pair;
 
 public class PairDataAssembler extends DataAssembler 
 {

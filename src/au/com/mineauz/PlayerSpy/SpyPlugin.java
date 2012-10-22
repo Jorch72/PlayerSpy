@@ -13,6 +13,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import au.com.mineauz.PlayerSpy.Upgrading.Upgrader;
+import au.com.mineauz.PlayerSpy.Utilities.PriorityExecutor;
 import au.com.mineauz.PlayerSpy.commands.*;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;

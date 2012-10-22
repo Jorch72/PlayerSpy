@@ -104,6 +104,7 @@ AliasCheck:	for(Entry<String, ICommand> ent : mCommands.entrySet())
 		if(com.getPermission() != null && !sender.hasPermission(com.getPermission()))
 		{
 			sender.sendMessage(ChatColor.RED + "You do not have permission to use /" + label + " " + subCommand);
+			return true;
 		}
 		
 		if(!com.onCommand(sender, subCommand, subArgs))

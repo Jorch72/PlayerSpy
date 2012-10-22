@@ -9,6 +9,9 @@ import net.minecraft.server.EntityTypes;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.entity.*;
 
+import au.com.mineauz.PlayerSpy.Utilities.EntityShadowPlayer;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
+
 
 
 public class StoredEntity 

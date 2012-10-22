@@ -2,13 +2,10 @@ package au.com.mineauz.PlayerSpy.commands;
 
 import java.util.List;
 
-import net.minecraft.server.ItemStack;
-
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 
-import au.com.mineauz.PlayerSpy.StringTranslator;
-import au.com.mineauz.PlayerSpy.Utility;
+import au.com.mineauz.PlayerSpy.ACIDTest;
+
 
 public class DebugCommand implements ICommand
 {
@@ -40,29 +37,20 @@ public class DebugCommand implements ICommand
 	@Override
 	public boolean canBeConsole() 
 	{
-		return false;
+		return true;
 	}
 
 	@Override
 	public boolean onCommand(CommandSender sender, String label, String[] args) 
 	{
-		Player player = (Player)sender;
+		if(args.length != 1)
+			return false;
 		
-		if(args.length == 0)
-		{
-			ItemStack stack  = Utility.convertToNative(player.getItemInHand());
-			sender.sendMessage(StringTranslator.translateName(stack.getItem().c(stack)));
-		}
-		else
-		{
-			String name = args[0];
-			org.bukkit.inventory.ItemStack result = Utility.matchName(name);
-			if(result == null)
-				sender.sendMessage("No results");
-			else
-				sender.sendMessage(Utility.formatItemName(result));
-		}
-		
+		ACIDTest test = new ACIDTest();
+		if(args[0].equals("1"))
+			test.test1();
+		if(args[0].equals("2"))
+			test.test2();
 		
 		return true;
 	}

@@ -6,8 +6,8 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import au.com.mineauz.PlayerSpy.Pager;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
+import au.com.mineauz.PlayerSpy.Utilities.Pager;
 import au.com.mineauz.PlayerSpy.monitoring.DeepMonitor;
 import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
 

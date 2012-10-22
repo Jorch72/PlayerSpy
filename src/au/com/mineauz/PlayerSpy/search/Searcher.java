@@ -13,11 +13,11 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.Cause;
-import au.com.mineauz.PlayerSpy.Pager;
-import au.com.mineauz.PlayerSpy.Pair;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
-import au.com.mineauz.PlayerSpy.Utility;
 import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.Utilities.Pager;
+import au.com.mineauz.PlayerSpy.Utilities.Pair;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
 public class Searcher 
 {

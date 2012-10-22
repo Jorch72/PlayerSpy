@@ -9,20 +9,22 @@ import java.util.ListIterator;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.Cause;
-import au.com.mineauz.PlayerSpy.Pair;
 import au.com.mineauz.PlayerSpy.RecordList;
-import au.com.mineauz.PlayerSpy.SafeChunk;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
-import au.com.mineauz.PlayerSpy.Utility;
+import au.com.mineauz.PlayerSpy.StoredBlock;
 import au.com.mineauz.PlayerSpy.LogTasks.Task;
 import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
 import au.com.mineauz.PlayerSpy.Records.InteractRecord;
 import au.com.mineauz.PlayerSpy.Records.InventoryTransactionRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
+import au.com.mineauz.PlayerSpy.Utilities.Pair;
+import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
 import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
@@ -33,12 +35,17 @@ public class InspectBlockTask implements Task<Void>
 {
 	private Player mWho;
 	private Location mLocation;
+	private Location mAltLocation;
+	private Material mAltType;
+	
 	private ArrayList<Pair<Cause, Record>> mostRecent;
 	
-	public InspectBlockTask(Player who, Location block)
+	public InspectBlockTask(Player who, Location block, Location altLocation, Material altType)
 	{
 		mWho = who;
 		mLocation = block.clone();
+		mAltLocation = (altLocation != null ? altLocation.clone() : null);
+		mAltType = altType;
 	}
 	
 	private void processRecords(Cause cause, RecordList list)
@@ -72,7 +79,7 @@ public class InspectBlockTask implements Task<Void>
 	{
 		if(record.getType() == RecordType.BlockChange)
 		{
-			if(((BlockChangeRecord)record).getLocation().equals(mLocation))
+			if(((BlockChangeRecord)record).getLocation().equals(mLocation) || (((BlockChangeRecord)record).getBlock().getType() == mAltType && ((BlockChangeRecord)record).getLocation().equals(mAltLocation)))
 			{
 				insertRecord(cause, record);
 				return true;
@@ -81,7 +88,9 @@ public class InspectBlockTask implements Task<Void>
 		else if(record.getType() == RecordType.ItemTransaction && SpyPlugin.getSettings().inspectTransactions)
 		{
 			InventoryTransactionRecord transaction = (InventoryTransactionRecord)record;
-			if(transaction.getInventoryInfo().getBlock() != null && transaction.getInventoryInfo().getBlock().getLocation().equals(mLocation))
+			StoredBlock block = transaction.getInventoryInfo().getBlock();
+			
+			if(block != null && (block.getLocation().equals(mLocation) || block.getType() == mAltType && block.getLocation().equals(mAltLocation)))
 			{
 				insertRecord(cause, record);
 				return true;
@@ -90,7 +99,9 @@ public class InspectBlockTask implements Task<Void>
 		else if(record.getType() == RecordType.Interact && SpyPlugin.getSettings().inspectUse)
 		{
 			InteractRecord interact = (InteractRecord)record;
-			if(interact.hasBlock() && interact.getBlock().getLocation().equals(mLocation))
+			StoredBlock block = interact.getBlock();
+			
+			if(interact.hasBlock() && (block.getLocation().equals(mLocation) || block.getType() == mAltType && block.getLocation().equals(mAltLocation)))
 			{
 				insertRecord(cause, record);
 				return true;

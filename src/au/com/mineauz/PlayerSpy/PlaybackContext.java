@@ -24,6 +24,8 @@ import org.bukkit.inventory.Inventory;
 
 import au.com.mineauz.PlayerSpy.PlaybackControl.PlaybackState;
 import au.com.mineauz.PlayerSpy.Records.*;
+import au.com.mineauz.PlayerSpy.Utilities.EntityShadowPlayer;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
 public class PlaybackContext
 {

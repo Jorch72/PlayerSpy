@@ -8,6 +8,7 @@ import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.Records.*;
+import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
 
 public class RecordList extends ArrayList<Record> 
 {

@@ -4,7 +4,7 @@ import java.util.ArrayDeque;
 
 import org.bukkit.Material;
 
-import au.com.mineauz.PlayerSpy.Pair;
+import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.fsa.DataAssembler;
 
 public class AnyBlockDA extends DataAssembler 

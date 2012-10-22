@@ -2,9 +2,9 @@ package au.com.mineauz.PlayerSpy.search;
 
 import org.bukkit.Material;
 
-import au.com.mineauz.PlayerSpy.Pair;
 import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.Utilities.Pair;
 
 public class BlockConstraint extends Constraint 
 {

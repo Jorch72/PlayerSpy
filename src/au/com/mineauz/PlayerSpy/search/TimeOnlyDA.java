@@ -3,7 +3,7 @@ package au.com.mineauz.PlayerSpy.search;
 import java.util.ArrayDeque;
 import java.util.Date;
 
-import au.com.mineauz.PlayerSpy.Utility;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.fsa.DataAssembler;
 
 public class TimeOnlyDA extends DataAssembler

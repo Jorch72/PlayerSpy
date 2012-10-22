@@ -13,7 +13,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
 
 import au.com.mineauz.PlayerSpy.StoredBlock;
-import au.com.mineauz.PlayerSpy.Utility;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
 public class BlockChangeRecord extends Record implements IRollbackable
 {

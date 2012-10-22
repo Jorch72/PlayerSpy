@@ -7,9 +7,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.PlaybackContext;
-import au.com.mineauz.PlayerSpy.Util;
-import au.com.mineauz.PlayerSpy.Utility;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
+import au.com.mineauz.PlayerSpy.Utilities.Util;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
 public class FindCommand extends Command 
 {

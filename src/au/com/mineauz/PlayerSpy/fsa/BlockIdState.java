@@ -5,8 +5,8 @@ import java.util.ArrayDeque;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
-import au.com.mineauz.PlayerSpy.Pair;
-import au.com.mineauz.PlayerSpy.Utility;
+import au.com.mineauz.PlayerSpy.Utilities.Pair;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
 public class BlockIdState extends State
 {

@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy;
+package au.com.mineauz.PlayerSpy.Utilities;
 
 import net.minecraft.server.EntityHuman;
 import net.minecraft.server.World;

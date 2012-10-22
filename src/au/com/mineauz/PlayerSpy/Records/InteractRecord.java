@@ -15,9 +15,9 @@ import org.bukkit.inventory.ItemStack;
 import au.com.mineauz.PlayerSpy.StoredBlock;
 import au.com.mineauz.PlayerSpy.StoredEntity;
 import au.com.mineauz.PlayerSpy.StoredItemStack;
-import au.com.mineauz.PlayerSpy.Utility;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
 public class InteractRecord extends Record
 {

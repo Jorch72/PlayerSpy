@@ -8,7 +8,7 @@ import org.bukkit.World;
 import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.StoredItemStack;
-import au.com.mineauz.PlayerSpy.Utility;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
 public class DropItemRecord extends Record 
 {

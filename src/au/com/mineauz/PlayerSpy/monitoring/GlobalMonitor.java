@@ -26,12 +26,13 @@ import org.bukkit.material.MaterialData;
 import au.com.mineauz.PlayerSpy.*;
 import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Records.LogoffRecord.LogoffType;
+import au.com.mineauz.PlayerSpy.Utilities.Pair;
 
 public class GlobalMonitor implements Listener
 {
 	private HashMap<OfflinePlayer, ShallowMonitor> mShallowMonitors;
-	private HashMap<OfflinePlayer, Pair<ShallowMonitor, Long>> mOfflineMonitors;
-	private HashMap<OfflinePlayer, DeepMonitor> mDeepMonitors;
+	private HashMap<String, Pair<ShallowMonitor, Long>> mOfflineMonitors;
+	private HashMap<String, DeepMonitor> mDeepMonitors;
 
 	private ItemFlowTracker mItemTracker;
 	public static final GlobalMonitor instance = new GlobalMonitor();
@@ -49,8 +50,8 @@ public class GlobalMonitor implements Listener
 	private GlobalMonitor()
 	{
 		mShallowMonitors = new HashMap<OfflinePlayer, ShallowMonitor>();
-		mOfflineMonitors = new HashMap<OfflinePlayer, Pair<ShallowMonitor,Long>>();
-		mDeepMonitors = new HashMap<OfflinePlayer, DeepMonitor>();
+		mOfflineMonitors = new HashMap<String, Pair<ShallowMonitor,Long>>();
+		mDeepMonitors = new HashMap<String, DeepMonitor>();
 		
 	}
 	
@@ -124,10 +125,10 @@ public class GlobalMonitor implements Listener
 		mSpreadTracker.doUpdate();
 		mCauseFinder.update();
 		
-		Iterator<Entry<OfflinePlayer, Pair<ShallowMonitor, Long>>> it = mOfflineMonitors.entrySet().iterator();
+		Iterator<Entry<String, Pair<ShallowMonitor, Long>>> it = mOfflineMonitors.entrySet().iterator();
 		while(it.hasNext())
 		{
-			Entry<OfflinePlayer, Pair<ShallowMonitor, Long>> entry = it.next();
+			Entry<String, Pair<ShallowMonitor, Long>> entry = it.next();
 			// Check the time
 			if(System.currentTimeMillis() >= entry.getValue().getArg2() + SpyPlugin.getSettings().logTimeout)
 			{
@@ -141,10 +142,10 @@ public class GlobalMonitor implements Listener
 	{
 		LogUtil.finer("Attaching shallow monitor to " + player.getName());
 		
-		if(mOfflineMonitors.containsKey(player))
+		if(mOfflineMonitors.containsKey(player.getName()))
 		{
-			mShallowMonitors.put(player, mOfflineMonitors.get(player).getArg1());
-			mOfflineMonitors.remove(player);
+			mShallowMonitors.put(player, mOfflineMonitors.get(player.getName()).getArg1());
+			mOfflineMonitors.remove(player.getName());
 		}
 		else
 			mShallowMonitors.put(player, new ShallowMonitor(player));
@@ -174,7 +175,7 @@ public class GlobalMonitor implements Listener
 			
 			LogUtil.fine("Attaching Deep Monitor to " + player.getName());
 			monitor.logRecord(new SessionInfoRecord(true));
-			mDeepMonitors.put(player, monitor);
+			mDeepMonitors.put(player.getName(), monitor);
 		}
 		catch(ExceptionInInitializerError e)
 		{
@@ -189,11 +190,11 @@ public class GlobalMonitor implements Listener
 	}
 	public void removeDeep(OfflinePlayer player)
 	{
-		if(!mDeepMonitors.containsKey(player))
+		if(!mDeepMonitors.containsKey(player.getName()))
 			return;
 		
 		LogUtil.fine("Removing Deep Monitor from " + player.getName());
-		DeepMonitor deep = mDeepMonitors.remove(player);
+		DeepMonitor deep = mDeepMonitors.remove(player.getName());
 		deep.logRecord(new SessionInfoRecord(false));
 		
 		if(player.isOnline())
@@ -213,18 +214,21 @@ public class GlobalMonitor implements Listener
 	 */
 	public ShallowMonitor getMonitor(OfflinePlayer player)
 	{
+		if(player == null)
+			return null;
+		
 		ShallowMonitor mon = mShallowMonitors.get(player);
 		if(mon != null)
 			return mon;
 		
-		Pair<ShallowMonitor,Long> offlineMon = mOfflineMonitors.get(player);
+		Pair<ShallowMonitor,Long> offlineMon = mOfflineMonitors.get(player.getName());
 		if(offlineMon != null)
 		{
 			offlineMon.setArg2(System.currentTimeMillis());
 			return offlineMon.getArg1();
 		}
 		
-		return mDeepMonitors.get(player);
+		return mDeepMonitors.get(player.getName());
 	}
 	/**
 	 * Gets the monitor currently watching player. It will only return deep monitors.
@@ -232,7 +236,10 @@ public class GlobalMonitor implements Listener
 	 */
 	public DeepMonitor getDeepMonitor(OfflinePlayer player)
 	{
-		return mDeepMonitors.get(player);
+		if(player == null)
+			return null;
+		
+		return mDeepMonitors.get(player.getName());
 	}
 	public List<ShallowMonitor> getAllMonitors()
 	{
@@ -341,7 +348,7 @@ public class GlobalMonitor implements Listener
 			else
 			{
 				ShallowMonitor monitor = new ShallowMonitor(cause.getCausingPlayer());
-				mOfflineMonitors.put(cause.getCausingPlayer(), new Pair<ShallowMonitor, Long>(monitor, System.currentTimeMillis()));
+				mOfflineMonitors.put(cause.getCausingPlayer().getName(), new Pair<ShallowMonitor, Long>(monitor, System.currentTimeMillis()));
 				LogUtil.fine("Loading offline monitor for " + cause.getCausingPlayer().getName());
 				
 				for(Record record : records)
@@ -413,7 +420,7 @@ public class GlobalMonitor implements Listener
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onPlayerJoin(PlayerJoinEvent event)
 	{
-		if(!mDeepMonitors.containsKey(event.getPlayer()))
+		if(!mDeepMonitors.containsKey(event.getPlayer().getName()))
 			attachShallow(event.getPlayer());
 		
 		ShallowMonitor mon = getMonitor(event.getPlayer());
@@ -562,7 +569,7 @@ public class GlobalMonitor implements Listener
 	@EventHandler(ignoreCancelled = true)
 	private void onPlayerMove(PlayerMoveEvent event)
 	{
-		DeepMonitor mon = mDeepMonitors.get(event.getPlayer());
+		DeepMonitor mon = mDeepMonitors.get(event.getPlayer().getName());
 		if(mon != null)
 			mon.onMove(event.getPlayer().getLocation(), event.getPlayer().getEyeLocation());
 	}

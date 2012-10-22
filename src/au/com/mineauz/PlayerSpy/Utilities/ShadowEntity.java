@@ -1,6 +1,8 @@
-package au.com.mineauz.PlayerSpy;
+package au.com.mineauz.PlayerSpy.Utilities;
 
 import java.util.Calendar;
+
+import au.com.mineauz.PlayerSpy.StoredEntity;
 
 
 public class ShadowEntity 

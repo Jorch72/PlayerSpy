@@ -21,77 +21,59 @@ public class FileHeader
 	public int OwnerMapCount;
 	public byte[] Reserved = new byte[14];
 	
-	public boolean write(RandomAccessFile file)
+	public void write(RandomAccessFile file) throws IOException
 	{
-		try
-		{
-			file.writeByte(VersionMajor);
-			file.writeByte(VersionMinor);
+		file.writeByte(VersionMajor);
+		file.writeByte(VersionMinor);
 
-			file.writeUTF(PlayerName);
-			file.writeInt((int)IndexLocation);
-			file.writeInt((int)IndexSize);
-			
-			file.writeShort((short)SessionCount);
-			file.writeInt((int)HolesIndexLocation);
-			file.writeInt((int)HolesIndexSize);
-			file.writeShort((short)HolesIndexCount);
-			file.writeShort(HolesIndexPadding);
-			
-			if(VersionMajor == 2)
-			{
-				file.writeBoolean(RequiresOwnerTags);
-				file.writeInt((int)OwnerMapLocation);
-				file.writeInt((int)OwnerMapSize);
-				file.writeShort((short)OwnerMapCount);
-				file.write(Reserved);
-				
-			}
-			return true;
-		}
-		catch(IOException e)
+		file.writeUTF(PlayerName);
+		file.writeInt((int)IndexLocation);
+		file.writeInt((int)IndexSize);
+		
+		file.writeShort((short)SessionCount);
+		file.writeInt((int)HolesIndexLocation);
+		file.writeInt((int)HolesIndexSize);
+		file.writeShort((short)HolesIndexCount);
+		file.writeShort(HolesIndexPadding);
+		
+		if(VersionMajor == 2)
 		{
-			return false;
+			file.writeBoolean(RequiresOwnerTags);
+			file.writeInt((int)OwnerMapLocation);
+			file.writeInt((int)OwnerMapSize);
+			file.writeShort((short)OwnerMapCount);
+			file.write(Reserved);
 		}
 	}
 	
-	public boolean read(RandomAccessFile file) throws Exception
+	public void read(RandomAccessFile file) throws IOException
 	{
-		try
+		VersionMajor = file.readByte();
+		VersionMinor = file.readByte();
+		
+		// Check the version
+		// The minor version can be different since minor versions dont change what fields are present or the type but may change the contents of them
+		if(VersionMajor != 1 && VersionMajor != 2)
+			throw new RuntimeException("Unsupported file version!");
+		
+		PlayerName = file.readUTF();
+			
+		IndexLocation = (long)file.readInt();
+		IndexSize = (long)file.readInt();
+		SessionCount = (int)file.readShort();
+		
+		HolesIndexLocation = (long)file.readInt();
+		HolesIndexSize = (long)file.readInt();
+		HolesIndexCount = (int)file.readShort();
+		HolesIndexPadding = file.readShort();
+		
+		if(VersionMajor == 2)
 		{
-			VersionMajor = file.readByte();
-			VersionMinor = file.readByte();
-			
-			// Check the version
-			// The minor version can be different since minor versions dont change what fields are present or the type but may change the contents of them
-			if(VersionMajor != 1 && VersionMajor != 2)
-				throw new Exception("Unsupported file version!");
-			
-			PlayerName = file.readUTF();
-				
-			IndexLocation = (long)file.readInt();
-			IndexSize = (long)file.readInt();
-			SessionCount = (int)file.readShort();
-			
-			HolesIndexLocation = (long)file.readInt();
-			HolesIndexSize = (long)file.readInt();
-			HolesIndexCount = (int)file.readShort();
-			HolesIndexPadding = file.readShort();
-			
-			if(VersionMajor == 2)
-			{
-				RequiresOwnerTags = file.readBoolean();
-				OwnerMapLocation = file.readInt();
-				OwnerMapSize = file.readInt();
-				OwnerMapCount = file.readShort();
-				file.readFully(Reserved);
-			}
-			
-			return true;
-		}
-		catch(IOException e)
-		{
-			return false;
+			RequiresOwnerTags = file.readBoolean();
+			OwnerMapLocation = file.readInt();
+			OwnerMapSize = file.readInt();
+			OwnerMapCount = file.readShort();
+			file.readFully(Reserved);
 		}
 	}
 	

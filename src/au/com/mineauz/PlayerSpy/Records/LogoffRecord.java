@@ -6,7 +6,7 @@ import java.io.IOException;
 
 import org.bukkit.World;
 
-import au.com.mineauz.PlayerSpy.Utility;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
 public class LogoffRecord extends Record
 {

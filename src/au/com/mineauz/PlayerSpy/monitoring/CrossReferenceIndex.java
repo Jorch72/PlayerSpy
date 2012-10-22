@@ -13,7 +13,7 @@ import org.bukkit.World;
 import au.com.mineauz.PlayerSpy.IndexEntry;
 import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.LogUtil;
-import au.com.mineauz.PlayerSpy.SafeChunk;
+import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
 
 /**
  * The cross reference index provides information on the location of specific data.

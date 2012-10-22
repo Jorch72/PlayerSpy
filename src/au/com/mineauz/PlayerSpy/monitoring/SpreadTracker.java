@@ -10,7 +10,7 @@ import org.bukkit.Location;
 
 import au.com.mineauz.PlayerSpy.Cause;
 import au.com.mineauz.PlayerSpy.LogUtil;
-import au.com.mineauz.PlayerSpy.Utility;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
 /**
  * Tracks the spread of blocks. Does not track the spread of blocks between reloads.

@@ -8,7 +8,7 @@ import org.bukkit.command.CommandSender;
 
 import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.LogUtil;
-import au.com.mineauz.PlayerSpy.Utility;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 
 

@@ -4,7 +4,7 @@ import java.util.ArrayDeque;
 
 import org.bukkit.entity.EntityType;
 
-import au.com.mineauz.PlayerSpy.Util;
+import au.com.mineauz.PlayerSpy.Utilities.Util;
 
 public class EntityTypeState extends State
 {

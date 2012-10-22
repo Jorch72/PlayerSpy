@@ -3,7 +3,7 @@ package au.com.mineauz.PlayerSpy.commands.playback;
 import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.PlaybackContext;
-import au.com.mineauz.PlayerSpy.Util;
+import au.com.mineauz.PlayerSpy.Utilities.Util;
 
 public class SkipCommand extends Command
 {

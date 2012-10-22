@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy;
+package au.com.mineauz.PlayerSpy.Utilities;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -12,6 +12,8 @@ import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.enchantments.Enchantment;
 
+import au.com.mineauz.PlayerSpy.InventorySlot;
+import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
 
 import net.minecraft.server.*;

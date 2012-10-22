@@ -3,6 +3,8 @@ package au.com.mineauz.PlayerSpy;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
+
 public class Cause 
 {
 	private Cause(OfflinePlayer player, String extraCause) 

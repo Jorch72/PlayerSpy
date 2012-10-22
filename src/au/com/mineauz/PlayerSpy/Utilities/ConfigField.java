@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy;
+package au.com.mineauz.PlayerSpy.Utilities;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

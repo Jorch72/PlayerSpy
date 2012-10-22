@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy;
+package au.com.mineauz.PlayerSpy.Utilities;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -7,6 +7,8 @@ import java.util.regex.Pattern;
 
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
+
+import au.com.mineauz.PlayerSpy.SpyPlugin;
 
 public class Util 
 {

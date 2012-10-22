@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy;
+package au.com.mineauz.PlayerSpy.Utilities;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+
+import au.com.mineauz.PlayerSpy.LogUtil;
 
 public abstract class FileLinkedList<E extends IWritable> implements List<E>
 {

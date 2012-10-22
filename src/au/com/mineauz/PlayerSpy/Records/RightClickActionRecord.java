@@ -12,7 +12,7 @@ import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.StoredEntity;
 import au.com.mineauz.PlayerSpy.StoredItemStack;
-import au.com.mineauz.PlayerSpy.Utility;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
 public class RightClickActionRecord extends Record 
 {

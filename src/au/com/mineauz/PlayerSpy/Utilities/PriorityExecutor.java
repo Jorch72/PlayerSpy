@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy;
+package au.com.mineauz.PlayerSpy.Utilities;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -11,6 +11,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
+import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.LogTasks.Task;
 
 public class PriorityExecutor implements Executor

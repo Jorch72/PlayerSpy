@@ -8,6 +8,7 @@ import org.bukkit.Location;
 import org.bukkit.World;
 
 import au.com.mineauz.PlayerSpy.*;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
 public class DeathRecord extends Record implements ILocationAware
 {

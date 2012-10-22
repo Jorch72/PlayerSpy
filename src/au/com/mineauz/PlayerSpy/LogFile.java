@@ -18,6 +18,9 @@ import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 
 import au.com.mineauz.PlayerSpy.LogTasks.*;
 import au.com.mineauz.PlayerSpy.Records.*;
+import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
+import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
+import au.com.mineauz.PlayerSpy.Utilities.Util;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 
 public class LogFile 
@@ -96,13 +99,12 @@ public class LogFile
 	 * @param filename The filename to create the log at
 	 * @return An instance with an open log or null if unable to create it
 	 */
-	@SuppressWarnings("resource")
 	public static LogFile create(String playerName, String filename)
 	{
-		RandomAccessFile file = null;
+		ACIDRandomAccessFile file = null;
 		try 
 		{
-			file = new RandomAccessFile(filename, "rw");
+			file = new ACIDRandomAccessFile(filename, "rw");
 		}
 		catch (FileNotFoundException e) 
 		{
@@ -129,23 +131,23 @@ public class LogFile
 		
 		header.RequiresOwnerTags = false;
 		
-		if(!header.write(file))
+		try
 		{
-			try 
-			{
-				file.close();
-			} 
-			catch (IOException e) {}
+			file.beginTransaction();
+			
+			header.write(file);
+			
+			// write some padding in
+			file.write(new byte[HoleEntry.cSize]);
+			file.commit();
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+			file.rollback();
 			
 			return null;
 		}
-		
-		try 
-		{
-			// write some padding in
-			file.write(new byte[HoleEntry.cSize]);
-		} 
-		catch (IOException e) {}
 		
 		// initialize the logfile instance
 		
@@ -184,12 +186,18 @@ public class LogFile
 
 		try
 		{
+			log.mFile.beginTransaction();
+			
 			log.mFile.seek(0);
 			log.mHeader.write(log.mFile);
+			
+			log.mFile.commit();
 		}
 		catch(IOException e)
 		{
-			
+			log.mFile.rollback();
+			e.printStackTrace();
+			return null;
 		}
 		
 		return log;
@@ -206,13 +214,13 @@ public class LogFile
 		{
 			file = new RandomAccessFile(new File(filename), "r");
 			FileHeader header = new FileHeader();
-			if(!header.read(file))
-				header = null;
+			header.read(file);
 			
 			file.close();
 			
 			return header;
-		} catch (Exception e) 
+		} 
+		catch (Exception e) 
 		{
 			e.printStackTrace();
 		}
@@ -235,17 +243,12 @@ public class LogFile
 		{
 			LogUtil.info("Loading '" + filename + "'...");
 			mFilePath = new File(filename);
-			RandomAccessFile file = new RandomAccessFile(filename, "rw");
+			ACIDRandomAccessFile file = new ACIDRandomAccessFile(filename, "rw");
 			
 			// Read the file header
 			FileHeader header = new FileHeader();
-			if(!header.read(file ))
-			{
-				SpyPlugin.getInstance().getLogger().severe("Failed to load log file. Reason: Header incorrect.");
-				mLock.writeLock().unlock();
-				
-				return false;
-			}
+			header.read(file);
+			
 			mHeader = header;
 			
 			// Read the index
@@ -980,9 +983,10 @@ public class LogFile
 		{
 			mLock.writeLock().lock();
 			
-			
 			try
 			{
+				mFile.beginTransaction();
+				
 				LogUtil.info("Appending " + records.size() + " records to " + mPlayerName + ">" + owner);
 				
 				if(!mActiveSessions.containsKey(owner) || getSessionById(mActiveSessions.get(owner)) == null)
@@ -1041,10 +1045,13 @@ public class LogFile
 					else
 						result = true;
 				}
+				
+				mFile.commit();
 			}
 			catch(IOException e)
 			{
 				e.printStackTrace();
+				mFile.rollback();
 				result = false;
 			}
 			finally
@@ -1081,6 +1088,8 @@ public class LogFile
 			
 			try
 			{
+				mFile.beginTransaction();
+				
 				if(!mActiveSessions.containsKey(null) || getSessionById(mActiveSessions.get(null)) == null)
 				{
 					LogUtil.finer("Tried to append records. No active session was found.");
@@ -1125,10 +1134,13 @@ public class LogFile
 					else
 						result = true;
 				}
+				
+				mFile.commit();
 			}
 			catch(IOException e)
 			{
 				e.printStackTrace();
+				mFile.rollback();
 				result = false;
 			}
 			finally
@@ -1336,6 +1348,8 @@ public class LogFile
 			
 			try
 			{
+				mFile.beginTransaction();
+				
 				LogUtil.info("Purging records from " + Util.dateToString(fromDate) + " to " + Util.dateToString(toDate));
 				ArrayList<IndexEntry> relevantEntries = new ArrayList<IndexEntry>();
 				
@@ -1455,16 +1469,20 @@ public class LogFile
 					}
 				}
 				result = true;
+				
+				mFile.commit();
 			}
 			catch (IOException e)
 			{
 				e.printStackTrace();
 				result = false;
+				mFile.rollback();
 			}
 			catch(Exception e)
 			{
 				e.printStackTrace();
 				result = false;
+				mFile.rollback();
 			}
 			finally
 			{
@@ -1487,6 +1505,8 @@ public class LogFile
 		
 		try
 		{
+			mFile.beginTransaction();
+			
 			// Calculate the total amount of space unused in the file - space reserved for active sessions
 			long totalAvailableFreespace = 0;
 			long oldFileSize = mFile.length();
@@ -1759,11 +1779,14 @@ public class LogFile
 			
 			LogUtil.info("Compacting complete. New file size: " + mFile.length() + ". " + (mFile.length() / (double)oldFileSize) + "%");
 			result = true;
+			
+			mFile.commit();
 		}
 		catch(IOException e)
 		{
 			e.printStackTrace();
 			result = false;
+			mFile.rollback();
 		}
 		finally
 		{
@@ -2521,7 +2544,7 @@ public class LogFile
 	private ArrayList<OwnerMapEntry> mOwnerTagList;
 	private HashMap<Integer, Integer> mOwnerTagMap;
 	
-	private RandomAccessFile mFile;
+	private ACIDRandomAccessFile mFile;
 	
 	private HashMap<String, Integer> mActiveSessions;
 	private FileHeader mHeader;
