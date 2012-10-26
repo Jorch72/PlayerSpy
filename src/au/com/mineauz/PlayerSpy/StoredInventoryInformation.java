@@ -5,6 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
@@ -36,7 +37,7 @@ public class StoredInventoryInformation
 	private StoredEntity mEntity;
 	private InventoryType mType;
 	
-	public StoredInventoryInformation(Inventory inventory)
+	public StoredInventoryInformation(Inventory inventory, Location enderChestLocation)
 	{
 		if(inventory == null)
 		{
@@ -55,6 +56,9 @@ public class StoredInventoryInformation
 					break;
 				}
 			}
+			
+			if(enderChestLocation != null)
+				mBlock = new StoredBlock(enderChestLocation.getBlock());
 		}
 		else if(inventory.getHolder() instanceof Player)
 		{

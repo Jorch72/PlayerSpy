@@ -48,6 +48,7 @@ public class SearchTask implements Task<SearchResults>
 		SearchResults results = new SearchResults();
 		results.causes = new HashMap<Integer, Cause>();
 		results.allRecords = new ArrayList<Pair<Record,Integer>>();
+		results.usedFilter = mFilter;
 		int nextCauseId = 0;
 		
 		HashMap<Cause, Integer> reverseCauseMap = new HashMap<Cause, Integer>();

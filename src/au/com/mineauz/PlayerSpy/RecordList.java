@@ -19,9 +19,9 @@ public class RecordList extends ArrayList<Record>
 		boolean inv = false, world = false, position = false;
 		for(int i = 0; i < 4 && i < size(); i++)
 		{
-			if(get(i) instanceof ILocationAware)
+			if(get(i) instanceof IPlayerLocationAware)
 			{
-				if(((ILocationAware)get(i)).isFullLocation())
+				if(((IPlayerLocationAware)get(i)).isFullLocation())
 					world = true;
 				position = true;
 			}
@@ -44,9 +44,9 @@ public class RecordList extends ArrayList<Record>
 	{
 		for(Record record : this)
 		{
-			if(record instanceof ILocationAware)
+			if(record instanceof IPlayerLocationAware)
 			{
-				return ((ILocationAware)record).getLocation();
+				return ((IPlayerLocationAware)record).getLocation();
 			}
 		}
 		return null;
@@ -95,9 +95,9 @@ public class RecordList extends ArrayList<Record>
 		Location location = null;
 		for(int i = index; i >= 0; i--)
 		{
-			if(get(i) instanceof ILocationAware)
+			if(get(i) instanceof IPlayerLocationAware)
 			{
-				location = ((ILocationAware)get(i)).getLocation().clone();
+				location = ((IPlayerLocationAware)get(i)).getLocation().clone();
 				break;
 			}
 		}
@@ -269,53 +269,13 @@ public class RecordList extends ArrayList<Record>
 			SafeChunk chunk = null;
 			if(record instanceof ILocationAware)
 			{
+				if(((ILocationAware)record).getLocation() == null)
+					continue;
+				
 				if(((ILocationAware)record).getLocation().getWorld() == null)
-				{
-					//LogUtil.info("Null world found" + record.toString());
 					continue;
-				}
+				
 				chunk = new SafeChunk(((ILocationAware)record).getLocation());
-			}
-			else if(record instanceof BlockChangeRecord)
-				chunk = new SafeChunk(((BlockChangeRecord)record).getInitialBlock().getLocation());
-			else if(record instanceof AttackRecord)
-				chunk = new SafeChunk(((AttackRecord)record).getDamagee().getLocation());
-			else if(record instanceof DamageRecord)
-			{
-				if(((DamageRecord)record).getDamager() == null)
-					continue;
-				chunk = new SafeChunk(((DamageRecord)record).getDamager().getLocation());
-			}
-			else if(record instanceof InteractRecord)
-			{
-				if(((InteractRecord)record).getBlock() != null)
-					chunk = new SafeChunk(((InteractRecord)record).getBlock().getLocation());
-				else if(((InteractRecord)record).getEntity() != null)
-					chunk = new SafeChunk(((InteractRecord)record).getEntity().getLocation());
-				else
-					continue;
-			}
-			else if(record instanceof ItemPickupRecord)
-				chunk = new SafeChunk(((ItemPickupRecord)record).getLocation());
-			else if(record instanceof RightClickActionRecord)
-			{
-				if(((RightClickActionRecord)record).getEntity() != null)
-					chunk = new SafeChunk(((RightClickActionRecord)record).getEntity().getLocation());
-				else
-					continue;
-			}
-			else if(record instanceof SleepRecord)
-				chunk = new SafeChunk(((SleepRecord)record).getBedLocation());
-			else if(record instanceof VehicleMountRecord)
-				chunk = new SafeChunk(((VehicleMountRecord)record).getVehicle().getLocation());
-			else if(record instanceof InventoryTransactionRecord)
-			{
-				if(((InventoryTransactionRecord)record).getInventoryInfo().getBlock() != null)
-					chunk = new SafeChunk(((InventoryTransactionRecord)record).getInventoryInfo().getBlock().getLocation());
-				else if(((InventoryTransactionRecord)record).getInventoryInfo().getEntity() != null)
-					chunk = new SafeChunk(((InventoryTransactionRecord)record).getInventoryInfo().getEntity().getLocation());
-				else
-					continue;
 			}
 			else
 				continue;

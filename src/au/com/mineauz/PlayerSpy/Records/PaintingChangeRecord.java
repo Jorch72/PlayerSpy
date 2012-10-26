@@ -4,12 +4,13 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Painting;
 
 import au.com.mineauz.PlayerSpy.StoredPainting;
 
-public class PaintingChangeRecord extends Record implements IRollbackable
+public class PaintingChangeRecord extends Record implements IRollbackable, ILocationAware
 {
 
 	public PaintingChangeRecord(Painting painting, boolean place) 
@@ -82,5 +83,10 @@ public class PaintingChangeRecord extends Record implements IRollbackable
 	public void setRolledBack( boolean value )
 	{
 		mIsRolledBack = value;
+	}
+	@Override
+	public Location getLocation()
+	{
+		return mPainting.getLocation();
 	}
 }

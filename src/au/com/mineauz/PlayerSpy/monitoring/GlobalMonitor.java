@@ -579,7 +579,7 @@ public class GlobalMonitor implements Listener
 		if(event.getEntity() instanceof Player)
 		{
 			// Target was player
-			ShallowMonitor mon = getMonitor((Player)event.getEntity());
+			DeepMonitor mon = getDeepMonitor((Player)event.getEntity());
 		
 			// Record damage to the player
 			if(mon != null)
@@ -595,7 +595,7 @@ public class GlobalMonitor implements Listener
 			// Record attacks from the player
 			if(event.getDamager() instanceof Player)
 			{
-				mon = getMonitor((Player)event.getDamager());
+				mon = getDeepMonitor((Player)event.getDamager());
 				
 				if(mon != null)
 					mon.onAttack(event.getEntity(), event.getDamage());
@@ -603,7 +603,7 @@ public class GlobalMonitor implements Listener
 			// Record attack through projectile
 			else if(event.getDamager() instanceof Projectile && ((Projectile)event.getDamager()).getShooter() instanceof Player)
 			{
-				mon = getMonitor((Player)((Projectile)event.getDamager()).getShooter());
+				mon = getDeepMonitor((Player)((Projectile)event.getDamager()).getShooter());
 				
 				if(mon != null)
 					mon.onAttack(event.getEntity(), event.getDamage());
@@ -639,7 +639,7 @@ public class GlobalMonitor implements Listener
 	{
 		if(event.getEntity() instanceof Player)
 		{
-			ShallowMonitor mon = getMonitor((Player)event.getEntity());
+			DeepMonitor mon = getDeepMonitor((Player)event.getEntity());
 			
 			if(mon != null)
 				mon.onDamage(null, event.getDamager(), event.getDamage());
@@ -660,7 +660,7 @@ public class GlobalMonitor implements Listener
 			   event.getCause() == DamageCause.SUICIDE ||
 			   event.getCause() == DamageCause.VOID)
 			{
-				ShallowMonitor mon = getMonitor((Player)event.getEntity());
+				DeepMonitor mon = getDeepMonitor((Player)event.getEntity());
 				
 				if(mon != null)
 					mon.onDamage(null, null, event.getDamage());

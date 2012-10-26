@@ -35,6 +35,8 @@ public class Config extends AutoConfig
 	public boolean inspectTransactions = true;
 	@ConfigField(comment = "When set to true, use interactions with the inspected block, will show in quick inspect.", category="inspect")
 	public boolean inspectUse = true;
+	@ConfigField(comment = "When set to true, any entity related records at the inspected location, will in quick inspect.", category="inspect")
+	public boolean inspectEntities = true;
 	
 	@ConfigField(name="logTimeout", comment = "The amount of time that must pass before logs are closed after being asked to close.\nA low value can create lag when someone disconnects and quickly reconnects as the system has to wait for the log to finish closing before it can open it again.\nA high value will mean that uneeded logs will be loaded for longer consuming ram.\nMust be specified in date diff format. Default is 20 seconds.", category="general")
 	private String mLogTimeoutString = "20s";

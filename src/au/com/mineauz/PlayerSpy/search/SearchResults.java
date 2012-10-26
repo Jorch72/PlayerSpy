@@ -9,6 +9,7 @@ import au.com.mineauz.PlayerSpy.Utilities.Pair;
 
 public class SearchResults 
 {
+	public SearchFilter usedFilter;
 	public HashMap<Integer, Cause> causes;
 	public ArrayList<Pair<Record, Integer>> allRecords;
 }

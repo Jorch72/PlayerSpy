@@ -5,6 +5,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -43,14 +46,16 @@ public class ItemFlowTracker implements Listener
 	{
 		
 	}
-	
+
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onInventoryClick(InventoryClickEvent event)
 	{
 		if(!(event.getWhoClicked() instanceof Player))
 			return;
 		
-		scheduleInventoryUpdate(event.getView().getBottomInventory());
+		// Only deep monitors do per click updates
+		if(GlobalMonitor.instance.getDeepMonitor((Player)event.getWhoClicked()) != null)
+			scheduleInventoryUpdate(event.getView().getBottomInventory());
 		
 		if(event.getInventory().getType() == InventoryType.CRAFTING || event.getInventory().getType() == InventoryType.CREATIVE)
 			return;
@@ -96,7 +101,7 @@ public class ItemFlowTracker implements Listener
 			{
 				if(Utility.getStackOrNull(event.getCursor()) != null) // Still holding an item for some reason
 				{
-					LogUtil.fine(event.getCursor().toString());
+					LogUtil.fine("Already: " + event.getCursor().toString());
 					scheduleTransactionInSlot((Player)event.getWhoClicked(), dest, event.getSlot());
 				}
 				else
@@ -107,7 +112,13 @@ public class ItemFlowTracker implements Listener
 			// Throwing the item out
 			else if(source != null && dest == null)
 			{
-				scheduleTransactionInCursor((Player)event.getWhoClicked(), null);
+				if(source.getHolder() != event.getWhoClicked())
+					scheduleTransactionInCursor((Player)event.getWhoClicked(), null);
+				else
+				{
+					mPlayerLastClick.put((Player)event.getWhoClicked(), -999);
+					mCurrentTransactions.remove((Player)event.getWhoClicked());
+				}
 			}
 			// Transfering the item between inventories
 			else if(source != dest)
@@ -116,7 +127,9 @@ public class ItemFlowTracker implements Listener
 			}
 			else
 			{
-				mPlayerLastClick.put((Player)event.getWhoClicked(), -999);
+				//mPlayerLastClick.put((Player)event.getWhoClicked(), -999);
+				mCurrentTransactions.remove((Player)event.getWhoClicked());
+				LogUtil.info("Clearing Transaction");
 			}
 		}
 	}
@@ -132,7 +145,19 @@ public class ItemFlowTracker implements Listener
 			return;
 		ShallowMonitor mon = GlobalMonitor.instance.getMonitor((Player)event.getPlayer());
 		if(mon != null)
-			mon.beginTransaction(event.getInventory());
+		{
+			Location enderChestLocation = null;
+
+			if(event.getInventory().getType() == InventoryType.ENDER_CHEST)
+			{
+				Block block = event.getPlayer().getTargetBlock(null, 100);
+				if(block != null && block.getType() == Material.ENDER_CHEST && block.getLocation().distance(event.getPlayer().getLocation()) < 7)
+					enderChestLocation = block.getLocation();
+			}
+			
+			mon.beginTransaction(event.getInventory(),enderChestLocation);
+			recordInventoryState(event.getView().getBottomInventory());
+		}
 	}
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onInventoryClose(InventoryCloseEvent event)
@@ -147,7 +172,13 @@ public class ItemFlowTracker implements Listener
 			return;
 		ShallowMonitor mon = GlobalMonitor.instance.getMonitor((Player)event.getPlayer());
 		if(mon != null)
+		{
 			mon.endTransaction();
+			
+			ArrayList<InventorySlot> slots = detectChanges(event.getView().getBottomInventory(), false);
+			recordInventoryChanges(event.getView().getBottomInventory(), slots);
+			applyInventoryChanges(event.getView().getBottomInventory(), slots);
+		}
 		
 		scheduleTransactionInCursor((Player)event.getPlayer(), null);
 		mPlayerLastClick.put((Player)event.getPlayer(), -999);
@@ -350,6 +381,9 @@ public class ItemFlowTracker implements Listener
 	}
 	public void recordInventoryChanges(Inventory inventory, ArrayList<InventorySlot> changes)
 	{
+		if(changes == null || changes.isEmpty())
+			return;
+		
 		boolean handled = false;
 		if(inventory instanceof PlayerInventory)
 		{
@@ -518,7 +552,7 @@ public class ItemFlowTracker implements Listener
 					LogUtil.finer("Thrown out");
 					// Item thrown out
 					if(mon != null)
-						mon.doTransaction(mLastCursor, mInventory == mWho.getInventory());
+						mon.doTransaction(mLastCursor, mCurrentTransactions.get(mWho).getArg2() != mWho.getInventory());
 					
 					// Update the current transaction
 					mCurrentTransactions.put(mWho, null);

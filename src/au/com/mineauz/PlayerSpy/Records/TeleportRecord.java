@@ -11,7 +11,7 @@ import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import au.com.mineauz.PlayerSpy.*;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
-public class TeleportRecord extends Record implements ILocationAware
+public class TeleportRecord extends Record implements IPlayerLocationAware
 {
 	public TeleportRecord(Location whereTo, TeleportCause cause) 
 	{

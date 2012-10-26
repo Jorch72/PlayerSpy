@@ -5,6 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -19,7 +20,7 @@ import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
-public class InteractRecord extends Record
+public class InteractRecord extends Record implements ILocationAware
 {
 	public InteractRecord(Action type, Block block, ItemStack item, Entity ent) 
 	{
@@ -157,6 +158,15 @@ public class InteractRecord extends Record
 			String entityName = (mEntity.getEntityType() == EntityType.PLAYER ? mEntity.getPlayerName() : mEntity.getEntityType().getName());
 			return "%s interacted with " + ChatColor.DARK_AQUA + entityName + ChatColor.RESET;
 		}
+		return null;
+	}
+	@Override
+	public Location getLocation()
+	{
+		if(mBlock != null)
+			return mBlock.getLocation();
+		if(mEntity != null)
+			return mEntity.getLocation();
 		return null;
 	}
 }

@@ -15,7 +15,7 @@ import org.bukkit.material.MaterialData;
 import au.com.mineauz.PlayerSpy.StoredBlock;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
-public class BlockChangeRecord extends Record implements IRollbackable
+public class BlockChangeRecord extends Record implements IRollbackable, ILocationAware
 {
 	public StoredBlock mInitialBlock;
 	public StoredBlock mFinalBlock;

@@ -69,7 +69,7 @@ public class StoredLocation
 		if(loc.getWorld() == null)
 		{
 			loc.setWorld(Bukkit.getWorlds().get(0));
-			LogUtil.warning("Invalid world '" + world + "'in record. Defaulting to '" + loc.getWorld().getName() + "'. Did you delete a world?");
+			//LogUtil.warning("Invalid world '" + world + "'in record. Defaulting to '" + loc.getWorld().getName() + "'. Did you delete a world?");
 		}
 		
 		return new StoredLocation(loc);

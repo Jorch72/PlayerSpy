@@ -16,8 +16,11 @@ import au.com.mineauz.PlayerSpy.Cause;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.StoredBlock;
+import au.com.mineauz.PlayerSpy.StoredEntity;
 import au.com.mineauz.PlayerSpy.LogTasks.Task;
 import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
+import au.com.mineauz.PlayerSpy.Records.ILocationAware;
+import au.com.mineauz.PlayerSpy.Records.IPlayerLocationAware;
 import au.com.mineauz.PlayerSpy.Records.InteractRecord;
 import au.com.mineauz.PlayerSpy.Records.InventoryTransactionRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
@@ -66,12 +69,7 @@ public class InspectBlockTask implements Task<Void>
 					break;
 				
 				if(processRecord(cause, record))
-				{
-					// It was inserted. Recheck whether we need to search or not
-					if(mostRecent.size() >= SpyPlugin.getSettings().inspectCount)
-						break;
 					minDate = Math.min(mostRecent.get(mostRecent.size()-1).getArg2().getTimestamp(),minDate);
-				}
 			}
 		}
 	}
@@ -89,8 +87,14 @@ public class InspectBlockTask implements Task<Void>
 		{
 			InventoryTransactionRecord transaction = (InventoryTransactionRecord)record;
 			StoredBlock block = transaction.getInventoryInfo().getBlock();
+			StoredEntity entity = transaction.getInventoryInfo().getEntity();
 			
-			if(block != null && (block.getLocation().equals(mLocation) || block.getType() == mAltType && block.getLocation().equals(mAltLocation)))
+			if(block != null && (block.getLocation().equals(mLocation) || (block.getType() == mAltType && block.getLocation().equals(mAltLocation))))
+			{
+				insertRecord(cause, record);
+				return true;
+			}
+			else if(entity != null && entity.getLocation().getWorld() == mLocation.getWorld() &&  entity.getLocation().distanceSquared(mLocation) < 1.1)
 			{
 				insertRecord(cause, record);
 				return true;
@@ -101,7 +105,16 @@ public class InspectBlockTask implements Task<Void>
 			InteractRecord interact = (InteractRecord)record;
 			StoredBlock block = interact.getBlock();
 			
-			if(interact.hasBlock() && (block.getLocation().equals(mLocation) || block.getType() == mAltType && block.getLocation().equals(mAltLocation)))
+			if(interact.hasBlock() && (block.getLocation().equals(mLocation) || (block.getType() == mAltType && block.getLocation().equals(mAltLocation))))
+			{
+				insertRecord(cause, record);
+				return true;
+			}
+		}
+		else if(record instanceof ILocationAware && !(record instanceof IPlayerLocationAware) && SpyPlugin.getSettings().inspectEntities)
+		{
+			Location location = ((ILocationAware)record).getLocation();
+			if(location != null && location.getWorld() == mLocation.getWorld() && location.distanceSquared(mLocation) < 1.1)
 			{
 				insertRecord(cause, record);
 				return true;
@@ -111,15 +124,19 @@ public class InspectBlockTask implements Task<Void>
 	}
 	private void insertRecord(Cause cause, Record record)
 	{
+		boolean added = false;
 		for(int i = 0; i < mostRecent.size(); i++)
 		{
 			if(record.getTimestamp() > mostRecent.get(i).getArg2().getTimestamp())
 			{
 				mostRecent.add(i,new Pair<Cause, Record>(cause, record));
-				return;
+				added = true;
+				break;
 			}
 		}
-		mostRecent.add(new Pair<Cause, Record>(cause, record));
+		
+		if(!added)
+			mostRecent.add(new Pair<Cause, Record>(cause, record));
 		
 		if(mostRecent.size() > SpyPlugin.getSettings().inspectCount)
 			mostRecent.remove(mostRecent.size()-1);

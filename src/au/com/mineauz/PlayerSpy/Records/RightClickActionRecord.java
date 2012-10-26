@@ -5,6 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -14,7 +15,7 @@ import au.com.mineauz.PlayerSpy.StoredEntity;
 import au.com.mineauz.PlayerSpy.StoredItemStack;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
-public class RightClickActionRecord extends Record 
+public class RightClickActionRecord extends Record implements ILocationAware
 {
 	public enum Action
 	{
@@ -112,6 +113,13 @@ public class RightClickActionRecord extends Record
 		default:
 			break;
 		}
+		return null;
+	}
+	@Override
+	public Location getLocation()
+	{
+		if(mEntity != null)
+			return mEntity.getLocation();
 		return null;
 	}
 }

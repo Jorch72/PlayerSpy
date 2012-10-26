@@ -8,7 +8,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 
-import au.com.mineauz.PlayerSpy.*;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
 public class WorldChangeRecord extends Record {
@@ -37,7 +36,7 @@ public class WorldChangeRecord extends Record {
 		if(mWorld == null)
 		{
 			mWorld = Bukkit.getWorlds().get(0);
-			LogUtil.warning("Invalid world '" + mWorldString + "'in record. Defaulting to '" + mWorld.getName() + "'. Did you delete a world?");
+			//LogUtil.warning("Invalid world '" + mWorldString + "'in record. Defaulting to '" + mWorld.getName() + "'. Did you delete a world?");
 		}
 	}
 

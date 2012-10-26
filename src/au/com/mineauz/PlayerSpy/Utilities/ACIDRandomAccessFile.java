@@ -25,7 +25,10 @@ public class ACIDRandomAccessFile extends RandomAccessFile
 			mJournal = new Journal(file, this);
 			
 			if(mJournal.isHot())
+			{
 				mJournal.rollback();
+				LogUtil.fine("rolledback transaction");
+			}
 		}
 		catch(IOException e)
 		{

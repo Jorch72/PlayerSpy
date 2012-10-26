@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
@@ -40,6 +41,8 @@ public class ShallowMonitor
 	private HashMap<String, RecordList> mBuffers = new HashMap<String, RecordList>();
 	
 	private Inventory mCurrentTransactionInventory;
+	// Used for enderchests
+	private Location mCurrentTransactionInventoryLocation;
 	private ArrayList<ItemStack> mCurrentTransactions;
 	
 	/**
@@ -167,13 +170,14 @@ public class ShallowMonitor
 		return results;
 	}
 	
-	public void beginTransaction(Inventory inventory)
+	public void beginTransaction(Inventory inventory, Location enderChestLocation)
 	{
 		if(mCurrentTransactionInventory != null)
 			endTransaction();
 		
 		mCurrentTransactionInventory = inventory;
 		mCurrentTransactions = new ArrayList<ItemStack>();
+		mCurrentTransactionInventoryLocation = enderChestLocation;
 		
 		LogUtil.finer("Beginning Transaction");
 	}
@@ -181,6 +185,7 @@ public class ShallowMonitor
 	{
 		assert mCurrentTransactionInventory != null;
 		
+		LogUtil.info("Inc transaction: " + item);
 		// Total up transactions
 		for(ItemStack transaction : mCurrentTransactions)
 		{
@@ -215,10 +220,10 @@ public class ShallowMonitor
 				if(transaction.getAmount() < 0)
 				{
 					transaction.setAmount(-transaction.getAmount());
-					record = InventoryTransactionRecord.newTakeFromInventory(transaction, mCurrentTransactionInventory);
+					record = InventoryTransactionRecord.newTakeFromInventory(transaction, mCurrentTransactionInventory, mCurrentTransactionInventoryLocation);
 				}
 				else
-					record = InventoryTransactionRecord.newAddToInventory(transaction, mCurrentTransactionInventory);
+					record = InventoryTransactionRecord.newAddToInventory(transaction, mCurrentTransactionInventory, mCurrentTransactionInventoryLocation);
 				
 				LogUtil.finer(record.toString());
 				logRecord(record);
@@ -227,6 +232,7 @@ public class ShallowMonitor
 		
 		LogUtil.finer("Ended Transaction");
 		mCurrentTransactionInventory = null;
+		mCurrentTransactionInventoryLocation = null;
 		mCurrentTransactions.clear();
 		mCurrentTransactions = null;
 	}

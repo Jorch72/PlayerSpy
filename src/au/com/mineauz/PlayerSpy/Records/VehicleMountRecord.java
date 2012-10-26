@@ -5,13 +5,15 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Vehicle;
 
 import au.com.mineauz.PlayerSpy.StoredEntity;
 
-public class VehicleMountRecord extends Record {
+public class VehicleMountRecord extends Record implements ILocationAware 
+{
 
 	public VehicleMountRecord(boolean isMounting, Vehicle mounted) 
 	{
@@ -64,6 +66,11 @@ public class VehicleMountRecord extends Record {
 			return "%s mounted " + ChatColor.DARK_AQUA + entityName + ChatColor.RESET;
 		else
 			return "%s dismounted " + ChatColor.DARK_AQUA + entityName + ChatColor.RESET;
+	}
+	@Override
+	public Location getLocation()
+	{
+		return mVehicle.getLocation();
 	}
 	
 }

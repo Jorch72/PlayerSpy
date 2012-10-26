@@ -1,9 +1,11 @@
 package au.com.mineauz.PlayerSpy.Utilities;
 
+import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
 
 import org.bukkit.Location;
@@ -247,6 +249,63 @@ public class Utility
 	public static String formatItemName( org.bukkit.inventory.ItemStack myItem )
     {
 		ItemStack nativeStack = convertToNative(myItem);
+		
+		if(nativeStack.getItem() instanceof ItemPotion)
+		{
+			if (nativeStack.getData() == 0)
+	        {
+	            return StringTranslator.translateString("item.emptyPotion.name").trim();
+	        }
+	        else
+	        {
+	            String prefix = "";
+
+	            if (ItemPotion.g(nativeStack.getData()))
+	            {
+	                prefix = StringTranslator.translateString("potion.prefix.grenade").trim() + " ";
+	            }
+
+	            List<?> effects = Item.POTION.l(nativeStack);
+	            String name;
+
+	            if (effects != null && !effects.isEmpty())
+	            {
+	                name = ((MobEffect)effects.get(0)).d();
+	                name += ".postfix";
+	                return prefix + StringTranslator.translateString(name).trim();
+	            }
+	            else
+	            {
+	            	
+	            	try
+	            	{
+	            		Field field = PotionBrewer.class.getDeclaredField("appearances");
+	            		field.setAccessible(true);
+	            		String[] potionPrefixes = (String[])field.get(null);
+	            		
+	            		int damage = nativeStack.getData();
+	            		int index = (PotionBrewer.a(damage,5) ? 16 : 0) | (PotionBrewer.a(damage,4) ? 8 : 0) | (PotionBrewer.a(damage,3) ? 4 : 0) | (PotionBrewer.a(damage,2) ? 2 : 0) | (PotionBrewer.a(damage,1) ? 1 : 0);
+	            		name = StringTranslator.translateString(potionPrefixes[index]) + " " + StringTranslator.translateName(nativeStack.getItem().c(nativeStack));
+	            		return name;
+	            	}
+	            	catch(NoSuchFieldException e)
+	            	{
+	            		e.printStackTrace();
+	            	}
+	            	catch(IllegalArgumentException e)
+	            	{
+	            		e.printStackTrace();
+	            	}
+					catch ( IllegalAccessException e )
+					{
+						e.printStackTrace();
+					}
+	            	
+	            	
+	            }
+	        }
+		}
+		
 		String result = StringTranslator.translateName(nativeStack.getItem().c(nativeStack));
 		if(result.trim().isEmpty())
 		{
@@ -320,12 +379,14 @@ public class Utility
 			if(item == null)
 				continue;
 			
-			if(item instanceof ItemBlock)
+			if(item.k()) // Item has subtypes
 			{
-				String name = Block.byId[item.id].a(); 
-				if(keyName.equals(name))
+				// Search the first 16 ids
+				for(int i = 0; i < 16; i++)
 				{
-					return new org.bukkit.inventory.ItemStack(item.id, 1, (short)0);
+					String name = item.c(new ItemStack(item,1,i));
+					if(keyName.equals(name))
+						return new org.bukkit.inventory.ItemStack(item.id,1,(short)i);
 				}
 			}
 			else if(keyName.equals(item.getName()))

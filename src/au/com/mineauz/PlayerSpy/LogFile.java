@@ -9,6 +9,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 import java.io.*;
 
 import org.bukkit.Bukkit;
@@ -238,12 +239,13 @@ public class LogFile
 		
 		boolean ok = false;
 		mLock.writeLock().lock();
+		ACIDRandomAccessFile file = null;
 		
 		try
 		{
 			LogUtil.info("Loading '" + filename + "'...");
 			mFilePath = new File(filename);
-			ACIDRandomAccessFile file = new ACIDRandomAccessFile(filename, "rw");
+			file = new ACIDRandomAccessFile(filename, "rw");
 			
 			// Read the file header
 			FileHeader header = new FileHeader();
@@ -274,11 +276,12 @@ public class LogFile
 			{
 				for(int i = mIndex.size() - 1; i >= 0; --i)
 				{
+					if(mIndex.get(i).Compressed)
+						continue;
 					
 					if(!mActiveSessions.containsKey(getOwnerTag(i)))
 					{
 						mActiveSessions.put(getOwnerTag(i), mIndex.get(i).Id);
-						break;
 					}
 				}
 			}
@@ -299,11 +302,29 @@ public class LogFile
 		catch(IOException e)
 		{
 			e.printStackTrace();
+			try
+			{
+				if(file != null)
+					file.close();
+			}
+			catch(IOException ex)
+			{
+				
+			}
 			ok = false;
 		}
 		catch(Exception e)
 		{
 			e.printStackTrace();
+			try
+			{
+				if(file != null)
+					file.close();
+			}
+			catch(IOException ex)
+			{
+				
+			}
 			ok = false;
 		}
 		
@@ -797,8 +818,8 @@ public class LogFile
 				}
 				
 				// update the last world
-				if(record instanceof ILocationAware && ((ILocationAware)record).isFullLocation())
-					lastWorld = ((ILocationAware)record).getLocation().getWorld();
+				if(record instanceof IPlayerLocationAware && ((IPlayerLocationAware)record).isFullLocation())
+					lastWorld = ((IPlayerLocationAware)record).getLocation().getWorld();
 				else if(record instanceof WorldChangeRecord)
 					lastWorld = ((WorldChangeRecord)record).getWorld();
 				else if((lastWorld == null && record.getType() != RecordType.FullInventory && record.getType() != RecordType.EndOfSession) && !isAbsolute)
@@ -886,24 +907,32 @@ public class LogFile
 			// Calculate the size of the records
 			long totalSize = 0;
 			int cutoffIndex = 0;
-			for(Record record : records)
+			
+			if(!session.Compressed)
 			{
-				int size = record.getSize(isAbsolute);
-				
-				if(totalSize + size > availableSpace)
+				for(Record record : records)
 				{
-					// Split
-					splitSession = records.splitRecords(cutoffIndex, true);
-					break;
+					int size = record.getSize(isAbsolute);
+					
+					if(totalSize + size > availableSpace)
+					{
+						// Split
+						splitSession = records.splitRecords(cutoffIndex, true);
+						break;
+					}
+					totalSize += size;
+					cutoffIndex++;
+					
+					// Update deep mode
+					if(record instanceof SessionInfoRecord)
+					{
+						mDeepMode = ((SessionInfoRecord)record).isDeep();
+					}
 				}
-				totalSize += size;
-				cutoffIndex++;
-				
-				// Update deep mode
-				if(record instanceof SessionInfoRecord)
-				{
-					mDeepMode = ((SessionInfoRecord)record).isDeep();
-				}
+			}
+			else
+			{
+				splitSession = records.splitRecords(cutoffIndex, true);
 			}
 			
 			LogUtil.finer(" Total size to write: " + totalSize);
@@ -917,7 +946,7 @@ public class LogFile
 				ByteArrayOutputStream bstream = new ByteArrayOutputStream((int)totalSize);
 				DataOutputStream dstream = new DataOutputStream(bstream);
 				long lastSize = dstream.size();
-				for(int i = 0; i < cutoffIndex; i++)
+				for(int i = 0; i < records.size(); i++)
 				{
 					int expectedSize = records.get(i).getSize(isAbsolute);
 					records.get(i).write(dstream, isAbsolute);
@@ -949,6 +978,49 @@ public class LogFile
 				updateSession(mIndex.indexOf(session), session);
 				
 				CrossReferenceIndex.instance.updateSession(this, session, records.getAllChunks());
+			}
+			
+			if(splitSession != null && !session.Compressed)
+			{
+				// Finalize the old session by compressing it
+				LogUtil.fine("Finalizing session. Compressing: ");
+				
+				byte[] sessionData = new byte[(int)session.TotalSize];
+				mFile.seek(session.Location);
+				mFile.readFully(sessionData);
+				
+				ByteArrayOutputStream ostream = new ByteArrayOutputStream();
+				GZIPOutputStream compressor = new GZIPOutputStream(ostream);
+				
+				compressor.write(sessionData);
+				compressor.finish();
+				
+				if(ostream.size() < session.TotalSize)
+				{
+					LogUtil.fine("Compressed to " + ostream.size() + " from " + session.TotalSize + ". Reduction of " + String.format("%.1f%%",(session.TotalSize-ostream.size()) / (double)session.TotalSize * 100F));
+					
+					HoleEntry freedSpace = new HoleEntry();
+					freedSpace.Location = session.Location + ostream.size();
+					freedSpace.Size = session.TotalSize - ostream.size();
+					freedSpace.AttachedTo = null;
+					
+					mFile.seek(session.Location);
+					mFile.write(ostream.toByteArray());
+					
+					session.TotalSize = ostream.size();
+					session.Compressed = true;
+					
+					updateSession(mIndex.indexOf(session), session);
+					addHole(freedSpace);
+					
+					if(hole != -1)
+						mHoleIndex.get(hole).AttachedTo = null;
+					
+					pullData(freedSpace.Location);
+				}
+				else
+					LogUtil.fine("Compression cancelled as the result was larger than the original");
+				
 			}
 		}
 		finally
@@ -997,15 +1069,31 @@ public class LogFile
 						mActiveSessions.put(owner, mIndex.get(index).Id);
 	
 						IndexEntry session = mIndex.get(index);
-						session.OwnerTagId = NextId++;
+						session.OwnerTagId = -1;
 						
-						// Add the tag
-						OwnerMapEntry ent = new OwnerMapEntry();
-						ent.Owner = owner;
-						ent.Id = session.OwnerTagId;
+						// See if there is a tag we can reuse
+						for(OwnerMapEntry tag : mOwnerTagList)
+						{
+							if(tag.Owner.equalsIgnoreCase(owner))
+							{
+								session.OwnerTagId = tag.Id;
+								break;
+							}
+						}
+						
+						if(session.OwnerTagId == -1)
+						{
+							session.OwnerTagId = NextId++;
+							
+							// Add the tag
+							OwnerMapEntry ent = new OwnerMapEntry();
+							ent.Owner = owner;
+							ent.Id = session.OwnerTagId;
+							
+							mOwnerTagMap.put(session.OwnerTagId, addOwnerMap(ent));
+						}
 	
 						updateSession(index,session);
-						mOwnerTagMap.put(session.OwnerTagId, addOwnerMap(ent));
 						
 						result = true;
 					}
@@ -1027,15 +1115,31 @@ public class LogFile
 							mActiveSessions.put(owner, mIndex.get(index).Id);
 		
 							IndexEntry session = mIndex.get(index);
-							session.OwnerTagId = NextId++;
+							session.OwnerTagId = -1;
 							
-							// Add the tag
-							OwnerMapEntry ent = new OwnerMapEntry();
-							ent.Owner = owner;
-							ent.Id = session.OwnerTagId;
+							// See if there is a tag we can reuse
+							for(OwnerMapEntry tag : mOwnerTagList)
+							{
+								if(tag.Owner.equalsIgnoreCase(owner))
+								{
+									session.OwnerTagId = tag.Id;
+									break;
+								}
+							}
+							
+							if(session.OwnerTagId == -1)
+							{
+								session.OwnerTagId = NextId++;
+								
+								// Add the tag
+								OwnerMapEntry ent = new OwnerMapEntry();
+								ent.Owner = owner;
+								ent.Id = session.OwnerTagId;
+								
+								mOwnerTagMap.put(session.OwnerTagId, addOwnerMap(ent));
+							}
 		
 							updateSession(index,session);
-							mOwnerTagMap.put(session.OwnerTagId, addOwnerMap(ent));
 							
 							result = true;
 						}
@@ -1048,7 +1152,7 @@ public class LogFile
 				
 				mFile.commit();
 			}
-			catch(IOException e)
+			catch(Exception e)
 			{
 				e.printStackTrace();
 				mFile.rollback();
@@ -1137,7 +1241,7 @@ public class LogFile
 				
 				mFile.commit();
 			}
-			catch(IOException e)
+			catch(Exception e)
 			{
 				e.printStackTrace();
 				mFile.rollback();
@@ -1381,11 +1485,25 @@ public class LogFile
 						if(mActiveSessions.get(otag) != null && mActiveSessions.get(otag) == entry.Id)
 							mActiveSessions.remove(otag);
 	
+						// Purge the owner tag if no session uses it
+						int count = 0;
+						for(IndexEntry session : mIndex)
+						{
+							if(session.Id == entry.Id)
+								continue;
+							if(session.OwnerTagId == entry.OwnerTagId)
+								count++;
+						}
+						
+						if(count == 0)
+							removeOwnerMap(mOwnerTagMap.get(entry.OwnerTagId));
+						
 						// So that anything else using this object through a reference, wont do any damage
 						entry.RecordCount = 0;
 						entry.Location = 0;
 						entry.Id = -1;
 						entry.TotalSize = 0;
+						entry.OwnerTagId = -1;
 					}
 					else
 					{
@@ -1493,6 +1611,140 @@ public class LogFile
 		return result;
 	}
 
+	
+	private void pullData(long location) throws IOException
+	{
+		// Grab what ever is next after this
+		long nextLocation;
+		long nextSize = 0;
+		int hole = getHoleAfter(location);
+		
+		if(hole != -1)
+		{
+			HoleEntry holeData = mHoleIndex.get(hole);
+			if(holeData.AttachedTo != null)
+			{
+				LogUtil.finest("Skipping over reserved space");
+				pullData(holeData.Location + holeData.Size);
+			}
+			
+			LogUtil.finest("Pulling data to " + location);
+
+			// Find what data needs to be pulled
+			nextLocation = holeData.Location + holeData.Size;
+			int type = 0;
+			int index = 0;
+			
+			for(IndexEntry nextSession : mIndex)
+			{
+				if(nextSession.Location == nextLocation)
+				{
+					nextSize = nextSession.TotalSize;
+					type = 0;
+					break;
+				}
+				index++;
+			}
+			
+			if(nextSize == 0)
+			{
+				if(mHeader.IndexLocation == nextLocation)
+				{
+					nextSize = mHeader.IndexSize;
+					type = 1;
+				}
+				else if(mHeader.HolesIndexLocation == nextLocation)
+				{
+					type = 2;
+					nextSize = mHeader.HolesIndexSize + mHeader.HolesIndexPadding;
+				}
+				else if(mHeader.OwnerMapLocation == nextLocation)
+				{
+					nextSize = mHeader.OwnerMapSize;
+					type = 3;
+				}
+			}
+			
+			
+			if(nextSize != 0)
+			{
+				// Shift the data
+				long shiftAmount = nextLocation - location;
+				
+				byte[] buffer = new byte[1024];
+				int rcount = 0;
+				for(long readStart = nextLocation; readStart < nextLocation + nextSize; readStart += buffer.length)
+				{
+					mFile.seek(readStart);
+					if(readStart + buffer.length >= nextLocation + nextSize)
+					{
+						rcount = (int)(nextSize - (readStart - nextLocation));
+						mFile.readFully(buffer,0, rcount);
+					}
+					else
+					{
+						mFile.readFully(buffer);
+						rcount = buffer.length;
+					}
+					
+					mFile.seek(readStart - shiftAmount);
+					mFile.write(buffer,0,rcount);
+				}
+				
+				
+				HoleEntry old = new HoleEntry();
+				old.Location = holeData.Location + nextSize;
+				old.Size = holeData.Size;
+				
+				// Update whatever
+				switch(type)
+				{
+				case 0: // session
+				{
+					IndexEntry nextSession = mIndex.get(index);
+					LogUtil.finest("Shifted session " + nextSession.Id + " from " + nextSession.Location + " to " + holeData.Location);
+					nextSession.Location = holeData.Location;
+					updateSession(index, nextSession);
+					break;
+				}
+				case 1: // Index
+					LogUtil.finest("Shifted index from " + mHeader.IndexLocation + " to " + holeData.Location);
+					mHeader.IndexLocation = holeData.Location;
+					mFile.seek(0);
+					mHeader.write(mFile);
+					break;
+				case 2: // Hole Index
+					LogUtil.finest("Shifted hole index from " + mHeader.HolesIndexLocation + " to " + holeData.Location);
+					mHeader.HolesIndexLocation = holeData.Location;
+					mFile.seek(0);
+					mHeader.write(mFile);
+					break;
+				case 3: // OwnerMap
+					LogUtil.finest("Shifted owner map from " + mHeader.OwnerMapLocation + " to " + holeData.Location);
+					mHeader.OwnerMapLocation = holeData.Location;
+					mFile.seek(0);
+					mHeader.write(mFile);
+					break;
+				}
+				
+				// Move the hole
+				removeHole(hole);
+				
+				// Add in the new hole
+				addHole(old);
+				
+				// Attempt to compact further stuff
+				pullData(old.Location);
+			}
+			else
+			{
+				// Nothing to pull because there is no more data after us
+				removeHole(hole);
+				// Trim the file
+				mFile.setLength(holeData.Location);
+			}
+		}
+	}
 	/**
 	 * Optimises file useage, compressing and relocating sessions to minimise the file size
 	 */
@@ -1796,6 +2048,22 @@ public class LogFile
 		
 		return result;
 	}
+	
+	private int getHoleAfter(long location)
+	{
+		int i = 0;
+		// Find an available hole before it
+		for(HoleEntry hole : mHoleIndex)
+		{
+			if(hole.Location >= location)
+			{
+				return i; 
+			}
+			i++;
+		}
+		
+		return -1;
+	}
 	/// Checks if there is enough room reserved for that size starting at that location
 	private int isRoomFor(long size, long atLocation)
 	{
@@ -1862,6 +2130,11 @@ public class LogFile
 			merged.Location = b.Location;
 			merged.Size = Math.max(b.Size, (a.Location - b.Location) + a.Size);
 		}
+		
+		if(a.AttachedTo != null)
+			merged.AttachedTo = a.AttachedTo;
+		if(b.AttachedTo != null)
+			merged.AttachedTo = b.AttachedTo;
 		
 		return merged;
 	}
@@ -1996,7 +2269,7 @@ public class LogFile
 				else
 				{
 					// There was a hole to use
-					mFile.seek(mHeader.HolesIndexLocation + mHoleIndex.size() * HoleEntry.cSize);
+					mFile.seek(mHeader.HolesIndexLocation + index * HoleEntry.cSize);
 					for(int i = index; i < mHoleIndex.size(); i++)
 						mHoleIndex.get(i).write(mFile);
 
@@ -2485,7 +2758,7 @@ public class LogFile
 				// Try to attach to a session
 				for(IndexEntry session : mIndex)
 				{
-					if(ent.Location == session.Location + session.TotalSize)
+					if(!session.Compressed && ent.Location == session.Location + session.TotalSize)
 					{
 						ent.AttachedTo = session;
 						break;

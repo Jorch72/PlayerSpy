@@ -8,5 +8,6 @@ public class SearchFilter
 {
 	public ArrayList<Constraint> orConstraints = new ArrayList<Constraint>();
 	public ArrayList<Constraint> andConstraints = new ArrayList<Constraint>();
-	public ArrayList<Cause> causes = new ArrayList<Cause>(); 
+	public ArrayList<Cause> causes = new ArrayList<Cause>();
+	public ArrayList<Modifier> modifiers = new ArrayList<Modifier>();
 }

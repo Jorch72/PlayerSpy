@@ -5,5 +5,4 @@ import org.bukkit.Location;
 public interface ILocationAware 
 {
 	public Location getLocation();
-	public boolean isFullLocation();
 }

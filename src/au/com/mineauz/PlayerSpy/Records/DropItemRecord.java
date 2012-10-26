@@ -10,7 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import au.com.mineauz.PlayerSpy.StoredItemStack;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
-public class DropItemRecord extends Record 
+public class DropItemRecord extends Record
 {
 
 	public DropItemRecord(ItemStack stack) 

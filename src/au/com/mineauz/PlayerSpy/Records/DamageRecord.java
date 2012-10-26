@@ -5,13 +5,14 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 
 import au.com.mineauz.PlayerSpy.StoredEntity;
 
-public class DamageRecord extends Record 
+public class DamageRecord extends Record implements ILocationAware
 {
 
 	public DamageRecord(Entity damager, int amount) 
@@ -81,5 +82,13 @@ public class DamageRecord extends Record
 		{
 			return "%s took " + mAmount + " damage";
 		}
+	}
+	@Override
+	public Location getLocation()
+	{
+		if(mDamager != null)
+			return mDamager.getLocation();
+		else
+			return null;
 	}
 }

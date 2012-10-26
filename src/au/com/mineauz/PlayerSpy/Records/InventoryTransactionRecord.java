@@ -5,6 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.Inventory;
@@ -15,26 +16,26 @@ import au.com.mineauz.PlayerSpy.StoredInventoryInformation.InventoryType;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.StoredItemStack;
 
-public class InventoryTransactionRecord extends Record implements IRollbackable
+public class InventoryTransactionRecord extends Record implements IRollbackable, ILocationAware
 {
 	private ItemStack mItem;
 	private StoredInventoryInformation mInvInfo;
 	private boolean mTake;
 	private boolean mIsRolledBack;
 	
-	public static InventoryTransactionRecord newTakeFromInventory(ItemStack item, Inventory inventory)
+	public static InventoryTransactionRecord newTakeFromInventory(ItemStack item, Inventory inventory, Location enderChestLocation)
 	{
 		InventoryTransactionRecord record = new InventoryTransactionRecord();
 		record.mItem = item.clone();
-		record.mInvInfo = new StoredInventoryInformation(inventory);
+		record.mInvInfo = new StoredInventoryInformation(inventory, enderChestLocation);
 		record.mTake = true;
 		return record;
 	}
-	public static InventoryTransactionRecord newAddToInventory(ItemStack item, Inventory inventory)
+	public static InventoryTransactionRecord newAddToInventory(ItemStack item, Inventory inventory, Location enderChestLocation)
 	{
 		InventoryTransactionRecord record = new InventoryTransactionRecord();
 		record.mItem = item.clone();
-		record.mInvInfo = new StoredInventoryInformation(inventory);
+		record.mInvInfo = new StoredInventoryInformation(inventory, enderChestLocation);
 		record.mTake = false;
 		return record;
 	}
@@ -144,5 +145,14 @@ public class InventoryTransactionRecord extends Record implements IRollbackable
 	public void setRolledBack( boolean value )
 	{
 		mIsRolledBack = value;
+	}
+	@Override
+	public Location getLocation()
+	{
+		if(mInvInfo.getBlock() != null)
+			return mInvInfo.getBlock().getLocation();
+		else if(mInvInfo.getEntity() != null)
+			return mInvInfo.getEntity().getLocation();
+		return null;
 	}
 }

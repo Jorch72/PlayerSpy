@@ -9,7 +9,8 @@ import org.bukkit.World;
 
 import au.com.mineauz.PlayerSpy.StoredLocation;
 
-public class SleepRecord extends Record {
+public class SleepRecord extends Record implements IPlayerLocationAware 
+{
 
 	public SleepRecord(boolean isSleeping, Location bedLocation) 
 	{
@@ -62,5 +63,15 @@ public class SleepRecord extends Record {
 			return "%s went to sleep";
 		else
 			return "%s woke up";
+	}
+	@Override
+	public Location getLocation()
+	{
+		return mLocation.getLocation();
+	}
+	@Override
+	public boolean isFullLocation()
+	{
+		return false;
 	}
 }

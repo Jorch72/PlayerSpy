@@ -9,7 +9,7 @@ import org.bukkit.World;
 
 import au.com.mineauz.PlayerSpy.*;
 
-public class MoveRecord extends Record implements ILocationAware
+public class MoveRecord extends Record implements IPlayerLocationAware
 {
 
 	public MoveRecord(Location location, Location headLocation) 

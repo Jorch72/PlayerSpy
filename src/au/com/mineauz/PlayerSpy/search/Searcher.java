@@ -122,8 +122,15 @@ public class Searcher
 			}
 			
 			Cause cause = results.causes.get(result.getArg2());
-			
-			String output = String.format(ChatColor.GREEN + " %7s " + ChatColor.RESET, Utility.formatTime(date, "hh:mma")) + String.format(msg, ChatColor.RED + cause.friendlyName() + ChatColor.RESET);
+
+			String modifierOutput = "";
+			for(Modifier mod : results.usedFilter.modifiers)
+			{
+				String temp = mod.getExtraData(result.getArg1());
+				if(temp != null)
+					modifierOutput += "\n" + temp.trim();
+			}
+			String output = String.format(ChatColor.GREEN + " %7s " + ChatColor.RESET, Utility.formatTime(date, "hh:mma")) + String.format(msg, ChatColor.RED + cause.friendlyName() + ChatColor.RESET) + modifierOutput;
 			
 			pager.addItem(output);
 		}

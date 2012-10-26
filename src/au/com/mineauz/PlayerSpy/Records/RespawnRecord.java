@@ -10,7 +10,7 @@ import org.bukkit.World;
 import au.com.mineauz.PlayerSpy.*;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
-public class RespawnRecord extends Record implements ILocationAware
+public class RespawnRecord extends Record implements IPlayerLocationAware
 {
 	public RespawnRecord(Location respawnLocation) 
 	{

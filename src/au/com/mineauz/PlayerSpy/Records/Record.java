@@ -40,6 +40,7 @@ public abstract class Record
 		}
 		catch (IOException e)
 		{
+			e.printStackTrace();
 			return false;
 		}
 	}

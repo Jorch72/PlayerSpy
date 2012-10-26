@@ -13,7 +13,7 @@ import org.bukkit.inventory.ItemStack;
 import au.com.mineauz.PlayerSpy.*;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
-public class ItemPickupRecord extends Record 
+public class ItemPickupRecord extends Record implements ILocationAware
 {
 
 	public ItemPickupRecord(Item item) 

@@ -3,6 +3,7 @@ package au.com.mineauz.PlayerSpy.monitoring;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.sql.*;
 
@@ -378,6 +379,7 @@ public class CrossReferenceIndex
 			ArrayList<SessionInFile> results = new ArrayList<CrossReferenceIndex.SessionInFile>();
 			
 			HashMap<Integer, LogFile> openedLogs = new HashMap<Integer, LogFile>();
+			HashSet<String> failedLogs = new HashSet<String>();
 			
 			while(rs.next())
 			{
@@ -401,15 +403,22 @@ public class CrossReferenceIndex
 					}
 					
 					String name = fileRs.getString(2);
-					if(name.startsWith(LogFileRegistry.cGlobalFilePrefix))
+					
+					if(!failedLogs.contains(name))
 					{
-						World world = Bukkit.getWorld(name.substring(LogFileRegistry.cGlobalFilePrefix.length()));
-						log = LogFileRegistry.getLogFile(world);
-					}
-					else
-					{
-						OfflinePlayer player = Bukkit.getOfflinePlayer(name);
-						log = LogFileRegistry.getLogFile(player);
+						if(name.startsWith(LogFileRegistry.cGlobalFilePrefix))
+						{
+							World world = Bukkit.getWorld(name.substring(LogFileRegistry.cGlobalFilePrefix.length()));
+							log = LogFileRegistry.getLogFile(world);
+						}
+						else
+						{
+							OfflinePlayer player = Bukkit.getOfflinePlayer(name);
+							log = LogFileRegistry.getLogFile(player);
+						}
+						
+						if(log == null)
+							failedLogs.add(name);
 					}
 					fileRs.close();
 					
@@ -462,6 +471,7 @@ public class CrossReferenceIndex
 			ResultSet rs = mSelectSessionByChunkBetweenTimeStatement.executeQuery();
 			ArrayList<SessionInFile> results = new ArrayList<CrossReferenceIndex.SessionInFile>();
 			HashMap<Integer, LogFile> openedLogs = new HashMap<Integer, LogFile>();
+			HashSet<String> failedLogs = new HashSet<String>();
 			
 			while(rs.next())
 			{
@@ -485,18 +495,23 @@ public class CrossReferenceIndex
 					}
 					
 					String name = fileRs.getString(2);
-					if(name.startsWith(LogFileRegistry.cGlobalFilePrefix))
+					if(!failedLogs.contains(name))
 					{
-						World world = Bukkit.getWorld(name.substring(LogFileRegistry.cGlobalFilePrefix.length()));
-						log = LogFileRegistry.getLogFile(world);
-					}
-					else
-					{
-						OfflinePlayer player = Bukkit.getOfflinePlayer(name);
-						log = LogFileRegistry.getLogFile(player);
+						if(name.startsWith(LogFileRegistry.cGlobalFilePrefix))
+						{
+							World world = Bukkit.getWorld(name.substring(LogFileRegistry.cGlobalFilePrefix.length()));
+							log = LogFileRegistry.getLogFile(world);
+						}
+						else
+						{
+							OfflinePlayer player = Bukkit.getOfflinePlayer(name);
+							log = LogFileRegistry.getLogFile(player);
+						}
+						if(log == null)
+							failedLogs.add(name);
 					}
 					fileRs.close();
-				
+					
 					if(log == null)
 						continue;
 					
@@ -542,6 +557,7 @@ public class CrossReferenceIndex
 			ResultSet rs = mSelectSessionBetweenTimeStatement.executeQuery();
 			ArrayList<SessionInFile> results = new ArrayList<CrossReferenceIndex.SessionInFile>();
 			HashMap<Integer, LogFile> openedLogs = new HashMap<Integer, LogFile>();
+			HashSet<String> failedLogs = new HashSet<String>();
 			
 			while(rs.next())
 			{
@@ -565,18 +581,23 @@ public class CrossReferenceIndex
 					}
 					
 					String name = fileRs.getString(2);
-					if(name.startsWith(LogFileRegistry.cGlobalFilePrefix))
+					if(!failedLogs.contains(name))
 					{
-						World world = Bukkit.getWorld(name.substring(LogFileRegistry.cGlobalFilePrefix.length()));
-						log = LogFileRegistry.getLogFile(world);
-					}
-					else
-					{
-						OfflinePlayer player = Bukkit.getOfflinePlayer(name);
-						log = LogFileRegistry.getLogFile(player);
+						if(name.startsWith(LogFileRegistry.cGlobalFilePrefix))
+						{
+							World world = Bukkit.getWorld(name.substring(LogFileRegistry.cGlobalFilePrefix.length()));
+							log = LogFileRegistry.getLogFile(world);
+						}
+						else
+						{
+							OfflinePlayer player = Bukkit.getOfflinePlayer(name);
+							log = LogFileRegistry.getLogFile(player);
+						}
+						if(log == null)
+							failedLogs.add(name);
 					}
 					fileRs.close();
-
+					
 					if(log == null)
 						continue;
 					
