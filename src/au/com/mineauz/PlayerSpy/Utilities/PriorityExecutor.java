@@ -165,7 +165,7 @@ public class PriorityExecutor implements Executor
 		sTask.task = task;
 		sTask.future = future;
 		
-		boolean empty = mThreadPool.get(best).taskQueue.size() == 0;
+		boolean empty = mThreadPool.get(best).taskQueue.size() == 0 && !mThreadPool.get(best).isExecuting;
 		mThreadPool.get(best).taskQueue.add(sTask);
 		
 		// Start the thread executing if it needs to

@@ -27,6 +27,7 @@ public class ACIDRandomAccessFile extends RandomAccessFile
 			if(mJournal.isHot())
 			{
 				mJournal.rollback();
+				seek(0);
 				LogUtil.fine("rolledback transaction");
 			}
 		}
@@ -102,15 +103,7 @@ public class ACIDRandomAccessFile extends RandomAccessFile
 				throw new IllegalStateException("This thread is not the current owner of this transaction!");
 		
 			// Update the journal
-			long location = getFilePointer();
-			if(location < length())
-			{
-				byte[] old = new byte[b.length];
-				read(old);
-				seek(location);
-				
-				mJournal.addBytes(location, old);
-			}
+			mJournal.preWrite(b.length);
 			
 			super.write(b);
 		}
@@ -135,15 +128,7 @@ public class ACIDRandomAccessFile extends RandomAccessFile
 				throw new IllegalStateException("This thread is not the current owner of this transaction!");
 		
 			// Update the journal
-			long location = getFilePointer();
-			if(location < length())
-			{
-				byte[] old = new byte[len];
-				read(old);
-				seek(location);
-				
-				mJournal.addBytes(location, old);
-			}
+			mJournal.preWrite(len);
 					
 			super.write(b, off, len);
 		}
@@ -168,14 +153,7 @@ public class ACIDRandomAccessFile extends RandomAccessFile
 				throw new IllegalStateException("This thread is not the current owner of this transaction!");
 		
 			// Update the journal
-			long location = getFilePointer();
-			if(location < length())
-			{
-				byte old = (byte)read();
-				seek(location);
-				
-				mJournal.addByte(location, old);
-			}
+			mJournal.preWrite(1);
 					
 			super.write(b);
 		}

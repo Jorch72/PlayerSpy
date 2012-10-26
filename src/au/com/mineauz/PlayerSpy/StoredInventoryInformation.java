@@ -131,6 +131,13 @@ public class StoredInventoryInformation
 			break;
 		case Enderchest:
 			stream.writeUTF(mPlayerName);
+			if(mBlock == null)
+				stream.writeBoolean(false);
+			else
+			{
+				stream.writeBoolean(true);
+				mBlock.write(stream, absolute);
+			}
 			break;
 		case Entity:
 			mEntity.write(stream);
@@ -156,6 +163,11 @@ public class StoredInventoryInformation
 			break;
 		case Enderchest:
 			mPlayerName = stream.readUTF();
+			if(stream.readBoolean())
+			{
+				mBlock = new StoredBlock();
+				mBlock.read(stream, currentWorld, absolute);
+			}
 			break;
 		case Entity:
 			mEntity = StoredEntity.readEntity(stream);
@@ -179,7 +191,9 @@ public class StoredInventoryInformation
 			size += mBlock.getSize(absolute);
 			break;
 		case Enderchest:
-			size += Utility.getUTFLength(mPlayerName);
+			size += Utility.getUTFLength(mPlayerName) + 1;
+			if(mBlock != null)
+				size += mBlock.getSize(absolute);
 			break;
 		case Entity:
 			size += mEntity.getSize();

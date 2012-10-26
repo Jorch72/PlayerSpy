@@ -3,6 +3,8 @@ package au.com.mineauz.PlayerSpy;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
+
 public class FileHeader
 {
 	public byte VersionMajor = 2;
@@ -80,9 +82,9 @@ public class FileHeader
 	public int getSize()
 	{
 		if(VersionMajor == 1)
-			return 26 + PlayerName.length();
+			return 24 + Utility.getUTFLength(PlayerName);
 		else if(VersionMajor == 2)
-			return 51 + PlayerName.length();
+			return 49 +  + Utility.getUTFLength(PlayerName);
 		else
 			throw new IllegalArgumentException("Invalid Version " + VersionMajor);
 	}
