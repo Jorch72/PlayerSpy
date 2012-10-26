@@ -244,7 +244,7 @@ public class Utility
 	}
 	public static String locationToStringShort(Location loc)
 	{
-		return String.format("(%.0f, %.0f, %.0f, %s)", loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getName());
+		return String.format("(%.0f,%.0f,%.0f,%s)", loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getName());
 	}
 	public static String formatItemName( org.bukkit.inventory.ItemStack myItem )
     {
@@ -362,7 +362,8 @@ public class Utility
 			if(entry.getValue().equalsIgnoreCase(input))
 			{
 				keyName = entry.getKey();
-				break;
+				if(keyName.contains(".name"))
+					break;
 			}
 		}
 		

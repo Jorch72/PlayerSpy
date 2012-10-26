@@ -4,11 +4,15 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Painting;
+import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.StoredPainting;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
 public class PaintingChangeRecord extends Record implements IRollbackable, ILocationAware
 {
@@ -64,10 +68,11 @@ public class PaintingChangeRecord extends Record implements IRollbackable, ILoca
 	@Override
 	public String getDescription()
 	{
+		String name = ChatColor.DARK_AQUA + Utility.formatItemName(new ItemStack(Material.PAINTING)) + ChatColor.RESET;
 		if(mPlaced)
-			return "%s placed a painting";
+			return "%s placed a " + name;
 		else
-			return "%s removed a painting";
+			return "%s removed a " + name;
 	}
 	@Override
 	public boolean canBeRolledBack()

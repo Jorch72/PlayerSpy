@@ -38,6 +38,7 @@ public class InspectBlockTask implements Task<Void>
 {
 	private Player mWho;
 	private Location mLocation;
+	private Location mOffsetLocation;
 	private Location mAltLocation;
 	private Material mAltType;
 	
@@ -47,6 +48,8 @@ public class InspectBlockTask implements Task<Void>
 	{
 		mWho = who;
 		mLocation = block.clone();
+		mOffsetLocation = mLocation.clone().add(0.5, 0.5, 0.5);
+		
 		mAltLocation = (altLocation != null ? altLocation.clone() : null);
 		mAltType = altType;
 	}
@@ -94,7 +97,7 @@ public class InspectBlockTask implements Task<Void>
 				insertRecord(cause, record);
 				return true;
 			}
-			else if(entity != null && entity.getLocation().getWorld() == mLocation.getWorld() &&  entity.getLocation().distanceSquared(mLocation) < 1.1)
+			else if(entity != null && entity.getLocation().getWorld() == mLocation.getWorld() &&  entity.getLocation().distanceSquared(mOffsetLocation) < 1.1)
 			{
 				insertRecord(cause, record);
 				return true;
@@ -114,7 +117,7 @@ public class InspectBlockTask implements Task<Void>
 		else if(record instanceof ILocationAware && !(record instanceof IPlayerLocationAware) && SpyPlugin.getSettings().inspectEntities)
 		{
 			Location location = ((ILocationAware)record).getLocation();
-			if(location != null && location.getWorld() == mLocation.getWorld() && location.distanceSquared(mLocation) < 1.1)
+			if(location != null && location.getWorld() == mLocation.getWorld() && location.distanceSquared(mOffsetLocation) < 1.1)
 			{
 				insertRecord(cause, record);
 				return true;

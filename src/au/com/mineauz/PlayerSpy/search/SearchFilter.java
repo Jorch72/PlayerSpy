@@ -3,6 +3,8 @@ package au.com.mineauz.PlayerSpy.search;
 import java.util.ArrayList;
 
 import au.com.mineauz.PlayerSpy.Cause;
+import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
+import au.com.mineauz.PlayerSpy.search.interfaces.Modifier;
 
 public class SearchFilter 
 {

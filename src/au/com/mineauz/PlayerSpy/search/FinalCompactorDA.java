@@ -4,6 +4,8 @@ import java.util.ArrayDeque;
 
 import au.com.mineauz.PlayerSpy.Cause;
 import au.com.mineauz.PlayerSpy.fsa.DataAssembler;
+import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
+import au.com.mineauz.PlayerSpy.search.interfaces.Modifier;
 
 public class FinalCompactorDA extends DataAssembler 
 {
@@ -22,6 +24,8 @@ public class FinalCompactorDA extends DataAssembler
 				filter.andConstraints.add((Constraint)front);
 			else if(front instanceof Cause)
 				filter.causes.add((Cause)front);
+			else if(front instanceof Modifier)
+				filter.modifiers.add((Modifier)front);
 		}
 		
 		return filter;

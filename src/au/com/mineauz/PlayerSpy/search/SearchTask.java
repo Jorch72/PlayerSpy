@@ -18,6 +18,7 @@ import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
 import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 import au.com.mineauz.PlayerSpy.monitoring.ShallowMonitor;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex.SessionInFile;
+import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 
 public class SearchTask implements Task<SearchResults>
 {

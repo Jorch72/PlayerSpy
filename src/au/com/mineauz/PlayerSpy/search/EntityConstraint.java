@@ -6,6 +6,7 @@ import org.bukkit.entity.EntityType;
 import au.com.mineauz.PlayerSpy.Records.AttackRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
+import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 
 public class EntityConstraint extends Constraint
 {

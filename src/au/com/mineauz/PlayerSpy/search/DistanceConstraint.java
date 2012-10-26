@@ -4,6 +4,7 @@ import org.bukkit.Location;
 
 import au.com.mineauz.PlayerSpy.Records.ILocationAware;
 import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 
 public class DistanceConstraint extends Constraint
 {

@@ -3,6 +3,7 @@ package au.com.mineauz.PlayerSpy.search;
 import java.util.Date;
 
 import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 
 public class DateConstraint extends Constraint 
 {

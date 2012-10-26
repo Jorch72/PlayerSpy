@@ -8,9 +8,16 @@ import org.bukkit.inventory.ItemStack;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
-public class BlockIdState extends State
+public class TypeIdState extends State
 {
-
+	private boolean mBlocks;
+	private boolean mItems;
+	
+	public TypeIdState(boolean blocks, boolean items)
+	{
+		mBlocks = blocks;
+		mItems = items;
+	}
 	@Override
 	public boolean match(String word, ArrayDeque<Object> output) 
 	{
@@ -45,7 +52,7 @@ public class BlockIdState extends State
 			}
 		}
 		
-		if(mat == null || !mat.isBlock())
+		if(mat == null)
 			// Could not find a match
 			return false;
 		
@@ -62,6 +69,12 @@ public class BlockIdState extends State
 				return false;
 			}
 		}
+		
+		if(!mBlocks && mat.isBlock())
+			return false;
+		
+		if(!mItems && !mat.isBlock())
+			return false;
 		
 		output.push(new Pair<Material, Integer>(mat, meta));
 		

@@ -18,6 +18,8 @@ import org.bukkit.event.block.*;
 import org.bukkit.event.block.BlockIgniteEvent.IgniteCause;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
+import org.bukkit.event.painting.PaintingBreakByEntityEvent;
+import org.bukkit.event.painting.PaintingPlaceEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
@@ -513,7 +515,9 @@ public class GlobalMonitor implements Listener
 			event.getClickedBlock().getType() == Material.FENCE_GATE || 
 			event.getClickedBlock().getType() == Material.WOODEN_DOOR || 
 			event.getClickedBlock().getType() == Material.TRAP_DOOR ||
-			event.getClickedBlock().getType() == Material.TRIPWIRE)
+			event.getClickedBlock().getType() == Material.TRIPWIRE ||
+			event.getClickedBlock().getType() == Material.JUKEBOX
+			)
 		{
 			ShallowMonitor mon = getMonitor(event.getPlayer());
 			
@@ -1152,6 +1156,25 @@ public class GlobalMonitor implements Listener
 		DeepMonitor mon = getDeepMonitor(event.getPlayer());
 		if(mon != null)
 			mon.onTeleport(event.getTo(), event.getCause());
+	}
+	
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onPlacePainting(PaintingPlaceEvent event)
+	{
+		ShallowMonitor mon = getMonitor(event.getPlayer());
+		if(mon != null)
+			mon.onPlacePainting(event);
+	}
+	
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onBreakPainting(PaintingBreakByEntityEvent event)
+	{
+		if(!(event.getRemover() instanceof Player))
+			return;
+		
+		ShallowMonitor mon = getMonitor((Player)event.getRemover());
+		if(mon != null)
+			mon.onBreakPainting(event);
 	}
 	
 

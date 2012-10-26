@@ -18,6 +18,9 @@ import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Utilities.Pager;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.search.interfaces.ExtraDataModifier;
+import au.com.mineauz.PlayerSpy.search.interfaces.FormatterModifier;
+import au.com.mineauz.PlayerSpy.search.interfaces.Modifier;
 
 public class Searcher 
 {
@@ -92,6 +95,13 @@ public class Searcher
 		else
 			title = "Block history";
 		
+		// Apply formatter modifier
+		for(Modifier mod : results.usedFilter.modifiers)
+		{
+			if(mod instanceof FormatterModifier)
+				((FormatterModifier)mod).format(results);
+		}
+		
 		long lastDate = 0;
 		Pager pager = new Pager(title, (who instanceof Player ? 10 : 40));
 		for(Pair<Record,Integer> result : results.allRecords)
@@ -123,16 +133,21 @@ public class Searcher
 			
 			Cause cause = results.causes.get(result.getArg2());
 
-			String modifierOutput = "";
+			
+			String output = String.format(ChatColor.GREEN + " %7s " + ChatColor.RESET, Utility.formatTime(date, "hh:mma")) + String.format(msg, ChatColor.RED + cause.friendlyName() + ChatColor.RESET);
+			pager.addItem(output);
+			
 			for(Modifier mod : results.usedFilter.modifiers)
 			{
-				String temp = mod.getExtraData(result.getArg1());
-				if(temp != null)
-					modifierOutput += "\n" + temp.trim();
+				if(mod instanceof ExtraDataModifier)
+				{
+					String temp = ((ExtraDataModifier)mod).getExtraData(result.getArg1());
+					if(temp != null)
+						pager.addItem("         " + temp.trim());
+				}
 			}
-			String output = String.format(ChatColor.GREEN + " %7s " + ChatColor.RESET, Utility.formatTime(date, "hh:mma")) + String.format(msg, ChatColor.RED + cause.friendlyName() + ChatColor.RESET) + modifierOutput;
 			
-			pager.addItem(output);
+			
 		}
 		
 		pager.displayPage(who, page);

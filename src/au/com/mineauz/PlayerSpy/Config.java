@@ -45,6 +45,10 @@ public class Config extends AutoConfig
 	@ConfigField(comment = "You can set the language playerspy uses for displaying and reading item/block/entity names", category="general")
 	public String language = "en_US";
 	
+	@ConfigField(comment = "The maximum number of results that can be retrieved with search or history.", category="general")
+	public int maxSearchResults = 1000;
+	
+	
 	public Config(File file)
 	{
 		super(file);

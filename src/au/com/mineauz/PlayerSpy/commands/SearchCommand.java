@@ -4,12 +4,15 @@ import java.util.ArrayDeque;
 import java.util.List;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 
+import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.fsa.*;
 import au.com.mineauz.PlayerSpy.search.*;
+import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 
 public class SearchCommand implements ICommand 
 {
@@ -97,12 +100,22 @@ public class SearchCommand implements ICommand
 			.addNext(terminator)
 		;
 		
+		State modifiers = new NullState()
+			.addNext(new StringState("show")
+				.addNext(new MultiStringState("location","locations")
+					.addNext(new ShowLocationDA()
+						.addNext(dateConstraint)
+					)
+				)
+			)
+			.addNext(dateConstraint)
+		;
 		
 		State extraCauseConstraint = new StringState("or");
 		
 		extraCauseConstraint.addNext(new CauseState()
 			.addNext(extraCauseConstraint)
-			.addNext(dateConstraint)
+			.addNext(modifiers)
 		);
 		
 		
@@ -110,10 +123,10 @@ public class SearchCommand implements ICommand
 			.addNext(new StringState("by")
 				.addNext(new CauseState()
 					.addNext(extraCauseConstraint)
-					.addNext(dateConstraint)
+					.addNext(modifiers)
 				)
 			)
-			.addNext(dateConstraint)
+			.addNext(modifiers)
 		;
 			
 		
@@ -138,7 +151,9 @@ public class SearchCommand implements ICommand
 				.addNext(endOfBlockAction)
 			)
 		);
-		State blockId = new BlockIdState().addNext(endOfBlockAction);
+		State painting = new StringState("painting").addNext(new PaintingDA().addNext(endOfBlockAction));
+		
+		State blockId = new TypeIdState(true,false).addNext(endOfBlockAction);
 		
 		// All entity related ones
 		State entityId = new EntityTypeState().addNext(new EntityConstraintDA(false)
@@ -172,17 +187,96 @@ public class SearchCommand implements ICommand
 			)
 		);
 		
+		State transactionEnd = new TransactionDA().addNext(endOfActions);
 		
+		State transactionTarget = new NullState()
+			.addNext(new TypeIdState(true,false)
+				.addNext(transactionEnd)
+			)
+			.addNext(new EntityTypeState()
+				.addNext(transactionEnd)
+			)
+			.addNext(new PlayerNameState()
+				.addNext(transactionEnd)
+			)
+		;
+			
+		
+		State takeState = new NullState()
+			.addNext(new TypeIdState(true,true)
+				.addNext(new IntState(0,Integer.MAX_VALUE)
+					.addNext(new StringState("from")
+						.addNext(transactionTarget)
+					)
+					.addNext(transactionEnd)
+				)
+				.addNext(new StringState("from")
+					.addNext(transactionTarget)
+				)
+				.addNext(transactionEnd)
+			)
+			.addNext(new MultiStringState("any","anything")
+				.addNext(new GenericDA(new Pair<Material,Integer>(Material.AIR,-1),1)
+					.addNext(new IntState(0,Integer.MAX_VALUE)
+						.addNext(new StringState("from")
+							.addNext(transactionTarget)
+						)
+						.addNext(transactionEnd)
+					)
+					.addNext(new StringState("from")
+						.addNext(transactionTarget)
+					)
+					.addNext(transactionEnd)
+				)
+			)
+		;
+		
+		State giveState = new NullState()
+			.addNext(new TypeIdState(true,true)
+				.addNext(new IntState(0,Integer.MAX_VALUE)
+					.addNext(new StringState("to")
+						.addNext(transactionTarget)
+					)
+					.addNext(transactionEnd)
+				)
+				.addNext(new StringState("to")
+					.addNext(transactionTarget)
+				)
+				.addNext(transactionEnd)
+			)
+			.addNext(new MultiStringState("any","anything")
+				.addNext(new GenericDA(new Pair<Material,Integer>(Material.AIR,-1),1)
+					.addNext(new IntState(0,Integer.MAX_VALUE)
+						.addNext(new StringState("to")
+							.addNext(transactionTarget)
+						)
+						.addNext(transactionEnd)
+					)
+					.addNext(new StringState("to")
+						.addNext(transactionTarget)
+					)
+					.addNext(transactionEnd)
+				)
+			)
+		;
 		
 		mStartState = new InitialState()
 			.addNext(new StringState("for")
 				.addNext(new MultiStringState("place","placed","placing")
 					.addNext(blockId)
 					.addNext(anyBlock)
+					.addNext(painting)
 				)
-				.addNext(new MultiStringState("break","mine","mined","dug","destroyed","breaking","broken","removed")
+				.addNext(new MultiStringState("break","mine","mined","dug","destroyed","breaking","broken","removed","remove")
 					.addNext(blockId)
 					.addNext(anyBlock)
+					.addNext(painting)
+				)
+				.addNext(new MultiStringState("take","took")
+					.addNext(takeState)
+				)
+				.addNext(new MultiStringState("put","give","gave")
+					.addNext(giveState)
 				)
 //				.addNext(new StringState("spawn")
 //					.addNext(anyEntity)
