@@ -64,7 +64,7 @@ public class ItemPickupRecord extends Record implements ILocationAware
 	{
 		String itemName = Utility.formatItemName(mItem.getItem());
 		
-		return "%s picked up " + ChatColor.DARK_AQUA + itemName + ChatColor.RESET;
+		return mItem.getItem().getAmount() + "x " + ChatColor.DARK_AQUA + itemName + ChatColor.RESET + " picked up by %s";
 	}
 	
 }

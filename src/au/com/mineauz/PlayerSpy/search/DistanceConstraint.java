@@ -2,6 +2,7 @@ package au.com.mineauz.PlayerSpy.search;
 
 import org.bukkit.Location;
 
+import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
 import au.com.mineauz.PlayerSpy.Records.ILocationAware;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
@@ -28,6 +29,9 @@ public class DistanceConstraint extends Constraint
 			Location other = ((ILocationAware)record).getLocation();
 			if(other == null)
 				return false;
+			
+			if(record instanceof BlockChangeRecord)
+				other = other.clone().add(0.5,0.5,0.5);
 			
 			if(location.getWorld().equals(other.getWorld()))
 			{

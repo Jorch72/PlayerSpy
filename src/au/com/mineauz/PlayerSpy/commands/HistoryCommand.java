@@ -162,7 +162,7 @@ public class HistoryCommand implements ICommand
 	@Override
 	public String getUsageString(String label) 
 	{
-		return label + ChatColor.GREEN + "[other args] [page]";
+		return label + ChatColor.GREEN + " [page] | [args]";
 	}
 
 	@Override
@@ -174,7 +174,7 @@ public class HistoryCommand implements ICommand
 		if(Inspector.instance.getSelectedBlock((Player)sender) == null)
 		{
 			sender.sendMessage(ChatColor.RED + "You need to select a block with inspect mode");
-			return false;
+			return true;
 		}
 		
 		// Try page
@@ -212,7 +212,7 @@ public class HistoryCommand implements ICommand
 		{
 			ArrayDeque<Object> results = FiniteStateAutomata.parse(inputString.toLowerCase(), mStartState);
 			SearchFilter filter = (SearchFilter)results.pop();
-			filter.andConstraints.add(new DistanceConstraint(0.9, Inspector.instance.getSelectedBlock((Player)sender)));
+			filter.andConstraints.add(new DistanceConstraint(0.55, Inspector.instance.getSelectedBlock((Player)sender).clone().add(0.5,0.5,0.5)));
 			
 			Searcher.instance.getBlockHistory(sender, filter);
 		}

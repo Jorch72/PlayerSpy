@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.inventory.ItemStack;
 
@@ -51,6 +52,6 @@ public class DropItemRecord extends Record
 	@Override
 	public String getDescription()
 	{
-		return mStack.getItem().getAmount() + "x " + Utility.formatItemName(mStack.getItem()) + " dropped by %s";
+		return mStack.getItem().getAmount() + "x " + ChatColor.DARK_AQUA + Utility.formatItemName(mStack.getItem()) + ChatColor.RESET + " dropped by %s";
 	}
 }

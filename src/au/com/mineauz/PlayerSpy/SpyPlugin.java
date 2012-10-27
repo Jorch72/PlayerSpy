@@ -2,7 +2,6 @@ package au.com.mineauz.PlayerSpy;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -32,8 +31,8 @@ public class SpyPlugin extends JavaPlugin
 		
 		LogUtil.setLogger(getLogger());
 		//*****DEBUG******
-		getLogger().setLevel(Level.FINEST);
-		getLogger().getParent().getHandlers()[0].setLevel(Level.FINEST);
+		getLogger().setLevel(Level.FINE);
+		//getLogger().getParent().getHandlers()[0].setLevel(Level.FINEST);
 		//****END DEBUG****
 		
 		mConfig = new Config(new File(getDataFolder(), "config.yml"));
@@ -43,9 +42,6 @@ public class SpyPlugin extends JavaPlugin
 		getSettings().save();
 
 		sPluginInstance = this;
-		
-		Calendar.getInstance().setTimeZone(getSettings().timezone);
-		Calendar.getInstance().add(Calendar.MILLISECOND, (int) getSettings().timeoffset);
 		
 		CommandDispatcher dispatch = new CommandDispatcher();
 		getCommand("playerspy").setExecutor(dispatch);
@@ -62,7 +58,7 @@ public class SpyPlugin extends JavaPlugin
 			
 		}, 1L, 1L);
 
-		LogFileRegistry.setLogFileDirectory(getDataFolder());
+		LogFileRegistry.setLogFileDirectory(new File(getDataFolder(),"data"));
 		if(!CrossReferenceIndex.instance.initialize())
 		{
 			getServer().getPluginManager().disablePlugin(this);

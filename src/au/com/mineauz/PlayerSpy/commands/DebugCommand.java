@@ -10,7 +10,9 @@ import java.util.Map.Entry;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
+import au.com.mineauz.PlayerSpy.DebugHelper;
 import au.com.mineauz.PlayerSpy.FileHeader;
 import au.com.mineauz.PlayerSpy.HoleEntry;
 import au.com.mineauz.PlayerSpy.IndexEntry;
@@ -42,13 +44,13 @@ public class DebugCommand implements ICommand
 	@Override
 	public String getPermission() 
 	{
-		return null;
+		return "playerspy.inspect";
 	}
 
 	@Override
 	public String getUsageString(String label) 
 	{
-		return label + " <logname>";
+		return label + "(toggle|analyse <logname>|log)";
 	}
 
 	@Override
@@ -58,32 +60,24 @@ public class DebugCommand implements ICommand
 	}
 
 	@SuppressWarnings( "unchecked" )
-	@Override
-	public boolean onCommand(CommandSender sender, String label, String[] args) 
+	private void analyseLog(CommandSender sender, String logName, String focus)
 	{
-		if(args.length != 1 && args.length != 2)
-			return false;
-		
-		String logName = args[0];
-		
 		LogFile log = LogFileRegistry.getLogFile(Bukkit.getOfflinePlayer(logName));
 		
 		if(log == null)
 		{
 			sender.sendMessage("Unable to find log " + logName);
-			return true;
+			return;
 		}
 		
 		RecordType detailType = null;
-		if(args.length >= 2)
+		if(focus != null)
 		{
-			String type = args[1];
-			
-			detailType = RecordType.valueOf(type);
+			detailType = RecordType.valueOf(focus);
 			if(detailType == null)
 			{
-				sender.sendMessage("Invalid recordtype: " + type);
-				return true;
+				sender.sendMessage("Invalid recordtype: " + focus);
+				return;
 			}
 		}
 		
@@ -194,7 +188,7 @@ public class DebugCommand implements ICommand
 		catch(Exception e)
 		{
 			e.printStackTrace();
-			return true;
+			return;
 		}
 
 		long totalFreeSpace = 0;
@@ -232,6 +226,53 @@ public class DebugCommand implements ICommand
 		
 		sender.sendMessage(ChatColor.GREEN + "Total Free Space: " + ChatColor.RESET + totalFreeSpace);
 		sender.sendMessage(ChatColor.GREEN + "Total Reserved Space: " + ChatColor.RESET + totalReservedSpace);
+	}
+	
+	@Override
+	public boolean onCommand(CommandSender sender, String label, String[] args) 
+	{
+		if(args.length == 0)
+			return false;
+		
+		if(args[0].equalsIgnoreCase("toggle"))
+		{
+			if(args.length > 1)
+				return false;
+			
+			if(!(sender instanceof Player))
+				return false;
+			
+			if(DebugHelper.mDebugPlayers.contains(sender))
+			{
+				sender.sendMessage("Debug Messages Off");
+				DebugHelper.mDebugPlayers.remove(sender);
+			}
+			else
+			{
+				sender.sendMessage("Debug Messages On");
+				DebugHelper.mDebugPlayers.add((Player)sender);
+			}
+		}
+		else if(args[0].equalsIgnoreCase("analyse"))
+		{
+			if(args.length > 3)
+				return false;
+			
+			String logName = args[1];
+			String focus = (args.length > 2 ? args[2] : null);
+			analyseLog(sender, logName, focus);
+		}
+		else if(args[0].equalsIgnoreCase("log"))
+		{
+			if(args.length > 1)
+				return false;
+			
+			DebugHelper.outputDebugData();
+			sender.sendMessage("Saved debug log");
+		}
+		else
+			return false;
+		
 		return true;
 	}
 

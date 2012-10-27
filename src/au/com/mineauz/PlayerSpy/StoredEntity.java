@@ -99,6 +99,14 @@ public class StoredEntity
 		
 		return EntityType.fromId(mTypeId);
 	}
+	
+	public void setEntityType( EntityType type )
+	{
+		mTypeId = type.getTypeId();
+		if(mTypeId == -1)
+			mTypeId = (short) (1024 | type.ordinal());
+	}
+	
 	public org.bukkit.Location getLocation()
 	{
 		return mLocation.getLocation();
@@ -116,5 +124,6 @@ public class StoredEntity
 	private StoredLocation mLocation;
 	private String mPlayerName;
 	private int mOriginalId;
+	
 	
 }

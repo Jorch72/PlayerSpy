@@ -652,5 +652,10 @@ public class CrossReferenceIndex
 			mOpenedLogs.clear();
 		}
 		
+		public int getLogCount()
+		{
+			return mOpenedLogs.size();
+		}
+		
 	}
 }

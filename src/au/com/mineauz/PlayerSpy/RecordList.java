@@ -209,9 +209,17 @@ public class RecordList extends ArrayList<Record>
 			
 			// ensure state is consistent
 			if(location != null)
-				other.add(new TeleportRecord(location, TeleportCause.UNKNOWN));
+			{
+				Record r = new TeleportRecord(location, TeleportCause.UNKNOWN);
+				r.setTimestamp(get(splitIndex).getTimestamp());
+				other.add(r);
+			}
 			if(inventory != null)
-				other.add(inventory);
+			{
+				Record r = inventory;
+				r.setTimestamp(get(splitIndex).getTimestamp());
+				other.add(r);
+			}
 			
 			// Copy records
 			for(int i = splitIndex; i < size(); i++)
@@ -300,9 +308,17 @@ public class RecordList extends ArrayList<Record>
 		
 		// Ensure state
 		if(inventory != null)
-			add(0,inventory);
+		{
+			Record r = inventory;
+			r.setTimestamp(get(index).getTimestamp());
+			add(0,r);
+		}
 		if(loc != null)
-			add(0,new TeleportRecord(loc, TeleportCause.UNKNOWN));
+		{
+			Record r = new TeleportRecord(loc, TeleportCause.UNKNOWN); 
+			r.setTimestamp(get(index).getTimestamp());
+			add(0,r);
+		}
 	}
 	
 	public long getDataSize(boolean absolute)

@@ -185,7 +185,6 @@ public class ShallowMonitor
 	{
 		assert mCurrentTransactionInventory != null;
 		
-		LogUtil.info("Inc transaction: " + item);
 		// Total up transactions
 		for(ItemStack transaction : mCurrentTransactions)
 		{

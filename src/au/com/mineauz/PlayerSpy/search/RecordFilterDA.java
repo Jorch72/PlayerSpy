@@ -20,16 +20,20 @@ public class RecordFilterDA extends DataAssembler
 			{
 				objects.push(new RecordTypeConstraint(RecordType.Interact));
 				objects.push(new RecordTypeConstraint(RecordType.ItemTransaction));
+				objects.push(new RecordTypeConstraint(RecordType.ItemPickup));
 			}
 			else if(target.equals("items"))
 			{
 				objects.push(new RecordTypeConstraint(RecordType.Interact));
 				objects.push(new RecordTypeConstraint(RecordType.BlockChange));
+				objects.push(new RecordTypeConstraint(RecordType.PaintingChange));
 			}
 			else
 			{
 				objects.push(new RecordTypeConstraint(RecordType.BlockChange));
 				objects.push(new RecordTypeConstraint(RecordType.ItemTransaction));
+				objects.push(new RecordTypeConstraint(RecordType.PaintingChange));
+				objects.push(new RecordTypeConstraint(RecordType.ItemPickup));
 			}
 		}
 		else if(type.equals("only"))
@@ -37,10 +41,12 @@ public class RecordFilterDA extends DataAssembler
 			if(target.equals("blocks"))
 			{
 				objects.push(new RecordTypeConstraint(RecordType.BlockChange));
+				objects.push(new RecordTypeConstraint(RecordType.PaintingChange));
 			}
 			else if(target.equals("items"))
 			{
 				objects.push(new RecordTypeConstraint(RecordType.ItemTransaction));
+				objects.push(new RecordTypeConstraint(RecordType.ItemPickup));
 			}
 			else
 			{
@@ -52,6 +58,7 @@ public class RecordFilterDA extends DataAssembler
 			objects.push(new RecordTypeConstraint(RecordType.BlockChange));
 			objects.push(new RecordTypeConstraint(RecordType.Interact));
 			objects.push(new RecordTypeConstraint(RecordType.ItemTransaction));
+			objects.push(new RecordTypeConstraint(RecordType.PaintingChange));
 		}
 		return null;
 	}

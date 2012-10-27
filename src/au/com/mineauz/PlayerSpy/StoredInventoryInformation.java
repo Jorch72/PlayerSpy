@@ -12,6 +12,7 @@ import org.bukkit.block.Chest;
 import org.bukkit.block.DoubleChest;
 import org.bukkit.craftbukkit.inventory.CraftInventory;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.StorageMinecart;
@@ -62,13 +63,21 @@ public class StoredInventoryInformation
 		}
 		else if(inventory.getHolder() instanceof Player)
 		{
-			// In an alternate universe, this would have been how to deal with enderchests, but no, the bukkit devs fucked up again. -_-
-			//if(inventory.getType() == org.bukkit.event.inventory.InventoryType.ENDER_CHEST)
-				//mType = InventoryType.Enderchest;
-			//else
+			if(inventory.getType() == org.bukkit.event.inventory.InventoryType.MERCHANT)
+			{
+				mType = InventoryType.Entity;
+				mEntity = new StoredEntity((Player)inventory.getHolder());
+				mEntity.setEntityType(EntityType.VILLAGER);
+			}
+			else if(inventory.getType() == org.bukkit.event.inventory.InventoryType.PLAYER)
+			{
 				mType = InventoryType.Player;
-			
-			mPlayerName = ((Player)inventory.getHolder()).getName();
+				
+				mPlayerName = ((Player)inventory.getHolder()).getName();
+			}
+			// In an alternate universe, this would have been how to deal with enderchests, but no, the bukkit devs fucked up again. -_-
+			//else if(inventory.getType() == org.bukkit.event.inventory.InventoryType.ENDER_CHEST)
+				//mType = InventoryType.Enderchest;
 		}
 		else if(inventory.getHolder() instanceof HumanEntity)
 		{

@@ -33,7 +33,7 @@ public class CommandDispatcher implements CommandExecutor, TabCompleter
 		registerCommand(new PlaybackCommand());
 		registerCommand(new ListCommand());
 		registerCommand(new HelpCommand());
-		//registerCommand(new PurgeCommand());
+		registerCommand(new PurgeCommand());
 		registerCommand(new InspectCommand());
 		registerCommand(new HistoryCommand());
 		registerCommand(new DebugCommand());

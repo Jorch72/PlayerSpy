@@ -499,6 +499,7 @@ public class LogFile
 		if(!mHeader.RequiresOwnerTags)
 			throw new IllegalStateException("Owner tags are not enabled in this log");
 		
+		DebugHelper.beginTimingSection("loadRecords");
 		RecordList allRecords = loadRecordChunks(startDate,endDate,owner);
 		
 		int trimStart = 0;
@@ -522,6 +523,7 @@ public class LogFile
 		allRecords.splitRecords(trimStart, false);
 
 		LogUtil.fine("  " + allRecords.size() + " returned records");
+		DebugHelper.endTimingSection();
 		
 		return allRecords;
 	}
@@ -552,6 +554,7 @@ public class LogFile
 	{
 		assert mIsLoaded;
 		
+		DebugHelper.beginTimingSection("loadRecords");
 		RecordList allRecords = loadRecordChunks(startDate, endDate);
 		
 		int trimStart = 0;
@@ -575,6 +578,7 @@ public class LogFile
 		allRecords.splitRecords(trimStart, false);
 
 		LogUtil.fine("  " + allRecords.size() + " returned records");
+		DebugHelper.endTimingSection();
 		
 		return allRecords;
 	}
@@ -647,6 +651,7 @@ public class LogFile
 		if(!mHeader.RequiresOwnerTags)
 			throw new IllegalStateException("Owner tags are not enabled in this log");
 		
+		DebugHelper.beginTimingSection("loadChunks");
 		ArrayList<IndexEntry> relevantEntries = new ArrayList<IndexEntry>();
 		
 		LogUtil.fine("Loading records from " + Util.dateToString(startDate) + " to " + Util.dateToString(endDate));
@@ -681,7 +686,7 @@ public class LogFile
 		}
 		
 		mLock.writeLock().unlock();
-		
+		DebugHelper.endTimingSection();
 		
 		LogUtil.finer("  " + allRecords.size() + " loaded records");
 
@@ -716,7 +721,7 @@ public class LogFile
 	public RecordList loadRecordChunks(long startDate, long endDate)
 	{
 		assert mIsLoaded;
-		
+		DebugHelper.beginTimingSection("loadChunks");
 		LogUtil.fine("Loading chunks from " + Util.dateToString(startDate) + " to " + Util.dateToString(endDate));
 		ArrayList<IndexEntry> relevantEntries = new ArrayList<IndexEntry>();
 		
@@ -746,7 +751,7 @@ public class LogFile
 		LogUtil.fine("  " + allRecords.size() + " loaded records");
 		
 		mLock.writeLock().unlock();
-		
+		DebugHelper.endTimingSection();
 		
 		// No need to trim it
 		return allRecords;
@@ -774,13 +779,14 @@ public class LogFile
 		assert mIsLoaded;
 		
 		RecordList records = null;
+		DebugHelper.beginTimingSection("loadSession");
 		
 		boolean isAbsolute = getOwnerTag(session) != null;
 		
 		// We will hold the write lock because accessing the file concurrently through the same object with have issues i think.
 		mLock.writeLock().lock();
 		
-						
+		
 		try
 		{
 			records = new RecordList();
@@ -858,6 +864,7 @@ public class LogFile
 		}
 		mLock.writeLock().unlock();
 		
+		DebugHelper.endTimingSection();
 		
 		return records;
 	}
@@ -876,6 +883,7 @@ public class LogFile
 		RecordList splitSession = null;
 		boolean isAbsolute = getOwnerTag(session) != null;
 		
+		DebugHelper.beginTimingSection("appendRecordsInternal");
 		mLock.writeLock().lock();
 		
 		
@@ -1026,9 +1034,9 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			
+			DebugHelper.endTimingSection();
 		}
-		
+
 		return splitSession;
 	}
 	
@@ -1051,6 +1059,7 @@ public class LogFile
 
 		boolean result;
 		
+		DebugHelper.beginTimingSection("appendRecords");
 		synchronized (CrossReferenceIndex.instance)
 		{
 			mLock.writeLock().lock();
@@ -1107,7 +1116,7 @@ public class LogFile
 					
 					RecordList splitSession = appendRecords(records, activeSession);
 		
-					if(splitSession != null)
+					if(splitSession != null && splitSession.size() > 0)
 					{
 						int index = initialiseSession(splitSession, true);
 						if(index != -1)
@@ -1164,6 +1173,8 @@ public class LogFile
 				
 			}
 		}
+		
+		DebugHelper.endTimingSection();
 		return result;
 	}
 	/**
@@ -1184,6 +1195,7 @@ public class LogFile
 		
 		boolean result;
 		
+		DebugHelper.beginTimingSection("appendRecords");
 		synchronized(CrossReferenceIndex.instance)
 		{
 			LogUtil.info("Appending " + records.size() + " records to " + mPlayerName);
@@ -1224,7 +1236,7 @@ public class LogFile
 							mLastInventory = lastInventory;
 					}
 					// Make sure the remaining records are written
-					if(splitSession != null)
+					if(splitSession != null && splitSession.size() > 0)
 					{
 						int index = initialiseSession(splitSession, false);
 						if(index != -1)
@@ -1253,6 +1265,7 @@ public class LogFile
 				
 			}
 		}
+		DebugHelper.endTimingSection();
 		return result;
 	}
 	
@@ -1289,6 +1302,7 @@ public class LogFile
 		assert records.size() > 0;
 		
 		LogUtil.fine("Initializing New Session with " + records.size() + " records");
+		DebugHelper.beginTimingSection("initSession");
 		mLock.writeLock().lock();
 		
 		
@@ -1434,7 +1448,7 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			
+			DebugHelper.endTimingSection();
 		}
 	}
 
@@ -1446,6 +1460,7 @@ public class LogFile
 		assert mIsLoaded;
 		
 		boolean result;
+		DebugHelper.beginTimingSection("purgeRecords");
 		synchronized(CrossReferenceIndex.instance)
 		{
 			mLock.writeLock().lock();
@@ -1485,6 +1500,9 @@ public class LogFile
 						if(mActiveSessions.get(otag) != null && mActiveSessions.get(otag) == entry.Id)
 							mActiveSessions.remove(otag);
 	
+						// Pull the proceeding data forward
+						pullData(entry.Location);
+						
 						// Purge the owner tag if no session uses it
 						int count = 0;
 						for(IndexEntry session : mIndex)
@@ -1517,8 +1535,11 @@ public class LogFile
 						int endIndex = sessionData.getLastRecordBefore(toDate);
 						
 						// Split the data
-						sessionData.splitRecords(endIndex, true);
-						sessionData.removeBefore(startIndex);
+						RecordList lower = sessionData.splitRecords(startIndex, false);
+						sessionData.splitRecords(endIndex, false);
+						sessionData.addAll(0, lower);
+						//sessionData.splitRecords(endIndex, true);
+						//sessionData.removeBefore(startIndex);
 						
 						// Write back the new updated data
 						if(sessionData.size() == 0)
@@ -1527,6 +1548,9 @@ public class LogFile
 							
 							if(mActiveSessions.get(otag) != null && mActiveSessions.get(otag) == entry.Id)
 								mActiveSessions.remove(otag);
+							
+							// Pull the proceeding data forward
+							pullData(entry.Location);
 							
 							// So that anything else using this object through a reference, wont do any damage
 							entry.RecordCount = 0;
@@ -1560,6 +1584,7 @@ public class LogFile
 								lastSize = stream.size();
 							}
 							
+							
 							// Prepare the hole
 							HoleEntry hole = new HoleEntry();
 							hole.Size = entry.TotalSize;
@@ -1583,6 +1608,10 @@ public class LogFile
 							hole.Location = entry.Location + entry.TotalSize;
 							
 							addHole(hole);
+							
+							// Pull the proceeding data forward
+							pullData(entry.Location + entry.TotalSize);
+							
 						}
 					}
 				}
@@ -1608,12 +1637,14 @@ public class LogFile
 				
 			}
 		}
+		DebugHelper.endTimingSection();
 		return result;
 	}
 
 	
 	private void pullData(long location) throws IOException
 	{
+		DebugHelper.beginTimingSection("pullData");
 		// Grab what ever is next after this
 		long nextLocation;
 		long nextSize = 0;
@@ -1744,6 +1775,7 @@ public class LogFile
 				mFile.setLength(holeData.Location);
 			}
 		}
+		DebugHelper.endTimingSection();
 	}
 	/**
 	 * Optimises file useage, compressing and relocating sessions to minimise the file size
@@ -1753,6 +1785,7 @@ public class LogFile
 		assert mIsLoaded;
 		
 		boolean result = false;
+		DebugHelper.beginTimingSection("compactLog");
 		mLock.writeLock().lock();
 		
 		try
@@ -2043,7 +2076,7 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			
+			DebugHelper.endTimingSection();
 		}
 		
 		return result;
@@ -2143,6 +2176,7 @@ public class LogFile
 		if(entry.Size == 0)
 			return;
 		
+		DebugHelper.beginTimingSection("addHole");
 		mLock.writeLock().lock();
 		
 		
@@ -2291,7 +2325,7 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			
+			DebugHelper.endTimingSection();
 		}
 	}
 	private void fillHole(int index, long start, long size) throws IOException
@@ -2353,6 +2387,7 @@ public class LogFile
 	private void updateHole(int index, HoleEntry entry) throws IOException
 	{
 		assert index >= 0 && index < mHoleIndex.size();
+		DebugHelper.beginTimingSection("updateHole");
 		mLock.writeLock().lock();
 		
 		
@@ -2366,12 +2401,13 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			
+			DebugHelper.endTimingSection();
 		}
 	}
 	private void removeHole(int index) throws IOException
 	{
 		assert index >= 0 && index < mHoleIndex.size();
+		DebugHelper.beginTimingSection("removeHole");
 		mLock.writeLock().lock();
 		
 		
@@ -2403,7 +2439,7 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			
+			DebugHelper.endTimingSection();
 		}
 	}
 	
@@ -2411,6 +2447,7 @@ public class LogFile
 	{
 		int sessionIndex;
 		
+		DebugHelper.beginTimingSection("addSession");
 		mLock.writeLock().lock();
 		
 		try
@@ -2483,7 +2520,7 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			
+			DebugHelper.endTimingSection();
 		}
 		
 		return sessionIndex;
@@ -2492,6 +2529,7 @@ public class LogFile
 	{
 		assert index >= 0 && index < mIndex.size();
 		
+		DebugHelper.beginTimingSection("removeSession");
 		mLock.writeLock().lock();
 		
 		
@@ -2536,12 +2574,13 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			
+			DebugHelper.endTimingSection();
 		}
 	}
 	private void updateSession(int index, IndexEntry session) throws IOException
 	{
 		assert index >= 0 && index < mIndex.size() : "Tried to update session " + index + "/" + mIndex.size();
+		DebugHelper.beginTimingSection("updateSession");
 		mLock.writeLock().lock();
 		
 		
@@ -2556,7 +2595,7 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			
+			DebugHelper.endTimingSection();
 		}
 	}
 	
@@ -2564,6 +2603,7 @@ public class LogFile
 	{
 		int resultIndex;
 		
+		DebugHelper.beginTimingSection("addOwnerMap");
 		mLock.writeLock().lock();
 		
 		try
@@ -2619,7 +2659,7 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			
+			DebugHelper.endTimingSection();
 		}
 		return resultIndex;
 	}
@@ -2628,6 +2668,7 @@ public class LogFile
 	{
 		assert index >= 0 && index < mOwnerTagList.size();
 		
+		DebugHelper.beginTimingSection("removeOwnerMap");
 		mLock.writeLock().lock();
 		
 		
@@ -2661,7 +2702,7 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			
+			DebugHelper.endTimingSection();
 		}
 	}
 	
@@ -2715,6 +2756,7 @@ public class LogFile
 
 	private void readIndex(RandomAccessFile file, FileHeader header) throws IOException
 	{
+		DebugHelper.beginTimingSection("readIndex");
 		mLock.writeLock().lock();
 		
 		
@@ -2735,11 +2777,12 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			
+			DebugHelper.endTimingSection();
 		}
 	}
 	private void readHoles(RandomAccessFile file, FileHeader header) throws IOException
 	{
+		DebugHelper.beginTimingSection("readHoles");
 		mLock.writeLock().lock();
 		
 
@@ -2772,11 +2815,12 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			
+			DebugHelper.endTimingSection();
 		}
 	}
 	private void readOwnerMap(RandomAccessFile file, FileHeader header) throws IOException
 	{
+		DebugHelper.beginTimingSection("readOwnerMap");
 		mLock.writeLock().lock();
 		
 		
@@ -2797,7 +2841,7 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			
+			DebugHelper.endTimingSection();
 		}
 	}
 	private int mReferenceCount = 0;

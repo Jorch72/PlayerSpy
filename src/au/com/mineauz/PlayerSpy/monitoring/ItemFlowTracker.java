@@ -129,7 +129,6 @@ public class ItemFlowTracker implements Listener
 			{
 				//mPlayerLastClick.put((Player)event.getWhoClicked(), -999);
 				mCurrentTransactions.remove((Player)event.getWhoClicked());
-				LogUtil.info("Clearing Transaction");
 			}
 		}
 	}

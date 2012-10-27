@@ -3,13 +3,16 @@ package au.com.mineauz.PlayerSpy.inspect;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map.Entry;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.Cause;
@@ -168,6 +171,25 @@ public class InspectBlockTask implements Task<Void>
 			}
 		}
 		
+		// Global records
+		for(World world : Bukkit.getWorlds())
+		{
+			HashMap<String, RecordList> buffers = GlobalMonitor.instance.getBufferForWorld(world);
+			for(Entry<String, RecordList> buffer : buffers.entrySet())
+			{
+				Cause cause = Cause.globalCause(world, buffer.getKey());
+				
+				// Load up the records in the session
+				processRecords(cause, buffer.getValue());
+			}
+		}
+		
+		// Pending records
+		for(Pair<RecordList,Cause> pending : GlobalMonitor.instance.getPendingRecords().values())
+		{
+			// Load up the records in the session
+			processRecords(pending.getArg2(), pending.getArg1());
+		}
 		
 		// Check stuff saved to disk
 		CrossReferenceIndex.Results allSessions = CrossReferenceIndex.instance.getSessionsFor(new SafeChunk(mLocation));

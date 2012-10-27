@@ -9,6 +9,7 @@ import org.bukkit.command.CommandSender;
 import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 
 
@@ -83,16 +84,15 @@ public class PurgeTask  implements Task<Boolean>
 			{
 				if(!log.purgeRecords(mFromDate,mToDate))
 					mCaller.sendMessage(ChatColor.RED + "  Purge failed on " + log.getName());
-				else
-				{
-					if(!log.compactLog())
-						mCaller.sendMessage(ChatColor.RED + "  Compact failed on " + log.getName());
-				}
 			}
 			else
 			{
 				if(!log.getFile().delete())
 					mCaller.sendMessage(ChatColor.RED + "  Purge failed on " + log.getName());
+				else
+				{
+					CrossReferenceIndex.instance.removeLogFile(log);
+				}
 			}
 		}
 		else
@@ -101,11 +101,6 @@ public class PurgeTask  implements Task<Boolean>
 			
 			if(!log.purgeRecords(mFromDate,mToDate))
 				mCaller.sendMessage(ChatColor.RED + "  Purge failed on " + log.getName());
-			else
-			{
-				if(!log.compactLog())
-					mCaller.sendMessage(ChatColor.RED + "  Compact failed on " + log.getName());
-			}
 
 			log.close(false);
 		}

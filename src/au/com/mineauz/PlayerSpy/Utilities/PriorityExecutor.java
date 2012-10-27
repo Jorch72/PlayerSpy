@@ -2,19 +2,17 @@ package au.com.mineauz.PlayerSpy.Utilities;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
 
+import au.com.mineauz.PlayerSpy.DebugHelper;
 import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.LogTasks.Task;
 
-public class PriorityExecutor implements Executor
+public class PriorityExecutor
 {
 	private static class SubmittedTask
 	{
@@ -23,6 +21,8 @@ public class PriorityExecutor implements Executor
 	}
 	private static class ThreadInfo
 	{
+		public int id;
+		
 		public ExecutorService executor;
 		public ArrayDeque<SubmittedTask> taskQueue;
 		public boolean isExecuting = false;
@@ -32,6 +32,7 @@ public class PriorityExecutor implements Executor
 		{
 			if(taskQueue.isEmpty())
 			{
+				DebugHelper.setValue("thread-" + id + "-queue", 0);
 				isExecuting = false;
 				return;
 			}
@@ -41,9 +42,11 @@ public class PriorityExecutor implements Executor
 			while((nextTask.future.isCancelled() || nextTask.future.isDone()) && taskQueue.size() > 0)
 				nextTask = taskQueue.poll();
 
+			DebugHelper.setValue("thread-" + id + "-queue", taskQueue.size() + (isExecuting ? 1 : 0));
 			if(nextTask.future.isCancelled() || nextTask.future.isDone())
 			{
 				isExecuting = false;
+				DebugHelper.setValue("thread-" + id + "-queue", taskQueue.size());
 				return;
 			}
 			
@@ -89,41 +92,11 @@ public class PriorityExecutor implements Executor
 			ThreadInfo info = new ThreadInfo();
 			info.executor = Executors.newSingleThreadExecutor();
 			info.taskQueue = new ArrayDeque<PriorityExecutor.SubmittedTask>();
+			info.id = i;
 			mThreadPool.add(info);
 		}
 	}
 	
-	@Override
-	public void execute(Runnable command) 
-	{
-	}
-
-	public void shutdown() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	public List<Runnable> shutdownNow() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public boolean isShutdown() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	public boolean isTerminated() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	public boolean awaitTermination(long timeout, TimeUnit unit)
-			throws InterruptedException {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
 	public synchronized <T> Future<T> submit(Task<T> task) 
 	{
 		int taskId = task.getTaskTargetId();
@@ -164,6 +137,9 @@ public class PriorityExecutor implements Executor
 		SubmittedTask sTask = new SubmittedTask();
 		sTask.task = task;
 		sTask.future = future;
+		
+		DebugHelper.setValue("thread-" + best + "-queue", mThreadPool.get(best).taskQueue.size() + (mThreadPool.get(best).isExecuting ? 1 : 0));
+		DebugHelper.debugMessage("" + task.getClass().getSimpleName() + " submitted to thread " + best + ". QS: " + (mThreadPool.get(best).taskQueue.size() + (mThreadPool.get(best).isExecuting ? 1 : 0)));
 		
 		boolean empty = mThreadPool.get(best).taskQueue.size() == 0 && !mThreadPool.get(best).isExecuting;
 		mThreadPool.get(best).taskQueue.add(sTask);

@@ -12,22 +12,18 @@ import au.com.mineauz.PlayerSpy.Utilities.Util;
 
 public class Config extends AutoConfig 
 {
-	@ConfigField(comment = "When set to true, records fluid flow as block changes, and traces the flow to find the cause.", category="tracing")
-	public boolean recordFluidFlow = true;
-	@ConfigField(comment = "When set to true, records mushroom spread as block changes, and traces the spread to find the cause.", category="tracing")
-	public boolean recordMushroomSpread = true;
-	@ConfigField(comment = "When set to true, records grass and mycel spread as block changes, and traces the spread to find the cause.", category="tracing")
-	public boolean recordGrassSpread = true;
-	@ConfigField(comment = "When set to true, records fire spread as block changes, and traces the spread to find the cause.", category="tracing")
-	public boolean recordFireSpread = true;
+	@ConfigField(comment = "DISABLED FOR NOW. When set to true, records fluid flow as block changes, and traces the flow to find the cause.", category="tracing")
+	public boolean recordFluidFlow = false;
+	@ConfigField(comment = "DISABLED FOR NOW. When set to true, records mushroom spread as block changes, and traces the spread to find the cause.", category="tracing")
+	public boolean recordMushroomSpread = false;
+	@ConfigField(comment = "DISABLED FOR NOW. When set to true, records grass and mycel spread as block changes, and traces the spread to find the cause.", category="tracing")
+	public boolean recordGrassSpread = false;
+	@ConfigField(comment = "DISABLED FOR NOW. When set to true, records fire spread as block changes, and traces the spread to find the cause.", category="tracing")
+	public boolean recordFireSpread = false;
 	
 	@ConfigField(name="timezone", comment = "Allows you to specify a timezone to display records with because java has a bug that means that sometimes, it may incorrectly get the timezone infomation from the system.", category="time")
 	private String mTimezoneString = "UTC+10:00";
 	public TimeZone timezone;
-	
-	@ConfigField(name="offset", comment = "Allows you to specify a time offset in standard date diff format.", category="time")
-	private String mTimeOffsetString = "0s";
-	public long timeoffset;
 
 	@ConfigField(comment = "The number of items to display when you use the inspect tool on a block.", category="inspect")
 	public int inspectCount = 3;
@@ -37,6 +33,9 @@ public class Config extends AutoConfig
 	public boolean inspectUse = true;
 	@ConfigField(comment = "When set to true, any entity related records at the inspected location, will in quick inspect.", category="inspect")
 	public boolean inspectEntities = true;
+	
+	@ConfigField(comment = "The timeout in miliseconds between inspects. If you are getting double clicks while inspecting, increase this.", category="inspect")
+	public long inspectTimeout = 500;
 	
 	@ConfigField(name="logTimeout", comment = "The amount of time that must pass before logs are closed after being asked to close.\nA low value can create lag when someone disconnects and quickly reconnects as the system has to wait for the log to finish closing before it can open it again.\nA high value will mean that uneeded logs will be loaded for longer consuming ram.\nMust be specified in date diff format. Default is 20 seconds.", category="general")
 	private String mLogTimeoutString = "20s";
@@ -56,13 +55,13 @@ public class Config extends AutoConfig
 	
 	protected void onPreSave()
 	{
-		mTimeOffsetString = Util.dateDiffToString(timeoffset,true);
+		//mTimeOffsetString = Util.dateDiffToString(timeoffset,true);
 		mLogTimeoutString = Util.dateDiffToString(logTimeout,true);
 		mTimezoneString = timezone.getID();
 	}
 	protected void onPostLoad() throws InvalidConfigurationException
 	{
-		timeoffset = Util.parseDateDiff(mTimeOffsetString);
+		//timeoffset = Util.parseDateDiff(mTimeOffsetString);
 		timezone = TimeZone.getTimeZone(mTimezoneString.replace("UTC", "GMT"));
 		
 		if(!StringTranslator.setActiveLanguage(language))

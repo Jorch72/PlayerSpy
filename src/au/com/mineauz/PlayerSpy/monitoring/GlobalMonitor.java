@@ -298,6 +298,15 @@ public class GlobalMonitor implements Listener
 		}
 	}
 	
+	public HashMap<String,RecordList> getBufferForWorld(World world)
+	{
+		return mBuffers.get(world);
+	}
+	public HashMap<Cause, Pair<RecordList,Cause>> getPendingRecords()
+	{
+		return mPendingRecords;
+	}
+	
 	/**
 	 * Sends the records off to be logged by the appropriate logger, or to be sidelined until a cause is found
 	 * @param records The records to log, cannot be null
@@ -826,13 +835,16 @@ public class GlobalMonitor implements Listener
 				BlockChangeRecord record = new BlockChangeRecord(block.getState(), null, false);
 				records.add(record);
 			}
-			Cause cause = mCauseFinder.getCauseFor(event.getLocation());
-			Cause defaultCause = Cause.globalCause(event.getLocation().getWorld(),"#tnt");
+			// TODO: Fix causefinder
+			//Cause cause = mCauseFinder.getCauseFor(event.getLocation());
+			//Cause defaultCause = Cause.globalCause(event.getLocation().getWorld(),"#tnt");
+			Cause cause = Cause.globalCause(event.getLocation().getWorld(), "#tnt");
 			
 			if(cause.isPlayer() && cause.getExtraCause() == null)
 				cause.update(Cause.playerCause(cause.getCausingPlayer(), "#tnt"));
 			
-			logRecords(records,cause,defaultCause);
+			//logRecords(records,cause,defaultCause);
+			logRecords(records,cause,null);
 		}
 		else
 		{
@@ -864,6 +876,7 @@ public class GlobalMonitor implements Listener
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onBlockFade(BlockFadeEvent event)
 	{
+		// TODO: Fix Causefinder
 		Cause cause = null;
 		Cause backupCause = null;
 		switch(event.getBlock().getType())
@@ -872,18 +885,18 @@ public class GlobalMonitor implements Listener
 		case MYCEL:
 			cause = Cause.globalCause(event.getBlock().getWorld(),"#decay");
 			
-			if(SpyPlugin.getSettings().recordGrassSpread)
-				mSpreadTracker.remove(event.getBlock().getLocation());
+//			if(SpyPlugin.getSettings().recordGrassSpread)
+//				mSpreadTracker.remove(event.getBlock().getLocation());
 			break;
 		case ICE:
-			if(SpyPlugin.getSettings().recordFluidFlow)
-			{
-				cause = mCauseFinder.getCauseFor(event.getBlock().getLocation());
-				backupCause = Cause.globalCause(event.getBlock().getWorld(), "#melt");
-				mSpreadTracker.addSource(event.getBlock().getLocation(), cause);
-			}
-			else
-				cause = Cause.globalCause(event.getBlock().getWorld(), "#melt");
+//			if(SpyPlugin.getSettings().recordFluidFlow)
+//			{
+//				cause = mCauseFinder.getCauseFor(event.getBlock().getLocation());
+//				backupCause = Cause.globalCause(event.getBlock().getWorld(), "#melt");
+//				mSpreadTracker.addSource(event.getBlock().getLocation(), cause);
+//			}
+//			else
+			cause = Cause.globalCause(event.getBlock().getWorld(), "#melt");
 			break;
 		case SNOW:
 			cause = Cause.globalCause(event.getBlock().getWorld(), "#melt");
@@ -891,8 +904,8 @@ public class GlobalMonitor implements Listener
 		case FIRE:
 			cause = Cause.globalCause(event.getBlock().getWorld(), "#extinguished");
 			
-			if(SpyPlugin.getSettings().recordFireSpread)
-				mSpreadTracker.remove(event.getBlock().getLocation());
+//			if(SpyPlugin.getSettings().recordFireSpread)
+//				mSpreadTracker.remove(event.getBlock().getLocation());
 			break;
 		default:
 			return;
@@ -939,35 +952,36 @@ public class GlobalMonitor implements Listener
 	{
 		if(event.getBlock().getType() != Material.DRAGON_EGG)
 		{
-			if(SpyPlugin.getSettings().recordFluidFlow)
-			{
-				Cause cause = null;
-				if(!mSpreadTracker.spreadTo(event.getBlock().getLocation(), event.getToBlock().getLocation()))
-				{
-					// Start finding out who placed it
-					cause = mCauseFinder.getCauseFor(event.getBlock().getLocation());
-					// Add the source and respread it
-					mSpreadTracker.addSource(event.getBlock().getLocation(), cause);
-					mSpreadTracker.spreadTo(event.getBlock().getLocation(), event.getToBlock().getLocation());
-				}
-				else
-					cause = mSpreadTracker.getCause(event.getToBlock().getLocation());
-				
-				Cause backupCause = null;
-				if(event.getBlock().getType() == Material.LAVA || event.getBlock().getType() == Material.STATIONARY_LAVA)
-					backupCause = Cause.globalCause(event.getBlock().getWorld(), "#lava");
-				else if(event.getBlock().getType() == Material.WATER || event.getBlock().getType() == Material.STATIONARY_WATER)
-					backupCause = Cause.globalCause(event.getBlock().getWorld(), "#water");
-				else
-					backupCause = Cause.globalCause(event.getBlock().getWorld(), "#fluid"); // Mods i guess?
-				
-				if(cause.isUnknown()) // Its already been checked and is unknown
-					cause = backupCause;
-				if(cause.isPlayer() && cause.getExtraCause() == null)
-					cause.update(Cause.playerCause(cause.getCausingPlayer(), backupCause.getExtraCause()));
-				
-				delayLogBlockChange(event.getToBlock(), cause, backupCause);
-			}
+			// TODO: Fix causefinder
+//			if(SpyPlugin.getSettings().recordFluidFlow)
+//			{
+//				Cause cause = null;
+//				if(!mSpreadTracker.spreadTo(event.getBlock().getLocation(), event.getToBlock().getLocation()))
+//				{
+//					// Start finding out who placed it
+//					cause = mCauseFinder.getCauseFor(event.getBlock().getLocation());
+//					// Add the source and respread it
+//					mSpreadTracker.addSource(event.getBlock().getLocation(), cause);
+//					mSpreadTracker.spreadTo(event.getBlock().getLocation(), event.getToBlock().getLocation());
+//				}
+//				else
+//					cause = mSpreadTracker.getCause(event.getToBlock().getLocation());
+//				
+//				Cause backupCause = null;
+//				if(event.getBlock().getType() == Material.LAVA || event.getBlock().getType() == Material.STATIONARY_LAVA)
+//					backupCause = Cause.globalCause(event.getBlock().getWorld(), "#lava");
+//				else if(event.getBlock().getType() == Material.WATER || event.getBlock().getType() == Material.STATIONARY_WATER)
+//					backupCause = Cause.globalCause(event.getBlock().getWorld(), "#water");
+//				else
+//					backupCause = Cause.globalCause(event.getBlock().getWorld(), "#fluid"); // Mods i guess?
+//				
+//				if(cause.isUnknown()) // Its already been checked and is unknown
+//					cause = backupCause;
+//				if(cause.isPlayer() && cause.getExtraCause() == null)
+//					cause.update(Cause.playerCause(cause.getCausingPlayer(), backupCause.getExtraCause()));
+//				
+//				delayLogBlockChange(event.getToBlock(), cause, backupCause);
+//			}
 		}
 	}
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -975,16 +989,16 @@ public class GlobalMonitor implements Listener
 	{
 		// Check config
 		boolean ok = false;
-		if(event.getNewState().getType() == Material.FIRE && SpyPlugin.getSettings().recordFireSpread)
-			ok = true;
-		else if((event.getNewState().getType() == Material.GRASS || event.getNewState().getType() == Material.MYCEL) && SpyPlugin.getSettings().recordGrassSpread)
-			ok = true;
-		else if((event.getNewState().getType() == Material.RED_MUSHROOM || event.getNewState().getType() == Material.BROWN_MUSHROOM) && SpyPlugin.getSettings().recordMushroomSpread)
-			ok = true;
+//		if(event.getNewState().getType() == Material.FIRE && SpyPlugin.getSettings().recordFireSpread)
+//			ok = true;
+//		else if((event.getNewState().getType() == Material.GRASS || event.getNewState().getType() == Material.MYCEL) && SpyPlugin.getSettings().recordGrassSpread)
+//			ok = true;
+//		else if((event.getNewState().getType() == Material.RED_MUSHROOM || event.getNewState().getType() == Material.BROWN_MUSHROOM) && SpyPlugin.getSettings().recordMushroomSpread)
+//			ok = true;
 		
 		if(!ok)
 			return;
-
+		// TODO: Fix causefinder
 		// Track spread
 		Cause cause = null;
 		if(!mSpreadTracker.spreadTo(event.getSource().getLocation(), event.getBlock().getLocation()))
