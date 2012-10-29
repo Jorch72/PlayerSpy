@@ -59,6 +59,9 @@ public class InspectBlockTask implements Task<Void>
 	
 	private void processRecords(Cause cause, RecordList list)
 	{
+		if(list.size() == 0)
+			return;
+		
 		if(mostRecent.size() < SpyPlugin.getSettings().inspectCount || list.getEndTimestamp() > mostRecent.get(mostRecent.size()-1).getArg2().getTimestamp())
 		{
 			long minDate = 0;

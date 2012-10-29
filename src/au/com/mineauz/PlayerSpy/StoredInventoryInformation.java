@@ -75,6 +75,12 @@ public class StoredInventoryInformation
 				
 				mPlayerName = ((Player)inventory.getHolder()).getName();
 			}
+			else
+			{
+				LogUtil.fine("Unknown inventory type with holder player. Type: " + inventory.getType() + " holder:" + ((Player)inventory.getHolder()).getName() + " world:" + ((Player)inventory.getHolder()).getWorld().getName());
+				mType = InventoryType.Unknown;
+			}
+			
 			// In an alternate universe, this would have been how to deal with enderchests, but no, the bukkit devs fucked up again. -_-
 			//else if(inventory.getType() == org.bukkit.event.inventory.InventoryType.ENDER_CHEST)
 				//mType = InventoryType.Enderchest;

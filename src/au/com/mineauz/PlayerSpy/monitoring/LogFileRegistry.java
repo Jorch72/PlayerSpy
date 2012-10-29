@@ -25,6 +25,7 @@ public class LogFileRegistry
 	public static void setLogFileDirectory(File directory)
 	{
 		mLogsRoot = directory;
+		mLogsRoot.mkdirs();
 	}
 	/**
 	 * Gets the log file directory

@@ -827,6 +827,8 @@ public class GlobalMonitor implements Listener
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onEntityExplode(EntityExplodeEvent event)
 	{
+		if(event.getEntity() == null)
+			return;
 		if(event.getEntityType() == EntityType.PRIMED_TNT)
 		{
 			RecordList records = new RecordList();

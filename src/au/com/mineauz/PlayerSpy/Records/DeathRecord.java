@@ -17,7 +17,7 @@ public class DeathRecord extends Record implements IPlayerLocationAware
 	{
 		super(RecordType.Death);
 		mLocation = new StoredLocation(deathLocation);
-		mReason = reason;
+		mReason = (reason == null ? "" : reason);
 	}
 	public DeathRecord() 
 	{

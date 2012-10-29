@@ -47,3 +47,9 @@ permissions:
   playerspy.reload:
     default: op
     description: Allows a player to reload the config file
+  playerspy.rollback:
+    default: op
+    description: Allows a player to rollback changes
+  playerspy.restore:
+    default: op
+    description: Allows a player to restore changes that were undone with rollback
