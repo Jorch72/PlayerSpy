@@ -408,7 +408,7 @@ public class PlaybackDisplay implements Listener
 	private void doMetaDataUpdate(Entity ent)
 	{
 		LogUtil.finest("@" + ent.id + " Metadata update");
-		Packet40EntityMetadata packet = new Packet40EntityMetadata(ent.id, ent.getDataWatcher());
+		Packet40EntityMetadata packet = new Packet40EntityMetadata(ent.id, ent.getDataWatcher(), true);
 		
 		sendPacket(packet, ent.world.getWorld());
 	}
@@ -436,8 +436,8 @@ public class PlaybackDisplay implements Listener
 		if(ent instanceof EntityShadowPlayer && !mShadowPlayers.contains(ent))
 			addShadowPlayer((EntityShadowPlayer)ent);
 		
-		Packet32EntityLook look = new Packet32EntityLook(ent.id, (byte)(ent.as * 256D / 360D), (byte)(ent.aT * 256D / 360D));
-		Packet35EntityHeadRotation head = new Packet35EntityHeadRotation(ent.id, (byte)(ent.as * 256D / 360D));
+		Packet32EntityLook look = new Packet32EntityLook(ent.id, (byte)(ent.ay * 256D / 360D), (byte)(ent.ba * 256D / 360D));
+		Packet35EntityHeadRotation head = new Packet35EntityHeadRotation(ent.id, (byte)(ent.ay * 256D / 360D));
 		
 		sendPacket(look, ent.world.getWorld());
 		sendPacket(head, ent.world.getWorld());

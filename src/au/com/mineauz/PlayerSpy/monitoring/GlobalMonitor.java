@@ -18,8 +18,8 @@ import org.bukkit.event.block.*;
 import org.bukkit.event.block.BlockIgniteEvent.IgniteCause;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
-import org.bukkit.event.painting.PaintingBreakByEntityEvent;
-import org.bukkit.event.painting.PaintingPlaceEvent;
+import org.bukkit.event.hanging.HangingBreakByEntityEvent;
+import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
@@ -287,6 +287,9 @@ public class GlobalMonitor implements Listener
 	{
 		for(Entry<World,HashMap<String, RecordList>> world : mBuffers.entrySet())
 		{
+			if(!mGlobalLogs.containsKey(world.getKey()))
+				continue;
+			
 			for(Entry<String, RecordList> ent : world.getValue().entrySet())
 			{
 				if(ent.getValue().size() == 0)
@@ -503,7 +506,11 @@ public class GlobalMonitor implements Listener
 		
 		if(event.getAction() == Action.PHYSICAL && event.getClickedBlock().getType() == Material.SOIL)
 		{
-			if(event.getClickedBlock().getRelative(BlockFace.UP).getType() == Material.CROPS || event.getClickedBlock().getRelative(BlockFace.UP).getType() == Material.MELON_STEM || event.getClickedBlock().getRelative(BlockFace.UP).getType() == Material.PUMPKIN_STEM)
+			if(event.getClickedBlock().getRelative(BlockFace.UP).getType() == Material.CROPS || 
+				event.getClickedBlock().getRelative(BlockFace.UP).getType() == Material.MELON_STEM || 
+				event.getClickedBlock().getRelative(BlockFace.UP).getType() == Material.PUMPKIN_STEM || 
+				event.getClickedBlock().getRelative(BlockFace.UP).getType() == Material.CARROT || 
+				event.getClickedBlock().getRelative(BlockFace.UP).getType() == Material.POTATO )
 			{
 				BlockChangeRecord record = new BlockChangeRecord(event.getClickedBlock().getRelative(BlockFace.UP).getState(), null, false);
 				ShallowMonitor mon = getMonitor(event.getPlayer());
@@ -525,7 +532,8 @@ public class GlobalMonitor implements Listener
 			event.getClickedBlock().getType() == Material.WOODEN_DOOR || 
 			event.getClickedBlock().getType() == Material.TRAP_DOOR ||
 			event.getClickedBlock().getType() == Material.TRIPWIRE ||
-			event.getClickedBlock().getType() == Material.JUKEBOX
+			event.getClickedBlock().getType() == Material.JUKEBOX ||
+			event.getClickedBlock().getType() == Material.WOOD_BUTTON 
 			)
 		{
 			ShallowMonitor mon = getMonitor(event.getPlayer());
@@ -1175,22 +1183,22 @@ public class GlobalMonitor implements Listener
 	}
 	
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onPlacePainting(PaintingPlaceEvent event)
+	public void onPlaceHanging(HangingPlaceEvent event)
 	{
 		ShallowMonitor mon = getMonitor(event.getPlayer());
 		if(mon != null)
-			mon.onPlacePainting(event);
+			mon.onPlaceHanging(event);
 	}
 	
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onBreakPainting(PaintingBreakByEntityEvent event)
+	public void onBreakHanging(HangingBreakByEntityEvent event)
 	{
 		if(!(event.getRemover() instanceof Player))
 			return;
 		
 		ShallowMonitor mon = getMonitor((Player)event.getRemover());
 		if(mon != null)
-			mon.onBreakPainting(event);
+			mon.onBreakHanging(event);
 	}
 	
 

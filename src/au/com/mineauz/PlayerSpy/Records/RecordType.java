@@ -47,5 +47,6 @@ public enum RecordType
 	Sleep,
 	// This is like eating or throwing enderpearls etc.
 	RClickAction,
-	ItemTransaction
+	ItemTransaction,
+	ItemFrameChange
 }

@@ -16,7 +16,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.painting.PaintingBreakByEntityEvent;
+import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
@@ -166,7 +166,7 @@ public class Inspector implements Listener
 		}
 	}
 	@EventHandler(priority = EventPriority.HIGHEST)
-	private void onClickPainting(PaintingBreakByEntityEvent event)
+	private void onClickPainting(HangingBreakByEntityEvent event)
 	{
 		if(!(event.getRemover() instanceof Player))
 			return;
@@ -182,7 +182,7 @@ public class Inspector implements Listener
 				return;
 			}
 						
-			doInspectAtEntity(event.getPainting(),player);
+			doInspectAtEntity(event.getEntity(),player);
 			
 			event.setCancelled(true);
 		}
