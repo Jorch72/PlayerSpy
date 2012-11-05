@@ -12,11 +12,13 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.ItemFrame;
+import org.bukkit.entity.Painting;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.painting.PaintingBreakByEntityEvent;
-import org.bukkit.event.painting.PaintingPlaceEvent;
+import org.bukkit.event.hanging.HangingBreakByEntityEvent;
+import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
@@ -342,12 +344,19 @@ public class ShallowMonitor
 		logRecord(new RightClickActionRecord(RightClickActionRecord.Action.ProjectileFire, new ItemStack(Material.EGG), null));
 	}
 	
-	public void onPlacePainting(PaintingPlaceEvent event)
+	public void onPlaceHanging(HangingPlaceEvent event)
 	{	
-		logRecord(new PaintingChangeRecord(event.getPainting(), true));
+		if(event.getEntity() instanceof Painting)
+			logRecord(new PaintingChangeRecord(((Painting)event.getEntity()), true));
+		else if(event.getEntity() instanceof ItemFrame)
+			logRecord(new ItemFrameChangeRecord(((ItemFrame)event.getEntity()), true));
+			
 	}
-	public void onBreakPainting(PaintingBreakByEntityEvent event)
+	public void onBreakHanging(HangingBreakByEntityEvent event)
 	{	
-		logRecord(new PaintingChangeRecord(event.getPainting(), false));
+		if(event.getEntity() instanceof Painting)
+			logRecord(new PaintingChangeRecord(((Painting)event.getEntity()), false));
+		else if(event.getEntity() instanceof ItemFrame)
+			logRecord(new ItemFrameChangeRecord(((ItemFrame)event.getEntity()), false));
 	}
 }

@@ -100,14 +100,14 @@ public class Utility
 	public static void setEntityHeadLook(EntityLiving ent, float yaw, float pitch)
 	{
 		// Last cam yaw
-		ent.at = ent.as;
+		ent.az = ent.ay;
 		// Cam yaw
-		ent.as = yaw;
+		ent.ay = yaw;
 		
 		// Last camera pitch
-		ent.aS = ent.aT;
+		ent.aZ = ent.ba;
 		// cam pitch
-		ent.at = pitch;
+		ent.ba = pitch;
 	}
 	
 	public static org.bukkit.inventory.ItemStack splitStack(org.bukkit.inventory.ItemStack stack, int amount)
@@ -270,7 +270,7 @@ public class Utility
 
 	            if (effects != null && !effects.isEmpty())
 	            {
-	                name = ((MobEffect)effects.get(0)).d();
+	                name = ((MobEffect)effects.get(0)).f();
 	                name += ".postfix";
 	                return prefix + StringTranslator.translateString(name).trim();
 	            }
@@ -285,7 +285,7 @@ public class Utility
 	            		
 	            		int damage = nativeStack.getData();
 	            		int index = (PotionBrewer.a(damage,5) ? 16 : 0) | (PotionBrewer.a(damage,4) ? 8 : 0) | (PotionBrewer.a(damage,3) ? 4 : 0) | (PotionBrewer.a(damage,2) ? 2 : 0) | (PotionBrewer.a(damage,1) ? 1 : 0);
-	            		name = StringTranslator.translateString(potionPrefixes[index]) + " " + StringTranslator.translateName(nativeStack.getItem().c(nativeStack));
+	            		name = StringTranslator.translateString(potionPrefixes[index]) + " " + StringTranslator.translateName(nativeStack.getItem().c_(nativeStack));
 	            		return name;
 	            	}
 	            	catch(NoSuchFieldException e)
@@ -306,7 +306,7 @@ public class Utility
 	        }
 		}
 		
-		String result = StringTranslator.translateName(nativeStack.getItem().c(nativeStack));
+		String result = StringTranslator.translateName(nativeStack.getItem().c_(nativeStack));
 		if(result.trim().isEmpty())
 		{
 	        String name = new StringBuilder().append( Character.toUpperCase(myItem.getType().name().charAt(0)) )
@@ -380,12 +380,12 @@ public class Utility
 			if(item == null)
 				continue;
 			
-			if(item.k()) // Item has subtypes
+			if(item.l()) // Item has subtypes
 			{
 				// Search the first 16 ids
 				for(int i = 0; i < 16; i++)
 				{
-					String name = item.c(new ItemStack(item,1,i));
+					String name = item.c_(new ItemStack(item,1,i));
 					if(keyName.equals(name))
 						return new org.bukkit.inventory.ItemStack(item.id,1,(short)i);
 				}
