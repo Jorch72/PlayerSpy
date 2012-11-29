@@ -9,6 +9,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.BlockState;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
 
@@ -142,8 +143,32 @@ public class BlockChangeRecord extends Record implements IRollbackable, ILocatio
 		return mIsRolledBack;
 	}
 	@Override
-	public void setRolledBack( boolean value )
+	public boolean rollback( boolean preview, Player previewTarget )
 	{
-		mIsRolledBack = value;
+		if (preview)
+		{
+			previewTarget.sendBlockChange(mInitialBlock.getLocation(), mInitialBlock.getType(), mInitialBlock.getData());
+		}
+		else
+		{
+			if(mInitialBlock.getLocation().getWorld() == null)
+				return false;
+			
+			mInitialBlock.applyBlockInWorld();
+			mIsRolledBack = true;
+		}
+		
+		return true;
+	}
+	@Override
+	public boolean restore()
+	{
+		if(mFinalBlock.getLocation().getWorld() == null)
+		return false;
+		
+		mFinalBlock.applyBlockInWorld();
+		mIsRolledBack = false;
+		
+		return true;
 	}
 }

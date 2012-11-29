@@ -1,5 +1,7 @@
 package au.com.mineauz.PlayerSpy.Records;
 
+import org.bukkit.entity.Player;
+
 public interface IRollbackable 
 {
 	/**
@@ -11,8 +13,7 @@ public interface IRollbackable
 	 * Gets whether this record has been rolled back
 	 */
 	public boolean wasRolledBack();
-	/**
-	 * Sets the state of rollback
-	 */
-	public void setRolledBack(boolean value);
+	
+	public boolean rollback(boolean preview, Player previewTarget);
+	public boolean restore();
 }

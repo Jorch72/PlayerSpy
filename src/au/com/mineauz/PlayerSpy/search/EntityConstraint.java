@@ -42,4 +42,11 @@ public class EntityConstraint extends Constraint
 		
 		return true;
 	}
+
+	@Override
+	public String getDescription()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

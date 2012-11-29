@@ -8,6 +8,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
@@ -142,11 +143,6 @@ public class InventoryTransactionRecord extends Record implements IRollbackable,
 		return mIsRolledBack;
 	}
 	@Override
-	public void setRolledBack( boolean value )
-	{
-		mIsRolledBack = value;
-	}
-	@Override
 	public Location getLocation()
 	{
 		if(mInvInfo.getBlock() != null)
@@ -154,5 +150,17 @@ public class InventoryTransactionRecord extends Record implements IRollbackable,
 		else if(mInvInfo.getEntity() != null)
 			return mInvInfo.getEntity().getLocation();
 		return null;
+	}
+	@Override
+	public boolean rollback( boolean preview, Player previewTarget )
+	{
+		// TODO Auto-generated method stub
+		return false;
+	}
+	@Override
+	public boolean restore()
+	{
+		// TODO Auto-generated method stub
+		return false;
 	}
 }

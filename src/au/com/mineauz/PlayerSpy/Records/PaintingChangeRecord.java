@@ -9,6 +9,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Painting;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.StoredPainting;
@@ -84,14 +85,29 @@ public class PaintingChangeRecord extends Record implements IRollbackable, ILoca
 	{
 		return mIsRolledBack;
 	}
-	@Override
-	public void setRolledBack( boolean value )
-	{
-		mIsRolledBack = value;
-	}
+
 	@Override
 	public Location getLocation()
 	{
 		return mPainting.getLocation();
+	}
+	@Override
+	public boolean rollback( boolean preview, Player previewTarget )
+	{
+		if(!preview)
+		{
+			Painting painting = getLocation().getWorld().spawn(getLocation(), Painting.class);
+			painting.setArt(mPainting.getArt());
+			painting.setFacingDirection(mPainting.getBlockFace());
+			
+			return true;
+		}
+		return false;
+	}
+	@Override
+	public boolean restore()
+	{
+		// TODO Auto-generated method stub
+		return false;
 	}
 }

@@ -7,10 +7,12 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import org.bukkit.ChatColor;
+import org.bukkit.command.BlockCommandSender;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.command.RemoteConsoleCommandSender;
 import org.bukkit.command.TabCompleter;
 
 /**
@@ -39,6 +41,7 @@ public class CommandDispatcher implements CommandExecutor, TabCompleter
 		registerCommand(new DebugCommand());
 		registerCommand(new SearchCommand());
 		registerCommand(new ReloadCommand());
+		registerCommand(new RollbackCommand());
 	}
 	/**
 	 * Registers a command to be handled by this dispatcher
@@ -94,9 +97,14 @@ AliasCheck:	for(Entry<String, ICommand> ent : mCommands.entrySet())
 		}
 		
 		// Check that the sender is correct
-		if(!com.canBeConsole() && sender instanceof ConsoleCommandSender)
+		if(!com.canBeConsole() && (sender instanceof ConsoleCommandSender || sender instanceof RemoteConsoleCommandSender))
 		{
-			sender.sendMessage(ChatColor.RED + "Only players can call /" + label + " " + subCommand);
+			sender.sendMessage(ChatColor.RED + "/" + label + " " + subCommand + " cannot be called from the console.");
+			return true;
+		}
+		if(!com.canBeCommandBlock() && sender instanceof BlockCommandSender)
+		{
+			sender.sendMessage(ChatColor.RED + "/" + label + " " + subCommand + " cannot be called from a command block.");
 			return true;
 		}
 		

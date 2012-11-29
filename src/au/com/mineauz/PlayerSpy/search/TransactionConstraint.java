@@ -92,4 +92,11 @@ public class TransactionConstraint extends Constraint
 		return false;
 	}
 
+	@Override
+	public String getDescription()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

@@ -9,6 +9,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.ItemFrame;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.StoredItemFrame;
@@ -86,14 +87,27 @@ public class ItemFrameChangeRecord extends Record implements IRollbackable, ILoc
 	{
 		return mIsRolledBack;
 	}
-	@Override
-	public void setRolledBack( boolean value )
-	{
-		mIsRolledBack = value;
-	}
+
 	@Override
 	public Location getLocation()
 	{
 		return mFrame.getLocation();
+	}
+	@Override
+	public boolean rollback( boolean preview, Player previewTarget )
+	{
+		if(!preview)
+		{
+			ItemFrame frame = getLocation().getWorld().spawn(getLocation(), ItemFrame.class);
+			frame.setFacingDirection(mFrame.getBlockFace());
+			frame.setItem(mFrame.getItem());
+		}
+		return false;
+	}
+	@Override
+	public boolean restore()
+	{
+		// TODO Auto-generated method stub
+		return false;
 	}
 }

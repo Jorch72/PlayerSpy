@@ -1,22 +1,30 @@
 package au.com.mineauz.PlayerSpy.search;
 
 import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
 import au.com.mineauz.PlayerSpy.Records.PaintingChangeRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 
 public class BlockConstraint extends Constraint 
 {
-	public boolean placed;
+	public enum Type
+	{
+		Place,
+		Break,
+		Any
+	}
+	public Type type;
 	public Pair<Material, Integer> material;
 	
 	@Override
 	public String toString() 
 	{
-		return "{ placed: " + placed + ", material: " + material + "}"; 
+		return "{ type: " + type + ", material: " + material + "}"; 
 	}
 
 	@Override
@@ -29,7 +37,7 @@ public class BlockConstraint extends Constraint
 			
 			PaintingChangeRecord change = (PaintingChangeRecord)record;
 			
-			if(change.getPlaced() != placed)
+			if(type == Type.Place && !change.getPlaced() || type == Type.Break && change.getPlaced())
 				return false;
 			
 			return true;
@@ -41,7 +49,7 @@ public class BlockConstraint extends Constraint
 			
 			BlockChangeRecord change = (BlockChangeRecord)record;
 			
-			if(change.wasPlaced() != placed)
+			if(type == Type.Place && !change.wasPlaced() || type == Type.Break && change.wasPlaced())
 				return false;
 			
 			if(material.getArg1() == Material.AIR)
@@ -58,5 +66,31 @@ public class BlockConstraint extends Constraint
 			
 			return false;
 		}
+	}
+
+	@Override
+	public String getDescription()
+	{
+		String result = "Block ";
+		switch(type)
+		{
+		case Any:
+			result += "Changes";
+			break;
+		case Break:
+			result += "Breaks";
+			break;
+		case Place:
+			result += "Places";
+			break;
+		}
+		
+		if(material.getArg1() == Material.AIR)
+			return result;
+		
+		result += " of ";
+		result += Utility.formatItemName(new ItemStack(material.getArg1(),1,(short)(int)material.getArg2()));
+		
+		return result;
 	}
 }

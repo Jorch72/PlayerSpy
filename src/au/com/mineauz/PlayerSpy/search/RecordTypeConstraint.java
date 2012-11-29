@@ -18,4 +18,11 @@ public class RecordTypeConstraint extends Constraint
 		return (record.getType() == type);
 	}
 
+	@Override
+	public String getDescription()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

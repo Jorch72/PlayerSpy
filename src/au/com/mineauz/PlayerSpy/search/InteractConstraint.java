@@ -56,4 +56,11 @@ public class InteractConstraint extends Constraint
 		
 	}
 
+	@Override
+	public String getDescription()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

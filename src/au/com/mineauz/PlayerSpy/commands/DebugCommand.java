@@ -58,6 +58,11 @@ public class DebugCommand implements ICommand
 	{
 		return true;
 	}
+	@Override
+	public boolean canBeCommandBlock()
+	{
+		return false;
+	}
 
 	@SuppressWarnings( "unchecked" )
 	private void analyseLog(CommandSender sender, String logName, String focus)

@@ -161,6 +161,33 @@ public class StoredBlock
 		return mStateData;
 	}
 	
+	public void applyBlockInWorld()
+	{
+		mLocation.getBlock().setTypeIdAndData(mType.getId(), mData, false);
+		
+		BlockState state = mLocation.getBlock().getState();
+		
+		switch(mStateType)
+		{
+		case Sign:
+			for(int i = 0; i < 4; i++)
+				((Sign)state).setLine(i, ((String[])mStateData)[i]);
+			break;
+		case Jukebox:
+			((Jukebox)state).setPlaying((Material)mStateData);
+			break;
+		case NoteBlock:
+			((NoteBlock)state).setNote((Note)mStateData);
+			break;
+		case Spawner:
+			((CreatureSpawner)state).setSpawnedType((EntityType)mStateData);
+			break;
+		case NormalBlock:
+			break;
+		}
+		
+		state.update(true);
+	}
 	public void write(DataOutputStream stream, boolean absolute) throws IOException
 	{
 		stream.writeInt(getTypeId());
