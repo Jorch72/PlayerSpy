@@ -37,6 +37,9 @@ public class InspectCommand implements ICommand
 	public boolean canBeConsole() {	return false; }
 
 	@Override
+	public boolean canBeCommandBlock() { return false; }
+	
+	@Override
 	public boolean onCommand(CommandSender sender, String label, String[] args) 
 	{
 		if(args.length != 0)

@@ -6,6 +6,7 @@ import org.bukkit.Material;
 
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.fsa.DataAssembler;
+import au.com.mineauz.PlayerSpy.search.BlockConstraint.Type;
 
 public class BlockConstraintDA extends DataAssembler
 {
@@ -17,7 +18,12 @@ public class BlockConstraintDA extends DataAssembler
 		String action = (String)objects.pop();
 		
 		BlockConstraint result = new BlockConstraint();
-		result.placed = (action.equals("place"));
+		if(action.equals("place"))
+			result.type = Type.Place;
+		else if(action.equals("break"))
+			result.type = Type.Break;
+		else
+			result.type = Type.Any;
 		result.material = mat;
 		
 		return result;

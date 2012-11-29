@@ -2535,7 +2535,6 @@ public class LogFile
 		
 		try
 		{
-			IndexEntry removedSession = mIndex.get(index);
 			CrossReferenceIndex.instance.removeSession(this, mIndex.get(index));
 			
 			// Shift the existing entries
@@ -2563,12 +2562,6 @@ public class LogFile
 			
 			addHole(hole);
 
-			if(removedSession.OwnerTagId != -1 && mHeader.VersionMajor >= 2)
-			{
-				removeOwnerMap(mOwnerTagMap.get(removedSession.OwnerTagId));
-				rebuildTagMap();
-			}
-			
 			rebuildIndexMap();
 		}
 		finally

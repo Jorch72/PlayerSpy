@@ -24,6 +24,8 @@ import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 import au.com.mineauz.PlayerSpy.monitoring.ShallowMonitor;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex.SessionInFile;
 import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
+import au.com.mineauz.PlayerSpy.search.interfaces.FormatterModifier;
+import au.com.mineauz.PlayerSpy.search.interfaces.Modifier;
 
 public class SearchTask implements Task<SearchResults>
 {
@@ -100,7 +102,7 @@ public class SearchTask implements Task<SearchResults>
 			results.allRecords.add(toInsert);
 		
 		// Remove the last item if its too big
-		if(results.allRecords.size() > SpyPlugin.getSettings().maxSearchResults)
+		if(!mFilter.noLimit && results.allRecords.size() > SpyPlugin.getSettings().maxSearchResults)
 			results.allRecords.remove(results.allRecords.size()-1);
 		
 		minDate = results.allRecords.get(results.allRecords.size()-1).getArg1().getTimestamp();
@@ -359,7 +361,13 @@ public class SearchTask implements Task<SearchResults>
 		DebugHelper.debugMessage(String.format("Search: LC:%d SC:%d BC:%d RC:%d",sessionsToSearch.getLogCount(),sessionCount,bufferedCount,totalRecords));
 		sessionsToSearch.release();
 		
-		
+		for(Modifier modifier : mFilter.modifiers)
+		{
+			if(modifier instanceof FormatterModifier)
+			{
+				((FormatterModifier)modifier).format(results);
+			}
+		}
 		
 		return results;
 	}

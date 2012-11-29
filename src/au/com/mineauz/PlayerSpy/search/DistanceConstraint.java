@@ -5,6 +5,7 @@ import org.bukkit.Location;
 import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
 import au.com.mineauz.PlayerSpy.Records.ILocationAware;
 import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 
 public class DistanceConstraint extends Constraint
@@ -40,5 +41,10 @@ public class DistanceConstraint extends Constraint
 			}
 		}
 		return false;
+	}
+	@Override
+	public String getDescription()
+	{
+		return "Within " + String.format("%.0f", distance) + " block of " + Utility.locationToStringShort(location);
 	}
 }

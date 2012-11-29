@@ -35,10 +35,10 @@ public class ReloadCommand implements ICommand
 	}
 
 	@Override
-	public boolean canBeConsole()
-	{
-		return true;
-	}
+	public boolean canBeConsole() { return true; }
+	
+	@Override
+	public boolean canBeCommandBlock() { return false; }
 
 	@Override
 	public boolean onCommand( CommandSender sender, String label, String[] args )

@@ -47,6 +47,8 @@ public class Config extends AutoConfig
 	@ConfigField(comment = "The maximum number of results that can be retrieved with search or history.", category="general")
 	public int maxSearchResults = 1000;
 	
+	@ConfigField(comment = "The maximum number of changes (block or transactions etc) that will be done each tick.", category="rollback")
+	public int maxChangesPerTick = 10;
 	
 	public Config(File file)
 	{

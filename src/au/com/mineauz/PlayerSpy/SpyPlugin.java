@@ -19,6 +19,7 @@ import au.com.mineauz.PlayerSpy.commands.*;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
 import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
+import au.com.mineauz.PlayerSpy.rollback.RollbackManager;
 import au.com.mineauz.PlayerSpy.search.Searcher;
 
 public class SpyPlugin extends JavaPlugin
@@ -151,6 +152,7 @@ public class SpyPlugin extends JavaPlugin
 	{
 		GlobalMonitor.instance.update();
 		Searcher.instance.update();
+		RollbackManager.instance.update();
 		for(Entry<Player, PlaybackContext> playback : mPlayers.entrySet())
 		{
 			playback.getValue().update();
