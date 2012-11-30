@@ -29,7 +29,8 @@ public class Upgrader
 			
 			// Check versions
 			FileHeader header = LogFile.scrapeHeader(file.getAbsolutePath());
-			if(header.VersionMajor != 2)
+			
+			if(header != null && header.VersionMajor != 2)
 			{
 				LogFile log = new LogFile();
 				if(log.load(file.getAbsolutePath()))

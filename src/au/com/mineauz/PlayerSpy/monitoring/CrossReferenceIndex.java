@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
 import java.sql.*;
 
 import org.bukkit.Bukkit;
@@ -191,7 +192,67 @@ public class CrossReferenceIndex
 			return -1;
 		}
 	}
+	private synchronized int getFileId(String logName)
+	{
+		for(Entry<LogFile, Integer> entry : mKnownFileIDs.entrySet())
+		{
+			if (entry.getKey().getName().equals(logName))
+				return entry.getValue();
+		}
+		
+		try
+		{
+			mSelectFileStatement.setString(1, logName);
+			ResultSet rs = mSelectFileStatement.executeQuery();
+			if(!rs.next())
+			{
+				rs.close();
+				return -1;
+			}
+			int fileId = rs.getInt(1);
 
+			rs.close();
+			return fileId;
+		}
+		catch(SQLException e)
+		{
+			e.printStackTrace();
+			return -1;
+		}
+	}
+	public synchronized boolean removeLogFile(String logName)
+	{
+		try
+		{
+			// Get the file id
+			int fileId = getFileId(logName);
+			if(fileId == -1)
+				return false;
+			
+			// Remove the file
+			mDeleteFileStatement.setInt(1, fileId);
+			mDeleteFileStatement.execute();
+			mDatabaseConnection.commit();
+			
+			for(Entry<LogFile, Integer> entry : mKnownFileIDs.entrySet())
+			{
+				if (entry.getKey().getName().equals(logName))
+				{
+					mKnownFileIDs.remove(entry.getKey());
+					break;
+				}
+			}
+			
+			return true;
+		}
+		catch(SQLException e)
+		{
+			e.printStackTrace();
+			tryRollback();
+		}
+		
+		return false;
+	}
 	public synchronized boolean removeLogFile(LogFile log)
 	{
 		try
@@ -205,6 +266,8 @@ public class CrossReferenceIndex
 			mDeleteFileStatement.setInt(1, fileId);
 			mDeleteFileStatement.execute();
 			mDatabaseConnection.commit();
+			
+			mKnownFileIDs.remove(log);
 			
 			return true;
 		}

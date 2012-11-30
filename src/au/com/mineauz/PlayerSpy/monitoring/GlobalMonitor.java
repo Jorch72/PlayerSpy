@@ -64,8 +64,10 @@ public class GlobalMonitor implements Listener
 		mPersist = new PersistantData(new File(SpyPlugin.getInstance().getDataFolder(),"persist.yml"));
 		if(!mPersist.load())
 			throw new RuntimeException("Unable to load persist file");
+
 		mPersist.save();
 
+		
 		for(OfflinePlayer player : mPersist.activeMonitorTargets)
 			attachDeepInternal(player);
 		
@@ -83,6 +85,15 @@ public class GlobalMonitor implements Listener
 			if(log == null)
 				log = LogFileRegistry.createLogFile(world);
 		
+			if(log == null)
+			{
+				log = LogFileRegistry.makeReplacementLog(world);
+				if (log != null)
+					LogUtil.warning("Log Load fail: __" + world.getName() + ". Replacement log has been installed and old log backed up.");
+				else
+					LogUtil.severe("Log Load fail: __" + world.getName() + ". Replacement log also failed. IO Error");
+			}
+			
 			if(log == null)
 				LogUtil.severe("Unable to create global log file for " + world.getName());
 			else

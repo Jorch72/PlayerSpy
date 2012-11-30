@@ -1,10 +1,13 @@
 package au.com.mineauz.PlayerSpy.monitoring;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
+
+import com.google.common.io.Files;
 
 import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.LogUtil;
@@ -59,12 +62,42 @@ public class LogFileRegistry
 		LogFile log = new LogFile();
 		if(!log.load(file.getAbsolutePath()))
 		{
-			LogUtil.warning("Player log for " + player.getName() + " failed to load. Corrupted?");
+			LogUtil.severe("Player log for " + player.getName() + " failed to load. Corrupted?");
 			return null;
 		}
 		
 		mLoadedLogs.put(player.getName(), log);
 		return log;
+	}
+	
+	public static LogFile makeReplacementLog(OfflinePlayer player)
+	{
+		return makeReplacementLog(player.getName(),new File(mLogsRoot, sanitiseName(player.getName()) + cFileExt));
+	}
+	public static LogFile makeReplacementLog(World world)
+	{
+		return makeReplacementLog(cGlobalFilePrefix + world.getName(), new File(mLogsRoot, cGlobalFilePrefix + sanitiseName(world.getName()) + cFileExt));
+	}
+	private static LogFile makeReplacementLog(String logName, File file)
+	{
+		// We need a log, so make a backup of this one, and make a new one
+		int num = 1;
+		while(new File(file.getAbsolutePath() + ".bak" + num).exists())	num++;
+		
+		File backup = new File(file.getAbsolutePath() + ".bak" + num);
+		try
+		{
+			Files.copy(file, backup);
+			CrossReferenceIndex.instance.removeLogFile(logName);
+			
+			return LogFile.create(logName, file.getAbsolutePath());
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+			LogUtil.severe("Cannot generate replacement log file!");
+			return null;
+		}
 	}
 	
 	public static LogFile getLogFileDelayLoad( OfflinePlayer player )
@@ -150,7 +183,7 @@ public class LogFileRegistry
 		if(file.exists())
 			return null;
 		
-		LogFile log = LogFile.createGlobal(cGlobalFilePrefix + world.getName(), file.getAbsolutePath());
+		LogFile log = LogFile.create(cGlobalFilePrefix + world.getName(), file.getAbsolutePath());
 		
 		if(log == null)
 			return null;

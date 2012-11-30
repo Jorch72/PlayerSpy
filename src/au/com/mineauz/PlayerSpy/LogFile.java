@@ -23,6 +23,7 @@ import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
 import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
+import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 
 public class LogFile 
 {
@@ -57,6 +58,10 @@ public class LogFile
 	public boolean isLoaded()
 	{
 		return mIsLoaded && !mIsClosing;
+	}
+	public boolean isCorrupted()
+	{
+		return mIsCorrupt;
 	}
 	public boolean isTimingOut()
 	{
@@ -130,10 +135,16 @@ public class LogFile
 		header.OwnerMapSize = 0;
 		header.OwnerMapLocation = header.getSize() + HoleEntry.cSize;
 		
-		header.RequiresOwnerTags = false;
+		if (playerName.startsWith(LogFileRegistry.cGlobalFilePrefix))
+			header.RequiresOwnerTags = true;
+		else
+			header.RequiresOwnerTags = false;
+		
 		
 		try
 		{
+			// Clean it first
+			file.setLength(0);
 			file.beginTransaction();
 			
 			header.write(file);
@@ -164,6 +175,8 @@ public class LogFile
 		log.mHeader = header;
 		log.mReferenceCount = 1;
 		
+
+		
 		log.rebuildTagMap();
 		log.rebuildIndexMap();
 		
@@ -179,6 +192,7 @@ public class LogFile
 	 * @param filename The filename to create the log at
 	 * @return An instance with an open log or null if unable to create it
 	 */
+	@Deprecated
 	public static LogFile createGlobal(String worldName, String filename)
 	{
 		LogFile log = create(worldName, filename);
@@ -240,7 +254,7 @@ public class LogFile
 		boolean ok = false;
 		mLock.writeLock().lock();
 		ACIDRandomAccessFile file = null;
-		
+		mIsCorrupt = false;
 		try
 		{
 			LogUtil.info("Loading '" + filename + "'...");
@@ -312,6 +326,7 @@ public class LogFile
 				
 			}
 			ok = false;
+			mIsCorrupt = true;
 		}
 		catch(Exception e)
 		{
@@ -326,6 +341,7 @@ public class LogFile
 				
 			}
 			ok = false;
+			mIsCorrupt = true;
 		}
 		
 		mLock.writeLock().unlock();
@@ -2850,6 +2866,7 @@ public class LogFile
 	private ReentrantLock mReferenceLock;
 	
 	private boolean mIsLoaded = false;
+	private boolean mIsCorrupt = false;
 	private boolean mIsClosing = false;
 	private int mTimeoutId = -1;
 	private String mPlayerName;

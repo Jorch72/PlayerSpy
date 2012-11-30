@@ -38,7 +38,14 @@ public class Journal
 	
 	public boolean isHot()
 	{
-		return (mJournalStream != null);
+		try 
+		{
+			return (mJournalStream != null && mJournalStream.length() > 22);
+		} 
+		catch (IOException e) 
+		{
+			return false;
+		}
 	}
 	
 	public void preWrite(long size) throws IOException
@@ -95,7 +102,7 @@ public class Journal
 	
 	public void rollback() throws IOException
 	{
-		if(mJournalStream == null)
+		if(!isHot())
 			throw new IllegalStateException("Cannot rollback journal, journal is cold.");
 		
 		mJournalStream.seek(0);
@@ -152,7 +159,7 @@ public class Journal
 	
 	public void clear() throws IOException
 	{
-		if(mJournalStream == null)
+		if(!isHot())
 			throw new IllegalStateException("Cannot clear journal, journal is cold.");
 		
 		try
