@@ -418,6 +418,15 @@ public class GlobalMonitor implements Listener
 			log = LogFileRegistry.createLogFile(event.getWorld());
 	
 		if(log == null)
+		{
+			log = LogFileRegistry.makeReplacementLog(event.getWorld());
+			if (log != null)
+				LogUtil.warning("Log Load fail: __" + event.getWorld().getName() + ". Replacement log has been installed and old log backed up.");
+			else
+				LogUtil.severe("Log Load fail: __" + event.getWorld().getName() + ". Replacement log also failed. IO Error");
+		}
+		
+		if(log == null)
 			LogUtil.severe("Unable to create global log file for " + event.getWorld().getName());
 		else
 		{
