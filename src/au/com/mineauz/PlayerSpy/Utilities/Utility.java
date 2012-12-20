@@ -10,15 +10,15 @@ import java.util.Map.Entry;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.CraftWorld;
-import org.bukkit.craftbukkit.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_4_5.CraftWorld;
+import org.bukkit.craftbukkit.v1_4_5.inventory.CraftItemStack;
 import org.bukkit.enchantments.Enchantment;
 
 import au.com.mineauz.PlayerSpy.InventorySlot;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
 
-import net.minecraft.server.*;
+import net.minecraft.server.v1_4_5.*;
 
 public class Utility 
 {
@@ -27,7 +27,7 @@ public class Utility
 		if(item == null)
 			return null;
 		if(item instanceof CraftItemStack)
-			return ((CraftItemStack)item).getHandle();
+			return CraftItemStack.asNMSCopy(item);
 		else
 		{
 			ItemStack nativeStack = new ItemStack(item.getTypeId(), item.getAmount(), item.getDurability());

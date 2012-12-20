@@ -56,10 +56,10 @@ public class StoredItemStack
 		{
 			int itemId, amount;
 			short durability;
-			byte data;
+			//byte data;
 			
 			itemId = stream.readInt();
-			data = stream.readByte();
+			/*data = */stream.readByte();
 			durability = stream.readShort();
 			amount = stream.readByte();
 			int enchantCount = stream.readByte();
@@ -71,7 +71,7 @@ public class StoredItemStack
 				Enchantment ench = Enchantment.getById(stream.readShort());
 				map.put(ench,(int)stream.readShort());
 			}
-			ItemStack item = new ItemStack(itemId,amount,durability,data);
+			ItemStack item = new ItemStack(itemId,amount,durability/*,data*/);
 			item.addUnsafeEnchantments(map);
 			
 			return new StoredItemStack(item);
