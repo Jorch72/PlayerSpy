@@ -3,15 +3,15 @@ package au.com.mineauz.PlayerSpy;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
-import net.minecraft.server.v1_4_5.*;
+import net.minecraft.server.v1_4_6.*;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.World;
-import org.bukkit.craftbukkit.v1_4_5.CraftSound;
-import org.bukkit.craftbukkit.v1_4_5.CraftWorld;
-import org.bukkit.craftbukkit.v1_4_5.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_4_6.CraftSound;
+import org.bukkit.craftbukkit.v1_4_6.CraftWorld;
+import org.bukkit.craftbukkit.v1_4_6.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -73,7 +73,7 @@ public class PlaybackDisplay implements Listener
 			
 			for(EntityItem item : mShadowItems)
 			{
-				sendPacketTo(player, new Packet21PickupSpawn(item), item.world.getWorld());
+				spawnEntityItem(item);
 			}
 			
 			for(EntityLiving mob : mShadowMobs)
@@ -232,7 +232,7 @@ public class PlaybackDisplay implements Listener
 			
 			for(EntityItem item : mShadowItems)
 			{
-				sendPacketTo(event.getPlayer(), new Packet21PickupSpawn(item), item.world.getWorld());
+				spawnEntityItem(item);
 			}
 			
 			for(EntityLiving mob : mShadowMobs)
@@ -313,7 +313,7 @@ public class PlaybackDisplay implements Listener
 		
 		for(EntityItem item : mAddedItems)
 		{
-			sendPacket(new Packet21PickupSpawn(item), item.world.getWorld());
+			spawnEntityItem(item);
 		}
 		mAddedItems.clear();
 		
@@ -385,6 +385,11 @@ public class PlaybackDisplay implements Listener
 		}
 		
 	}
+	private void spawnEntityItem(EntityItem item)
+	{
+		sendPacket(new Packet23VehicleSpawn(item, 2, 1), item.world.getWorld());
+		sendPacket(new Packet40EntityMetadata(item.id, item.getDataWatcher(), true), item.world.getWorld());
+	}
 	private void doUpdateEquipment(EntityHuman ent)
 	{
 		LogUtil.finest("@" + ent.id + " Update Equipment");
@@ -436,8 +441,8 @@ public class PlaybackDisplay implements Listener
 		if(ent instanceof EntityShadowPlayer && !mShadowPlayers.contains(ent))
 			addShadowPlayer((EntityShadowPlayer)ent);
 		
-		Packet32EntityLook look = new Packet32EntityLook(ent.id, (byte)(ent.ay * 256D / 360D), (byte)(ent.ba * 256D / 360D));
-		Packet35EntityHeadRotation head = new Packet35EntityHeadRotation(ent.id, (byte)(ent.ay * 256D / 360D));
+		Packet32EntityLook look = new Packet32EntityLook(ent.id, (byte)(ent.az * 256D / 360D), (byte)(ent.bb * 256D / 360D));
+		Packet35EntityHeadRotation head = new Packet35EntityHeadRotation(ent.id, (byte)(ent.az * 256D / 360D));
 		
 		sendPacket(look, ent.world.getWorld());
 		sendPacket(head, ent.world.getWorld());
@@ -507,7 +512,7 @@ public class PlaybackDisplay implements Listener
 		for(Player viewer : mViewers)
 		{
 			if(world == null || viewer.getWorld() == world)
-				((CraftPlayer)viewer).getHandle().netServerHandler.sendPacket(packet);
+				((CraftPlayer)viewer).getHandle().playerConnection.sendPacket(packet);
 		}
 	}
 	
@@ -520,7 +525,7 @@ public class PlaybackDisplay implements Listener
 	private void sendPacketTo(Player player, Packet packet, World world)
 	{
 		if(world == null || player.getWorld() == world)
-			((CraftPlayer)player).getHandle().netServerHandler.sendPacket(packet);
+			((CraftPlayer)player).getHandle().playerConnection.sendPacket(packet);
 	}
 	
 	private ArrayList<Player> mViewers;

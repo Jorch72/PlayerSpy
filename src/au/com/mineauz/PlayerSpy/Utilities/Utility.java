@@ -10,15 +10,15 @@ import java.util.Map.Entry;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_4_5.CraftWorld;
-import org.bukkit.craftbukkit.v1_4_5.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_4_6.CraftWorld;
+import org.bukkit.craftbukkit.v1_4_6.inventory.CraftItemStack;
 import org.bukkit.enchantments.Enchantment;
 
 import au.com.mineauz.PlayerSpy.InventorySlot;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
 
-import net.minecraft.server.v1_4_5.*;
+import net.minecraft.server.v1_4_6.*;
 
 public class Utility 
 {
@@ -71,9 +71,9 @@ public class Utility
 		
 		return entityItem;
 	}
-	public static Packet21PickupSpawn makeItemSpawnPacket(Location location, org.bukkit.inventory.ItemStack item)
+	public static Packet23VehicleSpawn makeItemSpawnPacket(Location location, org.bukkit.inventory.ItemStack item)
 	{
-		return new Packet21PickupSpawn(makeEntityItem(location, item));
+		return new Packet23VehicleSpawn(makeEntityItem(location, item), 2, 1);
 	}
 	
 	public static void setEntityPosition(Entity ent, Location loc)
@@ -100,14 +100,14 @@ public class Utility
 	public static void setEntityHeadLook(EntityLiving ent, float yaw, float pitch)
 	{
 		// Last cam yaw
-		ent.az = ent.ay;
+		ent.aA = ent.az;
 		// Cam yaw
-		ent.ay = yaw;
+		ent.az = yaw;
 		
 		// Last camera pitch
-		ent.aZ = ent.ba;
+		ent.ba = ent.bb;
 		// cam pitch
-		ent.ba = pitch;
+		ent.bb = pitch;
 	}
 	
 	public static org.bukkit.inventory.ItemStack splitStack(org.bukkit.inventory.ItemStack stack, int amount)
@@ -265,7 +265,7 @@ public class Utility
 	                prefix = StringTranslator.translateString("potion.prefix.grenade").trim() + " ";
 	            }
 
-	            List<?> effects = Item.POTION.l(nativeStack);
+	            List<?> effects = Item.POTION.g(nativeStack);
 	            String name;
 
 	            if (effects != null && !effects.isEmpty())
@@ -285,7 +285,7 @@ public class Utility
 	            		
 	            		int damage = nativeStack.getData();
 	            		int index = (PotionBrewer.a(damage,5) ? 16 : 0) | (PotionBrewer.a(damage,4) ? 8 : 0) | (PotionBrewer.a(damage,3) ? 4 : 0) | (PotionBrewer.a(damage,2) ? 2 : 0) | (PotionBrewer.a(damage,1) ? 1 : 0);
-	            		name = StringTranslator.translateString(potionPrefixes[index]) + " " + StringTranslator.translateName(nativeStack.getItem().c_(nativeStack));
+	            		name = StringTranslator.translateString(potionPrefixes[index]) + " " + StringTranslator.translateName(nativeStack.getItem().d(nativeStack));
 	            		return name;
 	            	}
 	            	catch(NoSuchFieldException e)
@@ -306,7 +306,7 @@ public class Utility
 	        }
 		}
 		
-		String result = StringTranslator.translateName(nativeStack.getItem().c_(nativeStack));
+		String result = StringTranslator.translateName(nativeStack.getItem().d(nativeStack));
 		if(result.trim().isEmpty())
 		{
 	        String name = new StringBuilder().append( Character.toUpperCase(myItem.getType().name().charAt(0)) )
@@ -385,7 +385,7 @@ public class Utility
 				// Search the first 16 ids
 				for(int i = 0; i < 16; i++)
 				{
-					String name = item.c_(new ItemStack(item,1,i));
+					String name = item.d(new ItemStack(item,1,i));
 					if(keyName.equals(name))
 						return new org.bukkit.inventory.ItemStack(item.id,1,(short)i);
 				}

@@ -4,9 +4,9 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-import net.minecraft.server.v1_4_5.EntityTypes;
+import net.minecraft.server.v1_4_6.EntityTypes;
 
-import org.bukkit.craftbukkit.v1_4_5.CraftWorld;
+import org.bukkit.craftbukkit.v1_4_6.CraftWorld;
 import org.bukkit.entity.*;
 
 import au.com.mineauz.PlayerSpy.Utilities.EntityShadowPlayer;
@@ -72,9 +72,9 @@ public class StoredEntity
  		return 6 + mLocation.getSize(true) + (mTypeId == (EntityType.PLAYER.ordinal() | 1024) ? Utility.getUTFLength(mPlayerName) : 0);
 	}
 	
-	public net.minecraft.server.v1_4_5.Entity createEntity()
+	public net.minecraft.server.v1_4_6.Entity createEntity()
 	{
-		net.minecraft.server.v1_4_5.Entity ent;
+		net.minecraft.server.v1_4_6.Entity ent;
 		if(mTypeId == (EntityType.PLAYER.ordinal() | 1024))
 		{
 			ent = new EntityShadowPlayer(((CraftWorld)mLocation.getLocation().getWorld()).getHandle(), mPlayerName);
