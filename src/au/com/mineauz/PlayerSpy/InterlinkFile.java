@@ -17,6 +17,7 @@ import org.bukkit.World;
 import au.com.mineauz.PlayerSpy.Utilities.FileLinkedList;
 import au.com.mineauz.PlayerSpy.Utilities.IWritable;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 
 
 @SuppressWarnings( "unused" )
@@ -122,7 +123,7 @@ public class InterlinkFile
 	 */
 	public synchronized boolean load(File file)
 	{
-		assert !mIsLoaded;
+		Debug.loggedAssert(!mIsLoaded, "Cant load the file if already loaded");
 		
 		try
 		{
@@ -165,7 +166,7 @@ public class InterlinkFile
 	 */
 	public synchronized void close()
 	{
-		assert mIsLoaded;
+		Debug.loggedAssert(mIsLoaded);
 		
 		try
 		{
@@ -191,7 +192,7 @@ public class InterlinkFile
 	 */
 	public List<Pair<String, Integer>> getSessionsMatching(Predicate predicate)
 	{
-		assert mIsLoaded;
+		Debug.loggedAssert(mIsLoaded);
 		return null;
 	}
 	
@@ -205,7 +206,7 @@ public class InterlinkFile
 	 */
 	public synchronized boolean addSession(LogFile log, IndexEntry session, String owner, List<Chunk> allChunks)
 	{
-		assert mIsLoaded;
+		Debug.loggedAssert(mIsLoaded);
 		try
 		{
 			// Add or get the file id
@@ -238,7 +239,7 @@ public class InterlinkFile
 	 */
 	public synchronized boolean removeSession(LogFile log, IndexEntry session)
 	{
-		assert mIsLoaded;
+		Debug.loggedAssert(mIsLoaded);
 		// TODO: removeSession()
 		return false;
 	}
@@ -252,7 +253,7 @@ public class InterlinkFile
 	 */
 	public synchronized boolean updateSession(LogFile log, IndexEntry session, List<Chunk> allChunks)
 	{
-		assert mIsLoaded;
+		Debug.loggedAssert(mIsLoaded);
 		
 		short fileId = -1;
 		int sessionIndex = log.getSessions().indexOf(session);
@@ -632,7 +633,7 @@ public class InterlinkFile
 	
 	private void fillHole(int index, long start, long size)
 	{
-		assert index >= 0 && index < mHoles.size();
+		Debug.loggedAssert(index >= 0 && index < mHoles.size());
 		
 		HoleEntry hole = mHoles.get(index);
 		
@@ -677,7 +678,7 @@ public class InterlinkFile
 	}
 	private void updateHole(int index, HoleEntry entry)
 	{
-		assert index >= 0 && index < mHoles.size();
+		Debug.loggedAssert(index >= 0 && index < mHoles.size());
 		
 		try
 		{
@@ -693,7 +694,7 @@ public class InterlinkFile
 	}
 	private void removeHole(int index)
 	{
-		assert index >= 0 && index < mHoles.size();
+		Debug.loggedAssert(index >= 0 && index < mHoles.size());
 		try
 		{
 			if(index != mHoles.size()-1)
@@ -732,7 +733,7 @@ public class InterlinkFile
 	 */
 	private short addFile(LogFile log)
 	{
-		assert mIsLoaded;
+		Debug.loggedAssert(mIsLoaded);
 		
 		// Check that its not already added
 		for(FileIndexEntry ent : mFileMap.values())

@@ -4,6 +4,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 
 public class Cause 
 {
@@ -43,7 +44,7 @@ public class Cause
 	/**
 	 * Sets the extra cause info. Cannot be changed if this isnt a player cause
 	 */
-	public void setExtraCause(String extraCause) { assert isPlayer(); mExtraCause = extraCause; }
+	public void setExtraCause(String extraCause) { Debug.loggedAssert(isPlayer(), "Tried to set extra cause but this isnt a player"); mExtraCause = extraCause; }
 	
 	/**
 	 * Gets the world the cause is for when this is a global cause.
@@ -182,8 +183,8 @@ public class Cause
 	 */
 	public static Cause playerCause(OfflinePlayer causingPlayer, String extraCause)
 	{
-		assert causingPlayer != null : "causingPlayer cannot be null";
-		assert extraCause != null;
+		Debug.loggedAssert(causingPlayer != null,"causingPlayer cannot be null");
+		Debug.loggedAssert(extraCause != null);
 		return new Cause(causingPlayer, extraCause);
 	}
 	/**
@@ -192,7 +193,7 @@ public class Cause
 	 */
 	public static Cause playerCause(OfflinePlayer causingPlayer)
 	{
-		assert causingPlayer != null : "causingPlayer cannot be null";
+		Debug.loggedAssert(causingPlayer != null, "causingPlayer cannot be null");
 		return new Cause(causingPlayer, null);
 	}
 	
@@ -203,8 +204,8 @@ public class Cause
 	 */
 	public static Cause globalCause(World world, String cause)
 	{
-		assert world != null : "world cannot be null for a global cause";
-		assert cause != null : "cause cannot be null for a global cause";
+		Debug.loggedAssert(world != null, "world cannot be null for a global cause");
+		Debug.loggedAssert(cause != null, "cause cannot be null for a global cause");
 		
 		return new Cause(world, cause);
 	}

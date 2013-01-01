@@ -78,7 +78,7 @@ public class InventoryTransactionRecord extends Record implements IRollbackable,
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
 		mTake = stream.readBoolean();
 		mItem = StoredItemStack.readItemStack(stream).getItem();

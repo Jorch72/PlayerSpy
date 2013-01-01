@@ -11,6 +11,8 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.inventory.ItemStack;
 
+import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
+
 
 public class StoredItemFrame 
 {
@@ -44,44 +46,37 @@ public class StoredItemFrame
 		return mRotation;
 	}
 	
-	public boolean write(DataOutputStream stream, boolean absolute)
+	public void write(DataOutputStream stream, boolean absolute) throws IOException
 	{
-		try
-		{
-			stream.writeByte(mRotation.ordinal());
-			stream.writeByte(mFacing.ordinal());
-			mLocation.writeLocation(stream, absolute);
-			new StoredItemStack(mItem).writeItemStack(stream);
-			
-			return true;
-		}
-		catch(IOException e)
-		{
-			return false;
-		}
+		stream.writeByte(mRotation.ordinal());
+		stream.writeByte(mFacing.ordinal());
+		mLocation.writeLocation(stream, absolute);
+		new StoredItemStack(mItem).writeItemStack(stream);
 	}
 	
-	public static StoredItemFrame read(DataInputStream stream, World currentWorld, boolean absolute)
+	public static StoredItemFrame read(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
-		try
-		{
-			StoredItemFrame frame = new StoredItemFrame();
-			frame.mRotation = Rotation.values()[stream.readByte()];
-			frame.mFacing = BlockFace.values()[stream.readByte()];
-			
-			if(absolute)
-				frame.mLocation = StoredLocation.readLocationFull(stream);
-			else
-				frame.mLocation = StoredLocation.readLocation(stream,currentWorld);
-			
-			frame.mItem = StoredItemStack.readItemStack(stream).getItem();
-			
-			return frame;
-		}
-		catch(IOException e)
-		{
-			return null;
-		}
+		StoredItemFrame frame = new StoredItemFrame();
+		int rot = stream.readByte();
+		if(rot < 0 || rot >= Rotation.values().length)
+			throw new RecordFormatException("Bad rotation value " + rot);
+		
+		frame.mRotation = Rotation.values()[rot];
+		
+		int facing = stream.readByte();
+		if(facing < 0 || facing >= BlockFace.values().length)
+			throw new RecordFormatException("Bad facing value " + facing);
+		
+		frame.mFacing = BlockFace.values()[facing];
+		
+		if(absolute)
+			frame.mLocation = StoredLocation.readLocationFull(stream);
+		else
+			frame.mLocation = StoredLocation.readLocation(stream,currentWorld);
+		
+		frame.mItem = StoredItemStack.readItemStack(stream).getItem();
+		
+		return frame;
 	}
 	
 	public int getSize(boolean absolute)

@@ -1,8 +1,8 @@
 package au.com.mineauz.PlayerSpy.LogTasks;
 
 import au.com.mineauz.PlayerSpy.LogFile;
-import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.RecordList;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 
 public class LoadRecordsAsyncTask implements Task<RecordList>
 {
@@ -32,7 +32,7 @@ public class LoadRecordsAsyncTask implements Task<RecordList>
 	@Override
 	public RecordList call() throws Exception 
 	{
-		LogUtil.finer("LoadRecordsAsyncTask starting");
+		Debug.fine("LoadRecordsAsyncTask starting");
 		RecordList results = null;
 
 		if(mOwner != null)
@@ -49,7 +49,7 @@ public class LoadRecordsAsyncTask implements Task<RecordList>
 			else
 				results = mLogFile.loadRecords(mStartDate, mEndDate);
 		}
-		LogUtil.finer("LoadRecordsAsyncTask completed");
+		Debug.finer("LoadRecordsAsyncTask completed");
 		return results;
 	}
 	@Override

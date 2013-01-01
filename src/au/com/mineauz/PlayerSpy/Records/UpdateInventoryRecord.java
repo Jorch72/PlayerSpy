@@ -32,9 +32,11 @@ public class UpdateInventoryRecord extends Record
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
 		int count = stream.readByte();
+		if(count < 0 || count >= 40)
+			throw new RecordFormatException("Slot count out of range");
 		Slots = new ArrayList<InventorySlot>(count);
 		
 		for(int i = 0; i < count; i++)

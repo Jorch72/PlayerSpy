@@ -392,7 +392,6 @@ public class PlaybackDisplay implements Listener
 	}
 	private void doUpdateEquipment(EntityHuman ent)
 	{
-		LogUtil.finest("@" + ent.id + " Update Equipment");
 		for(int i = 0; i < 4; i++)
 		{
 			if(ent.inventory.armor[i] != null && ent.inventory.armor[i].id != 0)
@@ -412,7 +411,6 @@ public class PlaybackDisplay implements Listener
 	}
 	private void doMetaDataUpdate(Entity ent)
 	{
-		LogUtil.finest("@" + ent.id + " Metadata update");
 		Packet40EntityMetadata packet = new Packet40EntityMetadata(ent.id, ent.getDataWatcher(), true);
 		
 		sendPacket(packet, ent.world.getWorld());
@@ -450,13 +448,11 @@ public class PlaybackDisplay implements Listener
 	
 	public void doArmAnimation(EntityHuman ent)
 	{
-		LogUtil.finest("@" + ent.id + " Punch");
 		Packet18ArmAnimation packet = new Packet18ArmAnimation(ent, 1);
 		sendPacket(packet, ent.world.getWorld());
 	}
 	public void doEntityDamage(EntityLiving ent)
 	{
-		LogUtil.finest("@" + ent.id + " Hurt");
 		Packet18ArmAnimation packet = new Packet18ArmAnimation(ent, 2);
 		sendPacket(packet, ent.world.getWorld());
 		playSound(Utility.getLocation(ent),Sound.HURT_FLESH, 1, 1);

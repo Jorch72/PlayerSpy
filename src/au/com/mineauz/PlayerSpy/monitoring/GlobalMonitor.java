@@ -29,6 +29,7 @@ import au.com.mineauz.PlayerSpy.*;
 import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Records.LogoffRecord.LogoffType;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 
 public class GlobalMonitor implements Listener
 {
@@ -59,7 +60,7 @@ public class GlobalMonitor implements Listener
 	
 	public void initialize()
 	{
-		LogUtil.finer("Staring global monitor");
+		Debug.finer("Staring global monitor");
 	
 		mPersist = new PersistantData(new File(SpyPlugin.getInstance().getDataFolder(),"persist.yml"));
 		if(!mPersist.load())
@@ -109,7 +110,7 @@ public class GlobalMonitor implements Listener
 	}
 	public void shutdown() 
 	{
-		LogUtil.fine("Shutting down the Global Monitor");
+		Debug.fine("Shutting down the Global Monitor");
 		flushAll();
 		LogFile.sNoTimeoutOverride = true;
 		for(Entry<World,LogFile> ent : mGlobalLogs.entrySet())
@@ -153,7 +154,7 @@ public class GlobalMonitor implements Listener
 	}
 	private void attachShallow(Player player)
 	{
-		LogUtil.finer("Attaching shallow monitor to " + player.getName());
+		Debug.finer("Attaching shallow monitor to " + player.getName());
 		
 		if(mOfflineMonitors.containsKey(player.getName()))
 		{
@@ -186,13 +187,14 @@ public class GlobalMonitor implements Listener
 				monitor = new DeepMonitor(player);
 			}
 			
-			LogUtil.fine("Attaching Deep Monitor to " + player.getName());
+			LogUtil.info("Attaching Deep Monitor to " + player.getName());
 			monitor.logRecord(new SessionInfoRecord(true));
 			mDeepMonitors.put(player.getName(), monitor);
 		}
 		catch(ExceptionInInitializerError e)
 		{
-			LogUtil.severe(e.getMessage());
+			LogUtil.warning("Attach failed");
+			Debug.logException(e);
 		}
 	}
 	public void attachDeep(OfflinePlayer player)
@@ -274,7 +276,7 @@ public class GlobalMonitor implements Listener
 
 	private void tryFlush(Cause cause)
 	{
-		assert cause.isGlobal();
+		Debug.loggedAssert(cause.isGlobal());
 		
 		HashMap<String, RecordList> records = mBuffers.get(cause.getWorld());
 		
@@ -283,7 +285,7 @@ public class GlobalMonitor implements Listener
 	}
 	private void flush(Cause cause)
 	{
-		assert cause.isGlobal();
+		Debug.loggedAssert(cause.isGlobal());
 		
 		HashMap<String, RecordList> records = mBuffers.get(cause.getWorld());
 		
@@ -329,9 +331,9 @@ public class GlobalMonitor implements Listener
 	 */
 	public void logRecords(RecordList records, Cause cause, Cause defaultCause)
 	{
-		assert records != null;
-		assert cause != null && !cause.isUnknown();
-		assert defaultCause != null || !cause.isPlaceholder();
+		Debug.loggedAssert(records != null);
+		Debug.loggedAssert(cause != null && !cause.isUnknown());
+		Debug.loggedAssert(defaultCause != null || !cause.isPlaceholder());
 		
 		if(cause.isPlaceholder())
 		{
@@ -374,7 +376,7 @@ public class GlobalMonitor implements Listener
 			{
 				ShallowMonitor monitor = new ShallowMonitor(cause.getCausingPlayer());
 				mOfflineMonitors.put(cause.getCausingPlayer().getName(), new Pair<ShallowMonitor, Long>(monitor, System.currentTimeMillis()));
-				LogUtil.fine("Loading offline monitor for " + cause.getCausingPlayer().getName());
+				Debug.fine("Loading offline monitor for " + cause.getCausingPlayer().getName());
 				
 				for(Record record : records)
 					monitor.logRecord(record, cause.getExtraCause());
@@ -1118,7 +1120,7 @@ public class GlobalMonitor implements Listener
 	@EventHandler
 	private void onCauseFound(CauseFinder.CauseFoundEvent event)
 	{
-		LogUtil.fine("Cause found for " + event.getPlaceholder() + ". Result: " + event.getCause());
+		Debug.fine("Cause found for " + event.getPlaceholder() + ". Result: " + event.getCause());
 		mSpreadTracker.updateSource(event.getLocation(), event.getCause());
 		
 		// Apply the records

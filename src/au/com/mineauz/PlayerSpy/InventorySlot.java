@@ -6,6 +6,8 @@ import java.io.IOException;
 
 import org.bukkit.inventory.ItemStack;
 
+import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
+
 
 public class InventorySlot 
 {
@@ -26,7 +28,7 @@ public class InventorySlot
 		new StoredItemStack(Item).writeItemStack(stream);
 	}
 	
-	public static InventorySlot read(DataInputStream stream) throws IOException
+	public static InventorySlot read(DataInputStream stream) throws IOException, RecordFormatException
 	{
 		InventorySlot slot = new InventorySlot();
 		slot.Slot = stream.readShort();

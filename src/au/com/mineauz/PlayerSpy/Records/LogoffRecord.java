@@ -3,6 +3,7 @@ package au.com.mineauz.PlayerSpy.Records;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.UTFDataFormatException;
 
 import org.bukkit.World;
 
@@ -36,11 +37,23 @@ public class LogoffRecord extends Record
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException 
 	{
-		mLogoffType = LogoffType.values()[stream.readByte()];
-		if(mLogoffType != LogoffType.Quit)
-			mReason = stream.readUTF();
+		try
+		{
+			int id = stream.readByte();
+			
+			if(id < 0 || id > LogoffType.values().length)
+				throw new RecordFormatException(String.format("Tried to use value %d for logoff type", id));
+	
+			mLogoffType = LogoffType.values()[id];
+			if(mLogoffType != LogoffType.Quit)
+				mReason = stream.readUTF();
+		}
+		catch(UTFDataFormatException e)
+		{
+			throw new RecordFormatException("Error reading UTF string. Malformed data.");
+		}
 	}
 	
 	public LogoffType getLogoffType()

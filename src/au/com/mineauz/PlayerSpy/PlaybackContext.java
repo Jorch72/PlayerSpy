@@ -26,6 +26,7 @@ import au.com.mineauz.PlayerSpy.PlaybackControl.PlaybackState;
 import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Utilities.EntityShadowPlayer;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 
 public class PlaybackContext
 {
@@ -400,7 +401,7 @@ public class PlaybackContext
 			return new Location(player.world.getWorld(), player.locX, player.locY, player.locZ, player.yaw, player.pitch);
 		}
 		
-		LogUtil.fine("getTargetLocation() index was invalid");
+		Debug.info("getTargetLocation() index %d was invalid", index);
 		
 		return null;
 	}
@@ -596,7 +597,7 @@ public class PlaybackContext
 				mIndexShadowItemMap.remove(id);
 			}
 			else
-				LogUtil.fine("WARNING: Dropped item was not there to pickup");
+				Debug.warning("Dropped item was not there to pickup");
 			break;
 		case Login:
 			Utility.setEntityPosition(forPlayer, ((LoginRecord)record).getLocation());

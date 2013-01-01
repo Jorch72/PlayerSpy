@@ -55,9 +55,13 @@ public class RightClickActionRecord extends Record implements ILocationAware
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
-		mAction = Action.values()[stream.readByte()];
+		int actionType = stream.readByte();
+		if(actionType < 0 || actionType >= Action.values().length)
+			throw new RecordFormatException("Bad action type " + actionType);
+		
+		mAction = Action.values()[actionType];
 		mItem = StoredItemStack.readItemStack(stream);
 		
 		if(stream.readBoolean())

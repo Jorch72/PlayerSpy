@@ -41,7 +41,7 @@ public class DamageRecord extends Record implements ILocationAware
 	}
 	
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
 		mAmount = stream.readShort();
 		boolean hasDamager = stream.readBoolean();

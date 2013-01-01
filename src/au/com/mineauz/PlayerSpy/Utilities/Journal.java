@@ -7,7 +7,7 @@ import java.lang.reflect.Array;
 import java.util.HashSet;
 import java.util.Random;
 
-import au.com.mineauz.PlayerSpy.LogUtil;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 
 public class Journal
 {
@@ -121,7 +121,7 @@ public class Journal
 			// Every correct section will have a full sector worth of data
 			if(mJournalStream.read(data) != cSectorSize)
 			{
-				LogUtil.warning("Found a corrupt journal entry. Ignoring");
+				Debug.severe("Found a corrupt journal entry (size fail). Ignoring");
 				break;
 			}
 
@@ -135,7 +135,7 @@ public class Journal
 			
 			if(header.checksum != checksum)
 			{
-				LogUtil.warning("Found a corrupt journal entry (checksum fail). Ignoring");
+				Debug.severe("Found a corrupt journal entry (checksum fail). Ignoring");
 				continue;
 			}
 			

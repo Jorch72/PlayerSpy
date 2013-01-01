@@ -12,12 +12,12 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 
 import au.com.mineauz.PlayerSpy.Cause;
-import au.com.mineauz.PlayerSpy.DebugHelper;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.LogTasks.Task;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
 import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
@@ -183,6 +183,7 @@ public class SearchTask implements Task<SearchResults>
 	public SearchResults call()
 	{
 		CrossReferenceIndex.Results sessionsToSearch = null;
+		Debug.info("Beginning search");
 		
 		// Get the contraints
 		
@@ -207,6 +208,7 @@ public class SearchTask implements Task<SearchResults>
 		int bufferedCount = 0;
 		totalRecords = 0;
 		
+		Debug.fine("*Searching active buffers");
 		// Search buffers
 		for(ShallowMonitor mon : GlobalMonitor.instance.getAllMonitors())
 		{
@@ -244,6 +246,7 @@ public class SearchTask implements Task<SearchResults>
 			}
 		}
 		
+		Debug.fine("*Searching active global buffers");
 		// Global records
 		for(World world : Bukkit.getWorlds())
 		{
@@ -275,6 +278,7 @@ public class SearchTask implements Task<SearchResults>
 			}
 		}
 		
+		Debug.fine("*Searching pending records");
 		// Pending records
 		for(Pair<RecordList,Cause> pending : GlobalMonitor.instance.getPendingRecords().values())
 		{
@@ -302,8 +306,9 @@ public class SearchTask implements Task<SearchResults>
 			processRecords(pending.getArg1(), pending.getArg2());
 		}
 		
-		
+		Debug.fine("*Searching index for possibles");
 		sessionsToSearch = CrossReferenceIndex.instance.getSessionsFor(startTime, endTime);
+		Debug.finer("**%d possible sessions found", sessionsToSearch.foundSessions.size());
 		
 		for(SessionInFile fileSession : sessionsToSearch.foundSessions)
 		{
@@ -312,11 +317,14 @@ public class SearchTask implements Task<SearchResults>
 			// Build the cause
 			String ownerTag = fileSession.Log.getOwnerTag(fileSession.Session);
 			
-			if(fileSession.Log.getName().startsWith(LogFileRegistry.cGlobalFilePrefix))
+			if(fileSession.Log.requiresOwnerTags())
 			{
 				if(ownerTag == null)
+				{
+					Debug.severe("Sesison %d in log file %s which requires owner tags does not have an owner tag with it.", fileSession.Session.Id, fileSession.Log.getName());
 					// :( shouldnt happen but does
 					continue;
+				}
 				
 				cause = Cause.globalCause(Bukkit.getWorld(fileSession.Log.getName().substring(LogFileRegistry.cGlobalFilePrefix.length())), ownerTag);
 			}
@@ -356,10 +364,8 @@ public class SearchTask implements Task<SearchResults>
 			processRecords(records, cause);
 		}
 		
-		DebugHelper.debugMessage(String.format("Search: LC:%d SC:%d BC:%d RC:%d",sessionsToSearch.getLogCount(),sessionCount,bufferedCount,totalRecords));
+		Debug.info("Search completed. Logs opened: %d, Sessions Searched: %d, Records found in active buffers: %d, Total Searched Records: %d, Matching Records: %d", sessionsToSearch.getLogCount(), sessionCount, bufferedCount, totalRecords, results.allRecords.size());
 		sessionsToSearch.release();
-		
-		
 		
 		return results;
 	}

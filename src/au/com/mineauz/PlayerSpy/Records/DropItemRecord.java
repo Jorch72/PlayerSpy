@@ -31,7 +31,7 @@ public class DropItemRecord extends Record
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
 		mStack = StoredItemStack.readItemStack(stream);
 	}

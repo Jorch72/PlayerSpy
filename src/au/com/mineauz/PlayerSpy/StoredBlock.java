@@ -3,6 +3,7 @@ package au.com.mineauz.PlayerSpy;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.UTFDataFormatException;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -17,6 +18,8 @@ import org.bukkit.block.NoteBlock;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.EntityType;
 import org.bukkit.material.MaterialData;
+
+import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
 
 public class StoredBlock 
 {
@@ -191,40 +194,62 @@ public class StoredBlock
 		}
 	}
 	
-	public void read(DataInputStream stream, World currentWorld, boolean absolute) throws IOException
+	public void read(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
 		mType = Material.getMaterial(stream.readInt());
 		mData = stream.readByte();
+		
+		if(mType == null)
+			throw new RecordFormatException("Bad material type");
 		
 		if(absolute)
 			mLocation = StoredLocation.readLocationFull(stream).getLocation();
 		else
 			mLocation = StoredLocation.readLocation(stream, currentWorld).getLocation();
-		mStateType = BlockStateType.values()[stream.readByte()];
-		switch(mStateType)
+		
+		int stateTypeInt = stream.readByte();
+		if(stateTypeInt < 0 || stateTypeInt >= BlockStateType.values().length)
+			throw new RecordFormatException("Block state type out of range");
+		
+		try
 		{
-		case Sign:
+			mStateType = BlockStateType.values()[stateTypeInt];
+			switch(mStateType)
 			{
-				String[] data = new String[4];
-				data[0] = stream.readUTF();
-				data[1] = stream.readUTF();
-				data[2] = stream.readUTF();
-				data[3] = stream.readUTF();
-				mStateData = data;
+			case Sign:
+				{
+					String[] data = new String[4];
+					data[0] = stream.readUTF();
+					data[1] = stream.readUTF();
+					data[2] = stream.readUTF();
+					data[3] = stream.readUTF();
+					mStateData = data;
+					break;
+				}
+			case Jukebox:
+				mStateData = Material.getMaterial(stream.readInt());
+				if(mStateData == null)
+					throw new RecordFormatException("Bad material type for jukebox disk");
+				break;
+			case NoteBlock:
+				int note = stream.readByte();
+				if(note < 0 || note > 24)
+					throw new RecordFormatException("Bad note " + note + " read");
+				mStateData = new Note(stream.readByte());
+				break;
+			case Spawner:
+				mStateData = EntityType.fromId(stream.readShort());
+				if(mStateData == null)
+					throw new RecordFormatException("Bad entity type for monster spawner");
+				break;
+			default:
+				mStateData = null;
 				break;
 			}
-		case Jukebox:
-			mStateData = Material.getMaterial(stream.readInt());
-			break;
-		case NoteBlock:
-			mStateData = new Note(stream.readByte());
-			break;
-		case Spawner:
-			mStateData = EntityType.fromId(stream.readShort());
-			break;
-		default:
-			mStateData = null;
-			break;
+		}
+		catch(UTFDataFormatException e)
+		{
+			throw new RecordFormatException("Error reading UTF string. Malformed data.");
 		}
 	}
 	

@@ -13,6 +13,7 @@ import org.bukkit.inventory.ItemStack;
 import au.com.mineauz.PlayerSpy.StoredEntity;
 import au.com.mineauz.PlayerSpy.StoredItemStack;
 import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 
 @Deprecated
@@ -55,9 +56,13 @@ public class InteractRecord extends Record
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException , RecordFormatException
 	{
-		mType = Action.values()[stream.readByte()];
+		int actionType = stream.readByte();
+		if(actionType < 0 || actionType >= Action.values().length)
+			throw new RecordFormatException("Bad action type " + actionType);
+			
+		mType = Action.values()[actionType];
 		
 		// Block
 		if(stream.readBoolean())

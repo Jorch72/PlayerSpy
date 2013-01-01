@@ -17,6 +17,7 @@ import org.bukkit.enchantments.Enchantment;
 import au.com.mineauz.PlayerSpy.InventorySlot;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 
 import net.minecraft.server.v1_4_6.*;
 
@@ -61,8 +62,8 @@ public class Utility
 	
 	public static EntityItem makeEntityItem(Location location, org.bukkit.inventory.ItemStack item)
 	{
-		assert location != null : "Cannot set a null location";
-		assert item != null : "Cannot set a null item";
+		Debug.loggedAssert(location != null, "Cannot set a null location");
+		Debug.loggedAssert(item != null, "Cannot set a null item");
 		EntityItem entityItem = new EntityItem(((CraftWorld)location.getWorld()).getHandle(), location.getX(), location.getY(), location.getZ(), convertToNative(item));
 		
 		entityItem.motX = 0;
@@ -78,7 +79,7 @@ public class Utility
 	
 	public static void setEntityPosition(Entity ent, Location loc)
 	{
-		assert loc != null : "Cannot set a null location";
+		Debug.loggedAssert(loc != null, "Cannot set a null location");
 		
 		ent.world = ((CraftWorld)loc.getWorld()).getHandle();
 		ent.lastX = ent.locX;

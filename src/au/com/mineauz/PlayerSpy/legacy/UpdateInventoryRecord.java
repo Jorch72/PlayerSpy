@@ -9,6 +9,7 @@ import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.StoredItemStack;
 import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 
 @Deprecated
@@ -34,14 +35,14 @@ public class UpdateInventoryRecord extends Record
 		new StoredItemStack(mItem).writeItemStack(stream);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
 		mSlotId = stream.readByte();
 		mItem = StoredItemStack.readItemStack(stream).getItem();
 		if(mItem.getTypeId() == 0)
 			mItem = null;
 	}
-	public static UpdateInventoryRecord read(DataInputStream stream) throws IOException 
+	public static UpdateInventoryRecord read(DataInputStream stream) throws IOException, RecordFormatException
 	{
 		UpdateInventoryRecord record = new UpdateInventoryRecord();
 		record.mSlotId = stream.readByte();

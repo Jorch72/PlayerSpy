@@ -35,7 +35,7 @@ public class ItemPickupRecord extends Record implements ILocationAware
 		mLocation.writeLocation(stream, absolute);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
 		mItem = StoredItemStack.readItemStack(stream);
 		if(absolute)

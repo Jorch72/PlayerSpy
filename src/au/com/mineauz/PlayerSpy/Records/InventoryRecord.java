@@ -65,9 +65,13 @@ public class InventoryRecord extends Record
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
-		mItems = new ItemStack[stream.readByte()];
+		int itemCount = stream.readByte();
+		if(itemCount <= 0 || itemCount > 36)
+			throw new RecordFormatException("Bad number of item in inventory " + itemCount);
+		
+		mItems = new ItemStack[itemCount];
 		for(int i = 0; i < mItems.length; i++)
 		{
 			StoredItemStack store = StoredItemStack.readItemStack(stream);
@@ -77,7 +81,11 @@ public class InventoryRecord extends Record
 				mItems[i] = null;
 		}
 		
-		mArmour = new ItemStack[stream.readByte()];
+		int armourCount = stream.readByte();
+		if(armourCount <= 0 || armourCount > 4)
+			throw new RecordFormatException("Bad number of items in armour " + armourCount);
+		
+		mArmour = new ItemStack[armourCount];
 		for(int i = 0; i < mArmour.length; i++)
 		{
 			StoredItemStack store = StoredItemStack.readItemStack(stream);

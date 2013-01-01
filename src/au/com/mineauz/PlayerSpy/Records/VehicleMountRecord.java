@@ -34,7 +34,7 @@ public class VehicleMountRecord extends Record implements ILocationAware
 		mVehicle.write(stream);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException 
 	{
 		mIsMounting = stream.readBoolean();
 		mVehicle = StoredEntity.readEntity(stream);

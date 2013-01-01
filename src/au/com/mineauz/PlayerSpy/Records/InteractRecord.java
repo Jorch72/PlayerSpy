@@ -71,9 +71,13 @@ public class InteractRecord extends Record implements ILocationAware
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
-		mType = Action.values()[stream.readByte()];
+		int actionType = stream.readByte();
+		if(actionType < 0 || actionType >= Action.values().length)
+			throw new RecordFormatException("Bad action type " + actionType);
+		
+		mType = Action.values()[actionType];
 		
 		// Block
 		if(stream.readBoolean())

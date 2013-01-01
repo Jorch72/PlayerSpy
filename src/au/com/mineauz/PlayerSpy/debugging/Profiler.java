@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy;
+package au.com.mineauz.PlayerSpy.debugging;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -6,17 +6,14 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map.Entry;
 
-import org.bukkit.entity.Player;
-
+import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 
-public class DebugHelper
+public class Profiler
 {
 	private static final int cHistorySize = 10000;
-	public static HashSet<Player> mDebugPlayers = new HashSet<Player>();
 	
 	private static HashMap<String, ArrayDeque<Pair<Long,Object>>> mWhatchedVariables = new HashMap<String, ArrayDeque<Pair<Long,Object>>>();
 	private static HashMap<String, ArrayDeque<Long>> mTimingHistory = new HashMap<String, ArrayDeque<Long>>();
@@ -193,13 +190,6 @@ public class DebugHelper
 				return null;
 			
 			return history.peekLast().getArg2();
-		}
-	}
-	public static void debugMessage( String string )
-	{
-		for(Player player : mDebugPlayers)
-		{
-			player.sendMessage("DEBUG: " + string);
 		}
 	}
 }

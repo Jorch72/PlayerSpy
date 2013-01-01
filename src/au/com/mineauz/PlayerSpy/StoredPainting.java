@@ -10,6 +10,8 @@ import org.bukkit.World;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Painting;
 
+import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
+
 
 public class StoredPainting 
 {
@@ -53,24 +55,17 @@ public class StoredPainting
 		}
 	}
 	
-	public static StoredPainting readPainting(DataInputStream stream, World currentWorld, boolean absolute)
+	public static StoredPainting readPainting(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
-		try
-		{
-			StoredPainting painting = new StoredPainting();
-			painting.mArt = stream.readInt();
-			painting.mFace = stream.readInt();
-			if(absolute)
-				painting.mLocation = StoredLocation.readLocationFull(stream);
-			else
-				painting.mLocation = StoredLocation.readLocation(stream,currentWorld);
-			
-			return painting;
-		}
-		catch(IOException e)
-		{
-			return null;
-		}
+		StoredPainting painting = new StoredPainting();
+		painting.mArt = stream.readInt();
+		painting.mFace = stream.readInt();
+		if(absolute)
+			painting.mLocation = StoredLocation.readLocationFull(stream);
+		else
+			painting.mLocation = StoredLocation.readLocation(stream,currentWorld);
+		
+		return painting;
 	}
 	
 	public int getSize(boolean absolute)

@@ -14,8 +14,8 @@ import org.bukkit.World;
 
 import au.com.mineauz.PlayerSpy.IndexEntry;
 import au.com.mineauz.PlayerSpy.LogFile;
-import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 
 /**
  * The cross reference index provides information on the location of specific data.
@@ -295,15 +295,13 @@ public class CrossReferenceIndex
 			if(fileId == -1)
 				return false;
 			
-			LogUtil.finer("Adding session to reference");
+			Debug.fine("Adding session %d to reference", entry.Id);
 			mAddSessionStatement.setInt(1, entry.Id);
 			mAddSessionStatement.setInt(2, fileId);
 			mAddSessionStatement.setLong(3, entry.StartTimestamp);
 			mAddSessionStatement.setLong(4, entry.EndTimestamp);
 			
 			mAddSessionStatement.executeUpdate();
-			
-			LogUtil.finer("Session ID = " + entry.Id);
 			
 			mAddChunkStatement.clearBatch();
 			int count = 0;
@@ -318,7 +316,7 @@ public class CrossReferenceIndex
 				mAddChunkStatement.setInt(4, entry.Id);
 				mAddChunkStatement.addBatch();
 			}
-			LogUtil.finer("Adding " + count + " Chunks");
+			Debug.finer("Adding " + count + " Chunks");
 			mAddChunkStatement.executeBatch();
 			
 			mDatabaseConnection.commit();
@@ -326,7 +324,7 @@ public class CrossReferenceIndex
 		}
 		catch(SQLException e)
 		{
-			e.printStackTrace();
+			Debug.logException(e);
 			tryRollback();
 		}
 		return false;
@@ -353,7 +351,7 @@ public class CrossReferenceIndex
 		}
 		catch(SQLException e)
 		{
-			e.printStackTrace();
+			Debug.logException(e);
 			tryRollback();
 			return false;
 		}
@@ -368,8 +366,7 @@ public class CrossReferenceIndex
 	{
 		try
 		{
-			LogUtil.finer("Session Id = " + entry.Id);
-			LogUtil.finer("Updating Basic Session Info");
+			Debug.finer("Updating Basic Session Info for session %d in %s", entry.Id, log.getName());
 			mUpdateSessionStatement.setLong(1, entry.StartTimestamp);
 			mUpdateSessionStatement.setLong(2, entry.EndTimestamp);
 			mUpdateSessionStatement.setInt(3, entry.Id);
@@ -377,7 +374,7 @@ public class CrossReferenceIndex
 			mUpdateSessionStatement.executeUpdate();
 			
 			// Find what chunks are new
-			LogUtil.finer("Finding New Chunks");
+			Debug.finer("Finding New Chunks");
 			mSelectChunksBySessionStatement.setInt(1, entry.Id);
 			ResultSet existingChunks = mSelectChunksBySessionStatement.executeQuery();
 
@@ -410,7 +407,7 @@ public class CrossReferenceIndex
 				mAddChunkStatement.setInt(4, entry.Id);
 				mAddChunkStatement.addBatch();
 			}
-			LogUtil.finer("Adding " + count + " new chunks");
+			Debug.finer("Adding " + count + " new chunks");
 			mAddChunkStatement.executeBatch();
 			
 			
@@ -419,7 +416,7 @@ public class CrossReferenceIndex
 		}
 		catch(SQLException e)
 		{
-			e.printStackTrace();
+			Debug.logException(e);
 			tryRollback();
 
 			return false;
@@ -504,7 +501,7 @@ public class CrossReferenceIndex
 		}
 		catch(SQLException e)
 		{
-			e.printStackTrace();
+			Debug.logException(e);
 			return new Results(new ArrayList<CrossReferenceIndex.SessionInFile>(), new ArrayList<LogFile>());
 		}
 	}
@@ -594,7 +591,7 @@ public class CrossReferenceIndex
 		}
 		catch(SQLException e)
 		{
-			e.printStackTrace();
+			Debug.logException(e);
 			return new Results(new ArrayList<CrossReferenceIndex.SessionInFile>(), new ArrayList<LogFile>());
 		}
 	}
@@ -680,7 +677,7 @@ public class CrossReferenceIndex
 		}
 		catch(SQLException e)
 		{
-			e.printStackTrace();
+			Debug.logException(e);
 			return new Results(new ArrayList<CrossReferenceIndex.SessionInFile>(), new ArrayList<LogFile>());
 		}
 	}

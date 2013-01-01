@@ -3,6 +3,7 @@ package au.com.mineauz.PlayerSpy;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.UTFDataFormatException;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -18,7 +19,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.StorageMinecart;
 import org.bukkit.inventory.Inventory;
 
+import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 
 
 public class StoredInventoryInformation 
@@ -77,7 +80,7 @@ public class StoredInventoryInformation
 			}
 			else
 			{
-				LogUtil.fine("Unknown inventory type with holder player. Type: " + inventory.getType() + " holder:" + ((Player)inventory.getHolder()).getName() + " world:" + ((Player)inventory.getHolder()).getWorld().getName());
+				Debug.info("Unknown inventory type with holder player. Type: " + inventory.getType() + " holder:" + ((Player)inventory.getHolder()).getName() + " world:" + ((Player)inventory.getHolder()).getWorld().getName());
 				mType = InventoryType.Unknown;
 			}
 			
@@ -166,33 +169,44 @@ public class StoredInventoryInformation
 		}
 	}
 	
-	public void read(DataInputStream stream, World currentWorld, boolean absolute) throws IOException
+	public void read(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
-		mType = InventoryType.values()[stream.readByte()];
+		int typeId = stream.readByte();
+		if(typeId < 0 || typeId >= InventoryType.values().length)
+			throw new RecordFormatException("Bad inventory type id " + typeId);
 		
-		switch(mType)
+		mType = InventoryType.values()[typeId];
+		
+		try
 		{
-		case Chest:
-			mBlock = new StoredBlock();
-			mBlock.read(stream, currentWorld, absolute);
-			break;
-		case Enderchest:
-			mPlayerName = stream.readUTF();
-			if(stream.readBoolean())
+			switch(mType)
 			{
+			case Chest:
 				mBlock = new StoredBlock();
 				mBlock.read(stream, currentWorld, absolute);
+				break;
+			case Enderchest:
+				mPlayerName = stream.readUTF();
+				if(stream.readBoolean())
+				{
+					mBlock = new StoredBlock();
+					mBlock.read(stream, currentWorld, absolute);
+				}
+				break;
+			case Entity:
+				mEntity = StoredEntity.readEntity(stream);
+				break;
+			case Player:
+				mPlayerName = stream.readUTF();
+				break;
+			case None:
+			case Unknown:
+				break;
 			}
-			break;
-		case Entity:
-			mEntity = StoredEntity.readEntity(stream);
-			break;
-		case Player:
-			mPlayerName = stream.readUTF();
-			break;
-		case None:
-		case Unknown:
-			break;
+		}
+		catch(UTFDataFormatException e)
+		{
+			throw new RecordFormatException("Error reading UTF string. Malformed data.");
 		}
 	}
 	

@@ -3,12 +3,14 @@ package au.com.mineauz.PlayerSpy;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.UTFDataFormatException;
 
 import net.minecraft.server.v1_4_6.EntityTypes;
 
 import org.bukkit.craftbukkit.v1_4_6.CraftWorld;
 import org.bukkit.entity.*;
 
+import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
 import au.com.mineauz.PlayerSpy.Utilities.EntityShadowPlayer;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
@@ -46,7 +48,7 @@ public class StoredEntity
 			stream.writeUTF(mPlayerName);
 	}
 	
-	public void read(DataInputStream stream) throws IOException
+	public void read(DataInputStream stream) throws IOException, RecordFormatException
 	{
 		// type
 		mTypeId = stream.readShort();
@@ -55,12 +57,19 @@ public class StoredEntity
 		// location
 		mLocation = StoredLocation.readLocationFull(stream);
 		
-		// name if player
-		if(mTypeId == (EntityType.PLAYER.ordinal() | 1024))
-			mPlayerName = stream.readUTF();
+		try
+		{
+			// name if player
+			if(mTypeId == (EntityType.PLAYER.ordinal() | 1024))
+				mPlayerName = stream.readUTF();
+		}
+		catch(UTFDataFormatException e)
+		{
+			throw new RecordFormatException("Error reading UTF string. Malformed data.");
+		}
 	}
 
-	public static StoredEntity readEntity(DataInputStream stream) throws IOException
+	public static StoredEntity readEntity(DataInputStream stream) throws IOException, RecordFormatException
 	{
 		StoredEntity ent = new StoredEntity();
 		ent.read(stream);

@@ -35,7 +35,7 @@ public class MoveRecord extends Record implements IPlayerLocationAware
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
 		if(absolute)
 			mLocation = StoredLocation.readLocationFull(stream);

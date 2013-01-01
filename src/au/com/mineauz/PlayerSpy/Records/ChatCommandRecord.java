@@ -3,6 +3,7 @@ package au.com.mineauz.PlayerSpy.Records;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.UTFDataFormatException;
 
 import org.bukkit.ChatColor;
 import org.bukkit.World;
@@ -29,10 +30,17 @@ public class ChatCommandRecord extends Record
 		stream.writeBoolean(mPrevented);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
-		mMessage = stream.readUTF();
-		mPrevented = stream.readBoolean();
+		try
+		{
+			mMessage = stream.readUTF();
+			mPrevented = stream.readBoolean();
+		}
+		catch(UTFDataFormatException e)
+		{
+			throw new RecordFormatException("Error reading UTF string. Malformed data.");
+		}
 	}
 	
 	public String getMessage()

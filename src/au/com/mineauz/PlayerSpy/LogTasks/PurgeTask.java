@@ -7,8 +7,8 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
 import au.com.mineauz.PlayerSpy.LogFile;
-import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 
@@ -31,7 +31,7 @@ public class PurgeTask  implements Task<Boolean>
 	@Override
 	public Boolean call() throws Exception 
 	{
-		LogUtil.finer("Starting PurgeTask");
+		Debug.finer("Starting PurgeTask");
 		if(mAllLogs)
 		{
 			mCaller.sendMessage(ChatColor.GOLD + "Starting Purge from all logs.");

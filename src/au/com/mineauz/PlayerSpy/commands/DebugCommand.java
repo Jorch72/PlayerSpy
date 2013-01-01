@@ -6,13 +6,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.Map.Entry;
+import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import au.com.mineauz.PlayerSpy.DebugHelper;
 import au.com.mineauz.PlayerSpy.FileHeader;
 import au.com.mineauz.PlayerSpy.HoleEntry;
 import au.com.mineauz.PlayerSpy.IndexEntry;
@@ -23,6 +23,8 @@ import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
+import au.com.mineauz.PlayerSpy.debugging.Profiler;
 import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 
 
@@ -50,7 +52,7 @@ public class DebugCommand implements ICommand
 	@Override
 	public String getUsageString(String label) 
 	{
-		return label + "(toggle|analyse <logname>|log)";
+		return label + "(level|analyse <logname>|log|resetlog)";
 	}
 
 	@Override
@@ -234,24 +236,28 @@ public class DebugCommand implements ICommand
 		if(args.length == 0)
 			return false;
 		
-		if(args[0].equalsIgnoreCase("toggle"))
+		if(args[0].equalsIgnoreCase("level"))
 		{
-			if(args.length > 1)
+			if(args.length != 2)
 				return false;
 			
 			if(!(sender instanceof Player))
 				return false;
 			
-			if(DebugHelper.mDebugPlayers.contains(sender))
+			Level level = null;
+			
+			try
 			{
-				sender.sendMessage("Debug Messages Off");
-				DebugHelper.mDebugPlayers.remove(sender);
+				level = Level.parse(args[1].toUpperCase());
 			}
-			else
+			catch(IllegalArgumentException e)
 			{
-				sender.sendMessage("Debug Messages On");
-				DebugHelper.mDebugPlayers.add((Player)sender);
+				return false;
 			}
+			
+			Debug.setDebugLevel((Player)sender, level);
+			
+			sender.sendMessage("Debug Level " + level.toString());
 		}
 		else if(args[0].equalsIgnoreCase("analyse"))
 		{
@@ -267,8 +273,16 @@ public class DebugCommand implements ICommand
 			if(args.length > 1)
 				return false;
 			
-			DebugHelper.outputDebugData();
+			Profiler.outputDebugData();
 			sender.sendMessage("Saved debug log");
+		}
+		else if(args[0].equalsIgnoreCase("resetlog"))
+		{
+			if(args.length > 1)
+				return false;
+			
+			Debug.clearLog();
+			sender.sendMessage("Cleared log");
 		}
 		else
 			return false;

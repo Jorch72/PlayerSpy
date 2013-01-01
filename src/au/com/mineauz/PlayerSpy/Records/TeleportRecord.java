@@ -31,7 +31,7 @@ public class TeleportRecord extends Record implements IPlayerLocationAware
 		stream.writeByte(mCause);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
 		mLocation = StoredLocation.readLocationFull(stream);
 		mCause = stream.readByte();

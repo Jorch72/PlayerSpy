@@ -7,7 +7,7 @@ import java.io.RandomAccessFile;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-import au.com.mineauz.PlayerSpy.LogUtil;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 
 
 public class ACIDRandomAccessFile extends RandomAccessFile
@@ -28,7 +28,7 @@ public class ACIDRandomAccessFile extends RandomAccessFile
 			{
 				mJournal.rollback();
 				seek(0);
-				LogUtil.fine("rolledback transaction");
+				Debug.info("File %s had an open journal on load. Rollback was issued", file.getName());
 			}
 		}
 		catch(IOException e)
@@ -53,7 +53,7 @@ public class ACIDRandomAccessFile extends RandomAccessFile
 				throw new IllegalStateException("Cannot begin transaction, there is already one in progress.");
 		
 			mJournal.begin(length());
-			LogUtil.fine("Begun transaction");
+			Debug.finest("Begun transaction");
 		}
 		catch ( InterruptedException e )
 		{
@@ -65,7 +65,7 @@ public class ACIDRandomAccessFile extends RandomAccessFile
 	{
 		mJournalLock.unlock();
 		mJournal.clear();
-		LogUtil.fine("Committed transaction");
+		Debug.finest("Committed transaction");
 	}
 	
 	public void rollback()
@@ -74,7 +74,7 @@ public class ACIDRandomAccessFile extends RandomAccessFile
 		try
 		{
 			mJournal.rollback();
-			LogUtil.fine("rolledback transaction");
+			Debug.info("Transaction was rolled back");
 		}
 		catch(IOException e)
 		{

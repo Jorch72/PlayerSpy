@@ -29,7 +29,7 @@ public class SleepRecord extends Record implements IPlayerLocationAware
 		mLocation.writeLocation(stream, absolute);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
 		mIsSleeping = stream.readBoolean();
 		if(absolute)

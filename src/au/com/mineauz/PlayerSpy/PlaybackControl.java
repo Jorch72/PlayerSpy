@@ -14,7 +14,7 @@ import au.com.mineauz.PlayerSpy.LogTasks.SearchForEventTask;
 import au.com.mineauz.PlayerSpy.LogTasks.SearchForItemTask;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Records.SessionInfoRecord;
-import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 
 public class PlaybackControl 
 {
@@ -55,24 +55,24 @@ public class PlaybackControl
 	}
 	public boolean play()
 	{
-		// Check if no date has been specified by seek
-		if(mPlaybackDate == 0)
-		{
-			LogUtil.finer("Not Seeked");
-			return false;
-		}
-		
 		// Check if the buffer is empty and we are not loading
 		if(mBuffer.currentBuffer().size() == 0 && !mBuffer.isLoading())
 		{
-			LogUtil.finer("No data has been loaded or requested");
+			Debug.warning("PlaybackControl:play() attempted but no data has been requested");
+			return false;
+		}
+		
+		// Check if no date has been specified by seek
+		if(mPlaybackDate == 0)
+		{
+			Debug.warning("PlaybackControl:play() attempted but stream has not been seeked");
 			return false;
 		}
 		
 		// Check if we have reached the end of the buffer and are not loading more
 		if(getBufferIndex() >= mBuffer.currentBuffer().size() && !mBuffer.isLoading())
 		{
-			LogUtil.finer("End of data");
+			Debug.warning("PlaybackControl:play() attempted but stream is out of data");
 			return false;
 		}
 		
@@ -228,8 +228,6 @@ public class PlaybackControl
 				else
 					mPlaybackDate = mBuffer.currentBuffer().getEndTimestamp();
 				
-				String debug = Utility.formatTime(mPlaybackDate, "dd/mm/yy hh:mm:ss a");
-				LogUtil.fine("Seeked to " + debug);
 				boolean deep = mBuffer.currentBuffer().getDeep();
 				
 				if(!mDeepMode && deep)

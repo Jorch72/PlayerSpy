@@ -38,7 +38,7 @@ public class PaintingChangeRecord extends Record implements IRollbackable, ILoca
 		stream.writeBoolean(mIsRolledBack);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
 		mPlaced = stream.readBoolean();
 		

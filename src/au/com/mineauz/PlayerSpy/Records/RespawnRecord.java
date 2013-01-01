@@ -28,7 +28,7 @@ public class RespawnRecord extends Record implements IPlayerLocationAware
 		mLocation.writeLocation(stream,true);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
 		mLocation = StoredLocation.readLocationFull(stream);
 	}
