@@ -11,6 +11,7 @@ import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Records.SessionInfoRecord;
+import au.com.mineauz.PlayerSpy.Upgrading.v2.DropItemRecordUpgrader;
 import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 
 public class Upgrader 
@@ -153,5 +154,9 @@ public class Upgrader
 		registerUpgrader(1, RecordType.UpdateInventory, new UpdateInventoryUpgrader());
 		registerUpgrader(1, RecordType.BlockChange, new BlockChangeUpgrader());
 		registerUpgrader(1, RecordType.Interact, new InteractRecordUpgrader());
+		
+		// ======= Version 2 =======
+		registerUpgrader(2, RecordType.DropItem, new DropItemRecordUpgrader());
+		registerUpgrader(2, RecordType.Interact, new au.com.mineauz.PlayerSpy.Upgrading.v2.InteractRecordUpgrader());
 	}
 }

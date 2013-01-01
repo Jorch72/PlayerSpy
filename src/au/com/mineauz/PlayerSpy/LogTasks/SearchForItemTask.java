@@ -5,10 +5,10 @@ import org.bukkit.Material;
 import au.com.mineauz.PlayerSpy.InventorySlot;
 import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.RecordList;
-import au.com.mineauz.PlayerSpy.Records.InventoryRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
+import au.com.mineauz.PlayerSpy.legacy.v2.InventoryRecord;
 
 public class SearchForItemTask implements Task<Long>
 {

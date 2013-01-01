@@ -7,7 +7,6 @@ import java.io.IOException;
 import org.bukkit.Location;
 import org.bukkit.World;
 
-import au.com.mineauz.PlayerSpy.*;
 import au.com.mineauz.PlayerSpy.storage.StoredLocation;
 
 public class MoveRecord extends Record implements IPlayerLocationAware

@@ -8,7 +8,6 @@ import java.io.UTFDataFormatException;
 import org.bukkit.Location;
 import org.bukkit.World;
 
-import au.com.mineauz.PlayerSpy.*;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.storage.StoredLocation;
 

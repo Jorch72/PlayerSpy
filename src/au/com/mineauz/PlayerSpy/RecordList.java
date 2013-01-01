@@ -10,6 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
+import au.com.mineauz.PlayerSpy.legacy.v2.InventoryRecord;
 
 public class RecordList extends ArrayList<Record> 
 {

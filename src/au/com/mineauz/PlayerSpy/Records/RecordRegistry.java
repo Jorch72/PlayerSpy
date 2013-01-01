@@ -4,6 +4,13 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
+import au.com.mineauz.PlayerSpy.legacy.v2.DropItemRecord;
+import au.com.mineauz.PlayerSpy.legacy.v2.InteractRecord;
+import au.com.mineauz.PlayerSpy.legacy.v2.InventoryRecord;
+import au.com.mineauz.PlayerSpy.legacy.v2.InventoryTransactionRecord;
+import au.com.mineauz.PlayerSpy.legacy.v2.ItemPickupRecord;
+import au.com.mineauz.PlayerSpy.legacy.v2.RightClickActionRecord;
+
 
 @SuppressWarnings("deprecation")
 public class RecordRegistry 

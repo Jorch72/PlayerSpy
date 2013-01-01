@@ -3,9 +3,9 @@ package au.com.mineauz.PlayerSpy.search;
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 
-import au.com.mineauz.PlayerSpy.Records.InteractRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
+import au.com.mineauz.PlayerSpy.legacy.v2.InteractRecord;
 import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 
 public class InteractConstraint extends Constraint

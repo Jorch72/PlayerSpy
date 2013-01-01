@@ -3,10 +3,10 @@ package au.com.mineauz.PlayerSpy.search;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
-import au.com.mineauz.PlayerSpy.Records.DropItemRecord;
-import au.com.mineauz.PlayerSpy.Records.ItemPickupRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
+import au.com.mineauz.PlayerSpy.legacy.v2.DropItemRecord;
+import au.com.mineauz.PlayerSpy.legacy.v2.ItemPickupRecord;
 import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 
 public class ItemConstraint extends Constraint

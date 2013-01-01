@@ -27,6 +27,9 @@ import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Utilities.EntityShadowPlayer;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
+import au.com.mineauz.PlayerSpy.legacy.v2.DropItemRecord;
+import au.com.mineauz.PlayerSpy.legacy.v2.InventoryRecord;
+import au.com.mineauz.PlayerSpy.legacy.v2.ItemPickupRecord;
 import au.com.mineauz.PlayerSpy.storage.StoredBlock;
 
 public class PlaybackContext
