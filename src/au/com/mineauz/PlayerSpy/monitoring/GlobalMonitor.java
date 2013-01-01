@@ -771,7 +771,7 @@ public class GlobalMonitor implements Listener
 		
 		ShallowMonitor monitor = getMonitor(event.getPlayer());
 		if(monitor != null && event.getBlockClicked() != null)
-			monitor.onBucketEmpty(event.getBlockClicked(), event.getItemStack());
+			delayLogBlockChange(event.getBlockClicked().getRelative(event.getBlockFace()), Cause.playerCause(event.getPlayer()), null);
 		
 		if(SpyPlugin.getSettings().recordFluidFlow)
 		{
@@ -1223,5 +1223,26 @@ public class GlobalMonitor implements Listener
 			mon.onBreakHanging(event);
 	}
 	
+	@EventHandler
+	public void onEntityInteract(EntityInteractEvent event)
+	{
+		if(event.getBlock().getType() == Material.WOOD_BUTTON)
+		{
+			if(event.getEntity() instanceof Projectile)
+			{
+				// FIXME: This event is firing twice some times, need to filter this out
+				
+				// Find the shooter
+				if(((Projectile)event.getEntity()).getShooter() instanceof Player)
+				{
+					Player player = (Player)((Projectile)event.getEntity()).getShooter();
+					
+					PlayerInteractEvent newEvent = new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, player.getItemInHand(), event.getBlock(), BlockFace.SELF);
+					
+					onPlayerInteract(newEvent);
+				}
+			}
+		}
+	}
 
 }

@@ -30,7 +30,7 @@ public class Debug
 			OutputStream stream = new FileOutputStream(debugLogFile, true);
 
 			mDebugLog = Logger.getLogger("PlayerSpyDebug");
-			mDebugLog.setLevel(Level.FINEST);
+			mDebugLog.setLevel(Level.INFO);
 			mDebugLog.setUseParentHandlers(false);
 			
 			for(Handler handler : mDebugLog.getHandlers())

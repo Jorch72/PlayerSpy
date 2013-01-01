@@ -9,6 +9,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Note;
+import org.bukkit.SkullType;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -16,6 +17,7 @@ import org.bukkit.block.CreatureSpawner;
 import org.bukkit.block.Jukebox;
 import org.bukkit.block.NoteBlock;
 import org.bukkit.block.Sign;
+import org.bukkit.block.Skull;
 import org.bukkit.entity.EntityType;
 import org.bukkit.material.MaterialData;
 
@@ -34,7 +36,9 @@ public class StoredBlock
 		// Material (the disk material)
 		Jukebox,
 		// EntityType (the type of entity spawned)
-		Spawner
+		Spawner,
+		// SkullData instance
+		Skull
 	}
 	
 	private Location mLocation;
@@ -43,63 +47,7 @@ public class StoredBlock
 	private BlockStateType mStateType;
 	private Object mStateData;
 	
-	public StoredBlock(Block block)
-	{
-		if(block == null)
-		{
-			mLocation = new Location(Bukkit.getWorlds().get(0), 0, 0, 0);
-			mType = Material.AIR;
-			mData = 0;
-			mStateType = BlockStateType.NormalBlock;
-			return;
-		}
-		mLocation = block.getLocation().clone();
-		mType = block.getType();
-		mData = block.getData();
-		
-		if(block.getState() instanceof Sign)
-		{
-			mStateType = BlockStateType.Sign;
-			mStateData = ((Sign)block.getState()).getLines();
-		}
-		else if(block.getState() instanceof NoteBlock)
-		{
-			mStateType = BlockStateType.NoteBlock;
-			mStateData = ((NoteBlock)block.getState()).getNote();
-		}
-		else if(block.getState() instanceof Jukebox)
-		{
-			mStateType = BlockStateType.Jukebox;
-			try
-			{
-				mStateData = ((Jukebox)block.getState()).getPlaying();
-			}
-			catch(NullPointerException e) // Workaround to Craftbukkit bug(it doesnt check if there is a record before getting its id)
-			{
-				mStateData = Material.AIR;
-			}
-		}
-		else if(block.getState() instanceof CreatureSpawner)
-		{
-			mStateType = BlockStateType.Spawner;
-			mStateData = ((CreatureSpawner)block.getState()).getSpawnedType();
-		}
-		else
-			mStateType = BlockStateType.NormalBlock;
-	}
-	public StoredBlock(Location location, Material type, byte data)
-	{
-		mLocation = location.clone();
-		mType = type;
-		mData = data;
-		mStateType = BlockStateType.NormalBlock;
-	}
-	public StoredBlock()
-	{
-		mStateType = BlockStateType.NormalBlock;
-	}
-	
-	public StoredBlock(BlockState block) 
+	private void initFromBlockState(BlockState block)
 	{
 		if(block == null)
 		{
@@ -140,8 +88,50 @@ public class StoredBlock
 			mStateType = BlockStateType.Spawner;
 			mStateData = ((CreatureSpawner)block).getSpawnedType();
 		}
+		else if(block instanceof Skull)
+		{
+			mStateType = BlockStateType.Skull;
+			SkullData data = new SkullData();
+			data.type = ((Skull)block).getSkullType();
+			
+			if(data.type == SkullType.PLAYER)
+				data.player = ((Skull)block).getOwner();
+			
+			data.facing = ((Skull)block).getRotation();
+			
+			mStateData = data;
+		}
 		else
 			mStateType = BlockStateType.NormalBlock;
+	}
+	
+	public StoredBlock(Block block)
+	{
+		if(block == null)
+		{
+			mLocation = new Location(Bukkit.getWorlds().get(0), 0, 0, 0);
+			mType = Material.AIR;
+			mData = 0;
+			mStateType = BlockStateType.NormalBlock;
+			return;
+		}
+		initFromBlockState(block.getState());
+	}
+	public StoredBlock(Location location, Material type, byte data)
+	{
+		mLocation = location.clone();
+		mType = type;
+		mData = data;
+		mStateType = BlockStateType.NormalBlock;
+	}
+	public StoredBlock()
+	{
+		mStateType = BlockStateType.NormalBlock;
+	}
+	
+	public StoredBlock(BlockState block) 
+	{
+		initFromBlockState(block);
 	}
 	public StoredBlock(MaterialData data, Location location) 
 	{
@@ -203,6 +193,9 @@ public class StoredBlock
 		case Spawner:
 			stream.writeShort(((EntityType)mStateData).getTypeId());
 			break;
+		case Skull:
+			((SkullData)mStateData).write(stream);
+			break;
 		default:
 			break;
 		}
@@ -256,6 +249,11 @@ public class StoredBlock
 				if(mStateData == null)
 					throw new RecordFormatException("Bad entity type for monster spawner");
 				break;
+			case Skull:
+				mStateData = new SkullData();
+				
+				((SkullData)mStateData).read(stream);
+				break;
 			default:
 				mStateData = null;
 				break;
@@ -288,6 +286,9 @@ public class StoredBlock
 			break;
 		case Spawner:
 			size += 2;
+			break;
+		case Skull:
+			size += ((SkullData)mStateData).getSize();
 			break;
 		default:
 			break;

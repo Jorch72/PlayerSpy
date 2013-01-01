@@ -12,7 +12,17 @@ public class DebugLogFormatter extends Formatter
 	@Override
 	public String format( LogRecord record )
 	{
-		String result = String.format("%s [%s] \t",fmt.format(new Date(record.getMillis())), record.getLevel().toString().toUpperCase());
+		// Find the thread that was used
+		Thread theThread = null;
+		
+		for(Thread t : Thread.getAllStackTraces().keySet())
+			if (t.getId() == record.getThreadID())
+			{
+				theThread = t;
+				break;
+			}
+		
+		String result = String.format("%s [%d-%s] [%s] \t",fmt.format(new Date(record.getMillis())), record.getThreadID(), (theThread != null ? theThread.getName() : "Unknown Thread"), record.getLevel().toString().toUpperCase());
 		
 		if (record.getMessage() != null)
 			result += '"' + record.getMessage() + '"';
@@ -55,19 +65,7 @@ public class DebugLogFormatter extends Formatter
 		if (record.getSourceClassName() != null)
 			result += " called from " + record.getSourceClassName() + ":" + record.getSourceMethodName();
 		
-		// Find the thread that was used
-		Thread theThread = null;
-		
-		for(Thread t : Thread.getAllStackTraces().keySet())
-			if (t.getId() == record.getThreadID())
-			{
-				theThread = t;
-				break;
-			}
-		
-		result += String.format(" on thread %d [%s]", record.getThreadID(), (theThread == null ? "Unknown Thread" : theThread.getName())) + "\n";
-		
-		return result;
+		return result + "\n";
 	}
 
 	

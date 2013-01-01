@@ -810,7 +810,7 @@ public class LogFile
 		// We will hold the write lock because accessing the file concurrently through the same object with have issues i think.
 		mLock.writeLock().lock();
 		
-		Debug.info("Loading Session %d from %s", session.Id, mPlayerName);
+		Debug.fine("Loading Session %d from %s", session.Id, mPlayerName);
 		
 		try
 		{
