@@ -18,8 +18,6 @@ import org.bukkit.entity.Player;
 import au.com.mineauz.PlayerSpy.Cause;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
-import au.com.mineauz.PlayerSpy.StoredBlock;
-import au.com.mineauz.PlayerSpy.StoredEntity;
 import au.com.mineauz.PlayerSpy.LogTasks.Task;
 import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
 import au.com.mineauz.PlayerSpy.Records.ILocationAware;
@@ -36,6 +34,8 @@ import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
 import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 import au.com.mineauz.PlayerSpy.monitoring.ShallowMonitor;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex.SessionInFile;
+import au.com.mineauz.PlayerSpy.storage.StoredBlock;
+import au.com.mineauz.PlayerSpy.storage.StoredEntity;
 
 public class InspectBlockTask implements Task<Void>
 {

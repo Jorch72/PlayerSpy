@@ -7,6 +7,7 @@ import java.io.IOException;
 import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
+import au.com.mineauz.PlayerSpy.legacy.StoredItemStack;
 
 
 public class InventorySlot 

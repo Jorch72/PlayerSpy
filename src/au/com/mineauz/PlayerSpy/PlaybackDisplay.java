@@ -19,6 +19,7 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 
 import au.com.mineauz.PlayerSpy.Utilities.EntityShadowPlayer;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.storage.StoredBlock;
 
 public class PlaybackDisplay implements Listener
 {

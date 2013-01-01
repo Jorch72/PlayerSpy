@@ -12,8 +12,8 @@ import org.bukkit.block.BlockState;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
 
-import au.com.mineauz.PlayerSpy.StoredBlock;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.storage.StoredBlock;
 
 public class BlockChangeRecord extends Record implements IRollbackable, ILocationAware
 {

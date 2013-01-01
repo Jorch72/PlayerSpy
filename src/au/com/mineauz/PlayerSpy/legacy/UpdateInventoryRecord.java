@@ -7,7 +7,6 @@ import java.io.IOException;
 import org.bukkit.World;
 import org.bukkit.inventory.ItemStack;
 
-import au.com.mineauz.PlayerSpy.StoredItemStack;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
 import au.com.mineauz.PlayerSpy.Records.RecordType;

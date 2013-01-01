@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy;
+package au.com.mineauz.PlayerSpy.legacy;
 
 import java.io.*;
 import java.util.HashMap;
@@ -8,6 +8,7 @@ import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
 
+@Deprecated
 public class StoredItemStack 
 {
 	public StoredItemStack(ItemStack stack)

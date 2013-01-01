@@ -10,11 +10,10 @@ import org.bukkit.entity.Entity;
 import org.bukkit.event.block.Action;
 import org.bukkit.inventory.ItemStack;
 
-import au.com.mineauz.PlayerSpy.StoredEntity;
-import au.com.mineauz.PlayerSpy.StoredItemStack;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
+import au.com.mineauz.PlayerSpy.storage.StoredEntity;
 
 @Deprecated
 public class InteractRecord extends Record

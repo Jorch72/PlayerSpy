@@ -10,7 +10,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 
-import au.com.mineauz.PlayerSpy.StoredEntity;
+import au.com.mineauz.PlayerSpy.storage.StoredEntity;
 
 public class AttackRecord extends Record implements ILocationAware
 {

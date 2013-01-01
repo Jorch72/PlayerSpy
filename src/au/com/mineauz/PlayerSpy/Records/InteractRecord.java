@@ -13,12 +13,12 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.event.block.Action;
 import org.bukkit.inventory.ItemStack;
 
-import au.com.mineauz.PlayerSpy.StoredBlock;
-import au.com.mineauz.PlayerSpy.StoredEntity;
-import au.com.mineauz.PlayerSpy.StoredItemStack;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.legacy.StoredItemStack;
+import au.com.mineauz.PlayerSpy.storage.StoredBlock;
+import au.com.mineauz.PlayerSpy.storage.StoredEntity;
 
 public class InteractRecord extends Record implements ILocationAware
 {

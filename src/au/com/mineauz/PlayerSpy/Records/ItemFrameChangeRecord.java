@@ -11,8 +11,8 @@ import org.bukkit.World;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.inventory.ItemStack;
 
-import au.com.mineauz.PlayerSpy.StoredItemFrame;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.storage.StoredItemFrame;
 
 public class ItemFrameChangeRecord extends Record implements IRollbackable, ILocationAware
 {

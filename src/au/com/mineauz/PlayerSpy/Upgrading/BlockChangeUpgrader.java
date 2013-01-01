@@ -3,9 +3,9 @@ package au.com.mineauz.PlayerSpy.Upgrading;
 import org.bukkit.Material;
 
 import au.com.mineauz.PlayerSpy.RecordList;
-import au.com.mineauz.PlayerSpy.StoredBlock;
 import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.storage.StoredBlock;
 
 public class BlockChangeUpgrader extends RecordUpgrader
 {

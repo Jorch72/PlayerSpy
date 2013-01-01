@@ -8,8 +8,8 @@ import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.inventory.ItemStack;
 
-import au.com.mineauz.PlayerSpy.StoredItemStack;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.legacy.StoredItemStack;
 
 public class DropItemRecord extends Record
 {

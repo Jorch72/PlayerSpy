@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy;
+package au.com.mineauz.PlayerSpy.storage;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

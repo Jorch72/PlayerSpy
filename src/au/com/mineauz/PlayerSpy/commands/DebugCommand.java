@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 import java.util.logging.Level;
@@ -12,11 +13,14 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import au.com.mineauz.PlayerSpy.FileHeader;
 import au.com.mineauz.PlayerSpy.HoleEntry;
 import au.com.mineauz.PlayerSpy.IndexEntry;
 import au.com.mineauz.PlayerSpy.LogFile;
+import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
@@ -283,6 +287,19 @@ public class DebugCommand implements ICommand
 			
 			Debug.clearLog();
 			sender.sendMessage("Cleared log");
+		}
+		else if(args[0].equalsIgnoreCase("test"))
+		{
+			ItemStack inHand = ((Player)sender).getItemInHand();
+			
+			if(inHand != null)
+			{
+				ItemMeta meta = inHand.getItemMeta();
+				
+				Map<String, Object> test = meta.serialize();
+				
+				LogUtil.info(test.size() + " keys");
+			}
 		}
 		else
 			return false;

@@ -8,7 +8,7 @@ import org.bukkit.World;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
-import au.com.mineauz.PlayerSpy.StoredItemStack;
+import au.com.mineauz.PlayerSpy.legacy.StoredItemStack;
 
 public class InventoryRecord extends Record 
 {

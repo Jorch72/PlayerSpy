@@ -10,6 +10,7 @@ import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 
 import au.com.mineauz.PlayerSpy.*;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.storage.StoredLocation;
 
 public class TeleportRecord extends Record implements IPlayerLocationAware
 {

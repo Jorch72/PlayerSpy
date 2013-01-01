@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy;
+package au.com.mineauz.PlayerSpy.storage;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -12,6 +12,7 @@ import org.bukkit.entity.ItemFrame;
 import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
+import au.com.mineauz.PlayerSpy.legacy.StoredItemStack;
 
 
 public class StoredItemFrame 

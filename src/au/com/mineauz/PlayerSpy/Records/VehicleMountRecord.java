@@ -10,7 +10,7 @@ import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Vehicle;
 
-import au.com.mineauz.PlayerSpy.StoredEntity;
+import au.com.mineauz.PlayerSpy.storage.StoredEntity;
 
 public class VehicleMountRecord extends Record implements ILocationAware 
 {

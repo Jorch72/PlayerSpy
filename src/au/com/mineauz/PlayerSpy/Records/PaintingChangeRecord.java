@@ -11,8 +11,8 @@ import org.bukkit.World;
 import org.bukkit.entity.Painting;
 import org.bukkit.inventory.ItemStack;
 
-import au.com.mineauz.PlayerSpy.StoredPainting;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.storage.StoredPainting;
 
 public class PaintingChangeRecord extends Record implements IRollbackable, ILocationAware
 {

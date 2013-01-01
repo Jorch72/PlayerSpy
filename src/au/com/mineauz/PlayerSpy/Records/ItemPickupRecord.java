@@ -12,6 +12,8 @@ import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.*;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.legacy.StoredItemStack;
+import au.com.mineauz.PlayerSpy.storage.StoredLocation;
 
 public class ItemPickupRecord extends Record implements ILocationAware
 {

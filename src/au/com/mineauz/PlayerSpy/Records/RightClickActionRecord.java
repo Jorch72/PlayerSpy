@@ -11,9 +11,9 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.ItemStack;
 
-import au.com.mineauz.PlayerSpy.StoredEntity;
-import au.com.mineauz.PlayerSpy.StoredItemStack;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.legacy.StoredItemStack;
+import au.com.mineauz.PlayerSpy.storage.StoredEntity;
 
 public class RightClickActionRecord extends Record implements ILocationAware
 {

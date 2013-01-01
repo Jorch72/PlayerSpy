@@ -10,6 +10,7 @@ import org.bukkit.World;
 
 import au.com.mineauz.PlayerSpy.*;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.storage.StoredLocation;
 
 public class DeathRecord extends Record implements IPlayerLocationAware
 {
