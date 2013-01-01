@@ -70,7 +70,14 @@ public class StoredBlock
 		else if(block.getState() instanceof Jukebox)
 		{
 			mStateType = BlockStateType.Jukebox;
-			mStateData = ((Jukebox)block.getState()).getPlaying();
+			try
+			{
+				mStateData = ((Jukebox)block.getState()).getPlaying();
+			}
+			catch(NullPointerException e) // Workaround to Craftbukkit bug(it doesnt check if there is a record before getting its id)
+			{
+				mStateData = Material.AIR;
+			}
 		}
 		else if(block.getState() instanceof CreatureSpawner)
 		{
@@ -119,7 +126,14 @@ public class StoredBlock
 		else if(block instanceof Jukebox)
 		{
 			mStateType = BlockStateType.Jukebox;
-			mStateData = ((Jukebox)block).getPlaying();
+			try
+			{
+				mStateData = ((Jukebox)block).getPlaying();
+			}
+			catch(NullPointerException e) // Workaround to Craftbukkit bug(it doesnt check if there is a record before getting its id)
+			{
+				mStateData = Material.AIR;
+			}
 		}
 		else if(block instanceof CreatureSpawner)
 		{

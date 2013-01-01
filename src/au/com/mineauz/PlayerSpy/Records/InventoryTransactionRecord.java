@@ -12,9 +12,9 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.StoredInventoryInformation;
+import au.com.mineauz.PlayerSpy.StoredItemStack;
 import au.com.mineauz.PlayerSpy.StoredInventoryInformation.InventoryType;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
-import au.com.mineauz.PlayerSpy.StoredItemStack;
 
 public class InventoryTransactionRecord extends Record implements IRollbackable, ILocationAware
 {

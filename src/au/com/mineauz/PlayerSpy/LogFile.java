@@ -1003,6 +1003,8 @@ public class LogFile
 				
 				// Write it into the file
 				mFile.seek(session.Location + session.TotalSize);
+				Debug.finest("*Writing from %X -> %X", session.Location + session.TotalSize, session.Location + session.TotalSize + bstream.size()-1);
+				
 				mFile.write(bstream.toByteArray());
 	
 				// Consume the space
@@ -1435,7 +1437,8 @@ public class LogFile
 				// Append to the file
 				session.Location = mFile.length();
 				
-				Debug.finest(" writing byte stream to file");
+				Debug.finest(" Writing session %d to %X -> %X", session.Id, session.Location, session.Location + bstream.size() - 1);
+				
 				mFile.seek(session.Location);
 				mFile.write(bstream.toByteArray());
 				Debug.finest(" done");
@@ -1458,6 +1461,7 @@ public class LogFile
 			{
 				// Write it in the hole
 				mFile.seek(session.Location);
+				Debug.finest(" Writing session %d to %X -> %X", session.Id, session.Location, session.Location + bstream.size() - 1);
 				mFile.write(bstream.toByteArray());
 			}
 			
@@ -1689,22 +1693,22 @@ public class LogFile
 		long nextLocation;
 		long nextSize = 0;
 		int hole = getHoleAfter(location);
-		
+		// TODO: Remove the recursion here
 		if(hole != -1)
 		{
 			HoleEntry holeData = mHoleIndex.get(hole);
 			if(holeData.AttachedTo != null)
 			{
-				Debug.finest("Skipping over reserved space");
+				Debug.finest("Skipping over reserved space from %X -> %X attached to %d", holeData.Location, holeData.Location + holeData.Size - 1, holeData.AttachedTo.Id);
 				pullData(holeData.Location + holeData.Size);
 			}
 			
-			Debug.finest("Pulling data to " + location);
-
 			// Find what data needs to be pulled
 			nextLocation = holeData.Location + holeData.Size;
 			int type = 0;
 			int index = 0;
+			
+			Debug.finest("Pulling data from %X to %X", nextLocation, holeData.Location);
 			
 			for(IndexEntry nextSession : mIndex)
 			{
@@ -1740,7 +1744,7 @@ public class LogFile
 			if(nextSize != 0)
 			{
 				// Shift the data
-				long shiftAmount = nextLocation - location;
+				long shiftAmount = holeData.Size;
 				
 				byte[] buffer = new byte[1024];
 				int rcount = 0;
@@ -1773,25 +1777,25 @@ public class LogFile
 				case 0: // session
 				{
 					IndexEntry nextSession = mIndex.get(index);
-					Debug.finest("Shifted session " + nextSession.Id + " from " + nextSession.Location + " to " + holeData.Location);
+					Debug.finest("Shifted session %d from %X -> (%X-%X)", nextSession.Id, nextSession.Location, holeData.Location, holeData.Location + nextSize - 1);
 					nextSession.Location = holeData.Location;
 					updateSession(index, nextSession);
 					break;
 				}
 				case 1: // Index
-					Debug.finest("Shifted index from " + mHeader.IndexLocation + " to " + holeData.Location);
+					Debug.finest("Shifted index from %X -> (%X-%X)", mHeader.IndexLocation, holeData.Location, holeData.Location + nextSize - 1);
 					mHeader.IndexLocation = holeData.Location;
 					mFile.seek(0);
 					mHeader.write(mFile);
 					break;
 				case 2: // Hole Index
-					Debug.finest("Shifted hole index from " + mHeader.HolesIndexLocation + " to " + holeData.Location);
+					Debug.finest("Shifted hole index from %X -> (%X-%X)", mHeader.HolesIndexLocation, holeData.Location, holeData.Location + nextSize - 1);
 					mHeader.HolesIndexLocation = holeData.Location;
 					mFile.seek(0);
 					mHeader.write(mFile);
 					break;
 				case 3: // OwnerMap
-					Debug.finest("Shifted owner map from " + mHeader.OwnerMapLocation + " to " + holeData.Location);
+					Debug.finest("Shifted owner map from %X -> (%X-%X)", mHeader.OwnerMapLocation, holeData.Location, holeData.Location + nextSize - 1);
 					mHeader.OwnerMapLocation = holeData.Location;
 					mFile.seek(0);
 					mHeader.write(mFile);
@@ -2235,7 +2239,7 @@ public class LogFile
 					mFile.seek(mHeader.HolesIndexLocation + i * HoleEntry.cSize);
 					newHole.write(mFile);
 					
-					Debug.finest("Merging new hole into %d changing range from (%X->%X) into (%X->%X)", i, existing.Location, existing.Location + existing.Size,newHole.Location, newHole.Location + newHole.Size);
+					Debug.finest("Merging new hole into @%d changing range from (%X->%X) into (%X->%X)", i, existing.Location, existing.Location + existing.Size-1,newHole.Location, newHole.Location + newHole.Size-1);
 					
 					return;
 				}
@@ -2262,7 +2266,7 @@ public class LogFile
 				mHeader.HolesIndexSize = mHoleIndex.size() * HoleEntry.cSize;
 				mHeader.HolesIndexPadding -= HoleEntry.cSize;
 				
-				Debug.finest("New hole inserted into padding. Remaining padding: %d bytes", mHeader.HolesIndexPadding);
+				Debug.finest("Writing %d hole entries to %X -> %X Using padding. Remaining: %d bytes", mHoleIndex.size() - index, mHeader.HolesIndexLocation + index * HoleEntry.cSize, mHeader.HolesIndexLocation + mHeader.HolesIndexSize-1, mHeader.HolesIndexPadding);
 			}
 			else
 			{
@@ -2274,6 +2278,7 @@ public class LogFile
 					// There isnt a hole appended to the index
 					// Relocate the holes index
 					HoleEntry oldIndexHole = new HoleEntry();
+					long oldLocation = mHeader.HolesIndexLocation;
 					oldIndexHole.Location = mHeader.HolesIndexLocation;
 					oldIndexHole.Size = mHeader.HolesIndexSize + mHeader.HolesIndexPadding;
 					// Try to merge it
@@ -2334,7 +2339,7 @@ public class LogFile
 					// Padding
 					mFile.write(new byte[HoleEntry.cSize]);
 
-					Debug.finer("Hole index relocated");
+					Debug.finest("Moving hole index from %X to (%X -> %X) setting %d bytes padding", oldLocation, mHeader.HolesIndexLocation, mHeader.HolesIndexLocation + mHeader.HolesIndexSize - 1, mHeader.HolesIndexPadding);
 					
 					if(targetHole != -1) // Found a hole big enough
 						// Consume the hole
@@ -2351,7 +2356,7 @@ public class LogFile
 					mHeader.HolesIndexCount = mHoleIndex.size();
 					mHeader.HolesIndexSize = mHoleIndex.size() * HoleEntry.cSize;
 					
-					Debug.finer("Hole inserted into hole");
+					Debug.finest("Writing %d hole entries to %X -> %X", mHoleIndex.size() - index, mHeader.HolesIndexLocation + index * HoleEntry.cSize, mHeader.HolesIndexLocation + mHeader.HolesIndexSize-1);
 					
 					if(hole != mHoleIndex.size())
 						fillHole(hole,mFile.getFilePointer() - HoleEntry.cSize,HoleEntry.cSize);
@@ -2436,7 +2441,7 @@ public class LogFile
 			mFile.seek(mHeader.HolesIndexLocation + index * HoleEntry.cSize);
 			mHoleIndex.set(index,entry);
 			entry.write(mFile);
-			Debug.finest("Updated hole");
+			Debug.finest("Updated hole at %X -> %X", mHeader.HolesIndexLocation + index * HoleEntry.cSize, mHeader.HolesIndexLocation + index * HoleEntry.cSize + HoleEntry.cSize - 1);
 		}
 		finally
 		{
@@ -2525,7 +2530,7 @@ public class LogFile
 				for(int i = 0; i < mIndex.size(); i++)
 					mIndex.get(i).write(mHeader.VersionMajor,mFile);
 				
-				Debug.finer("Index relocated from %X -> %X. Size: %X", oldIndexHole.Location, mHeader.IndexLocation, mHeader.IndexSize);
+				Debug.finest("Index relocated from %X -> (%X->%X)", oldIndexHole.Location, mHeader.IndexLocation, mHeader.IndexLocation + mHeader.IndexSize-1);
 				// Add the hole info
 				addHole(oldIndexHole);
 			}
@@ -2540,7 +2545,7 @@ public class LogFile
 				for(int i = insertIndex; i < mIndex.size(); i++)
 					mIndex.get(i).write(mHeader.VersionMajor, mFile);
 				
-				Debug.finer("Session inserted at %d / %d. Size: %X", insertIndex, mIndex.size(), mHeader.IndexSize);
+				Debug.finest("Writing %d index entries from %X -> %X", mIndex.size() - insertIndex, mHeader.IndexLocation + insertIndex * IndexEntry.cSize[mHeader.VersionMajor], mHeader.IndexLocation + mHeader.IndexSize - 1);
 				// Consume the hole
 				if(hole != mHoleIndex.size())
 					fillHole(hole,mHeader.IndexLocation + (mIndex.size()-1) * IndexEntry.cSize[mHeader.VersionMajor],IndexEntry.cSize[mHeader.VersionMajor]);
@@ -2630,7 +2635,7 @@ public class LogFile
 			mIndex.set(index,session);
 			session.write(mHeader.VersionMajor,mFile);
 			
-			Debug.finest("Session %d(@%d) updated", session.Id, index);
+			Debug.finest("Session %d(@%d) updated at %X -> %X", session.Id, index, mHeader.IndexLocation + index * IndexEntry.cSize[mHeader.VersionMajor], mHeader.IndexLocation + index * IndexEntry.cSize[mHeader.VersionMajor] + IndexEntry.cSize[mHeader.VersionMajor] - 1);
 		}
 		finally
 		{
@@ -2670,7 +2675,7 @@ public class LogFile
 				for(int i = 0; i < mOwnerTagList.size(); i++)
 					mOwnerTagList.get(i).write(mFile);
 
-				Debug.fine("Owner tag Index relocated from %X -> %X. Size: %X", oldIndexHole.Location, mHeader.OwnerMapLocation, mHeader.OwnerMapSize);
+				Debug.fine("Owner tag Index relocated from %X -> (%X->%X)", oldIndexHole.Location, mHeader.OwnerMapLocation, mHeader.OwnerMapLocation + mHeader.OwnerMapSize-1);
 				
 				// Add the hole info
 				addHole(oldIndexHole);
@@ -2685,7 +2690,7 @@ public class LogFile
 				mFile.seek(mHeader.OwnerMapLocation + (mOwnerTagList.size()-1) * OwnerMapEntry.cSize);
 				map.write(mFile);
 				
-				Debug.finer("Owner tag appended. Size: %X", mHeader.OwnerMapSize);
+				Debug.finer("Owner tag written at %X -> %X", mHeader.OwnerMapLocation + (mOwnerTagList.size()-1) * OwnerMapEntry.cSize, mHeader.OwnerMapLocation + mHeader.OwnerMapSize - 1);
 				// Consume the hole
 				if(hole != mHoleIndex.size())
 					fillHole(hole,mHeader.OwnerMapLocation + (mOwnerTagList.size()-1) * OwnerMapEntry.cSize,OwnerMapEntry.cSize);
