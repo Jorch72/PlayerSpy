@@ -6,6 +6,7 @@ import java.io.IOException;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -48,6 +49,25 @@ public class InteractRecord extends Record implements ILocationAware
 			mItem = new StoredItemStack(item);
 		if(ent != null)
 			mEntity = ent;
+	}
+	
+	public InteractRecord(au.com.mineauz.PlayerSpy.legacy.InteractRecord old)
+	{
+		super(RecordType.Interact);
+		
+		StoredBlock block = null;
+		if(old.getBlock() != null)
+		{
+			block = new StoredBlock(old.getBlock().BlockLocation, Material.getMaterial(old.getBlock().BlockId), old.getBlock().BlockData);
+		}
+
+		mType = old.getAction();
+		if(block != null)
+			mBlock = block;
+		if(old.getItem() != null)
+			mItem = new StoredItemStack(old.getItem());
+		if(old.getEntity() != null)
+			mEntity = old.getEntity();
 	}
 
 	public InteractRecord() 

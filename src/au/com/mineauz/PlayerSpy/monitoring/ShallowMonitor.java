@@ -35,11 +35,6 @@ import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
-import au.com.mineauz.PlayerSpy.legacy.v2.DropItemRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.InteractRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.InventoryTransactionRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.ItemPickupRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.RightClickActionRecord;
 
 public class ShallowMonitor 
 {

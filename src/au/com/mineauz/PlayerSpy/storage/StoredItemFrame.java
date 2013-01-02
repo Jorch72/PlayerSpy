@@ -12,8 +12,7 @@ import org.bukkit.entity.ItemFrame;
 import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
-import au.com.mineauz.PlayerSpy.legacy.StoredItemStack;
-
+import au.com.mineauz.PlayerSpy.storage.StoredLocation;
 
 public class StoredItemFrame 
 {
@@ -23,6 +22,14 @@ public class StoredItemFrame
 		mItem = (frame.getItem() == null ? null : frame.getItem().clone());
 		mFacing = frame.getFacing();
 		mLocation = new StoredLocation(frame.getLocation());
+	}
+	@SuppressWarnings( "deprecation" )
+	public StoredItemFrame(au.com.mineauz.PlayerSpy.legacy.v2.StoredItemFrame old)
+	{
+		mRotation = old.getRotation();
+		mItem = old.getItem();
+		mFacing = old.getBlockFace();
+		mLocation = new StoredLocation(old.getLocation());
 	}
 	private StoredItemFrame()
 	{

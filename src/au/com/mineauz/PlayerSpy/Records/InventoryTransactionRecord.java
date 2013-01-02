@@ -44,11 +44,21 @@ public class InventoryTransactionRecord extends Record implements IRollbackable,
 		record.mTake = false;
 		return record;
 	}
-
+	
 	public InventoryTransactionRecord() 
 	{
 		super(RecordType.ItemTransaction);
 		mIsRolledBack = false;
+	}
+	
+	@SuppressWarnings( "deprecation" )
+	public InventoryTransactionRecord(au.com.mineauz.PlayerSpy.legacy.v2.InventoryTransactionRecord old)
+	{
+		super(RecordType.ItemTransaction);
+		
+		mItem = old.getItem();
+		mInvInfo = old.getInventoryInfo();
+		mTake = old.isTaking();
 	}
 
 	/**
@@ -79,7 +89,6 @@ public class InventoryTransactionRecord extends Record implements IRollbackable,
 		stream.writeBoolean(mTake);
 		new StoredItemStack(mItem).writeItemStack(stream);
 		mInvInfo.write(stream, absolute);
-		stream.writeBoolean(mIsRolledBack);
 	}
 
 	@Override
@@ -89,13 +98,12 @@ public class InventoryTransactionRecord extends Record implements IRollbackable,
 		mItem = StoredItemStack.readItemStack(stream).getItem();
 		mInvInfo = new StoredInventoryInformation();
 		mInvInfo.read(stream, currentWorld, absolute);
-		mIsRolledBack = stream.readBoolean();
 	}
 
 	@Override
 	protected int getContentSize(boolean absolute) 
 	{
-		return 2 + new StoredItemStack(mItem).getSize() + mInvInfo.getSize(absolute);
+		return 1 + new StoredItemStack(mItem).getSize() + mInvInfo.getSize(absolute);
 	}
 
 	@Override

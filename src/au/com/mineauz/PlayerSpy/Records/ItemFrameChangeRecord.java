@@ -11,6 +11,11 @@ import org.bukkit.World;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.inventory.ItemStack;
 
+import au.com.mineauz.PlayerSpy.Records.ILocationAware;
+import au.com.mineauz.PlayerSpy.Records.IRollbackable;
+import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
+import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.storage.StoredItemFrame;
 
@@ -33,13 +38,20 @@ public class ItemFrameChangeRecord extends Record implements IRollbackable, ILoc
 		super(RecordType.ItemFrameChange);
 		mIsRolledBack = false;
 	}
+	@SuppressWarnings( "deprecation" )
+	public ItemFrameChangeRecord(au.com.mineauz.PlayerSpy.legacy.v2.ItemFrameChangeRecord old)
+	{
+		super(RecordType.ItemFrameChange);
+		
+		mFrame = new StoredItemFrame(old.getItemFrame());
+		mPlaced = old.getPlaced();
+	}
 
 	@Override
 	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		stream.writeBoolean(mPlaced);
 		mFrame.write(stream, absolute);
-		stream.writeBoolean(mIsRolledBack);
 	}
 	@Override
 	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
@@ -47,13 +59,12 @@ public class ItemFrameChangeRecord extends Record implements IRollbackable, ILoc
 		mPlaced = stream.readBoolean();
 		
 		mFrame = StoredItemFrame.read(stream, currentWorld, absolute);
-		mIsRolledBack = stream.readBoolean();
 	}
 	
 	@Override
 	protected int getContentSize(boolean absolute) 
 	{
-		return mFrame.getSize(absolute) + 2; 
+		return mFrame.getSize(absolute) + 1; 
 	}
 
 	public StoredItemFrame getItemFrame()

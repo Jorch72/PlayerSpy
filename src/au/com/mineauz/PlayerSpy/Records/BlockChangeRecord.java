@@ -12,6 +12,11 @@ import org.bukkit.block.BlockState;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
 
+import au.com.mineauz.PlayerSpy.Records.ILocationAware;
+import au.com.mineauz.PlayerSpy.Records.IRollbackable;
+import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
+import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.storage.StoredBlock;
 
@@ -57,6 +62,16 @@ public class BlockChangeRecord extends Record implements IRollbackable, ILocatio
 		mPlaced = place;
 		mIsRolledBack = false;
 	}
+	
+	@SuppressWarnings( "deprecation" )
+	public BlockChangeRecord(au.com.mineauz.PlayerSpy.legacy.v2.BlockChangeRecord old)
+	{
+		super(RecordType.BlockChange);
+		
+		mInitialBlock = old.getInitialBlock();
+		mFinalBlock = old.getFinalBlock();
+		mPlaced = old.wasPlaced();
+	}
 
 	@Override
 	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
@@ -64,7 +79,6 @@ public class BlockChangeRecord extends Record implements IRollbackable, ILocatio
 		stream.writeBoolean(mPlaced);
 		mInitialBlock.write(stream, absolute);
 		mFinalBlock.write(stream, absolute);
-		stream.writeBoolean(mIsRolledBack);
 	}
 
 	@Override
@@ -76,14 +90,12 @@ public class BlockChangeRecord extends Record implements IRollbackable, ILocatio
 		
 		mFinalBlock = new StoredBlock();
 		mFinalBlock.read(stream, currentWorld, absolute);
-		
-		mIsRolledBack = stream.readBoolean();
 	}
 
 	@Override
 	protected int getContentSize(boolean absolute) 
 	{
-		return 2 + mInitialBlock.getSize(absolute) + mFinalBlock.getSize(absolute);
+		return 1 + mInitialBlock.getSize(absolute) + mFinalBlock.getSize(absolute);
 	}
 
 	public StoredBlock getInitialBlock()

@@ -10,15 +10,7 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerFishEvent.State;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 
-import au.com.mineauz.PlayerSpy.Records.ArmSwingRecord;
-import au.com.mineauz.PlayerSpy.Records.HeldItemChangeRecord;
-import au.com.mineauz.PlayerSpy.Records.MoveRecord;
-import au.com.mineauz.PlayerSpy.Records.RespawnRecord;
-import au.com.mineauz.PlayerSpy.Records.SleepRecord;
-import au.com.mineauz.PlayerSpy.Records.SneakRecord;
-import au.com.mineauz.PlayerSpy.Records.SprintRecord;
-import au.com.mineauz.PlayerSpy.Records.TeleportRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.RightClickActionRecord;
+import au.com.mineauz.PlayerSpy.Records.*;
 
 public class DeepMonitor extends ShallowMonitor
 {

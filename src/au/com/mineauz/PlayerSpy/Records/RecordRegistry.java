@@ -4,12 +4,16 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
+import au.com.mineauz.PlayerSpy.legacy.v2.BlockChangeRecord;
 import au.com.mineauz.PlayerSpy.legacy.v2.DropItemRecord;
 import au.com.mineauz.PlayerSpy.legacy.v2.InteractRecord;
 import au.com.mineauz.PlayerSpy.legacy.v2.InventoryRecord;
 import au.com.mineauz.PlayerSpy.legacy.v2.InventoryTransactionRecord;
+import au.com.mineauz.PlayerSpy.legacy.v2.ItemFrameChangeRecord;
 import au.com.mineauz.PlayerSpy.legacy.v2.ItemPickupRecord;
+import au.com.mineauz.PlayerSpy.legacy.v2.PaintingChangeRecord;
 import au.com.mineauz.PlayerSpy.legacy.v2.RightClickActionRecord;
+import au.com.mineauz.PlayerSpy.legacy.v2.UpdateInventoryRecord;
 
 
 @SuppressWarnings("deprecation")
@@ -146,5 +150,17 @@ public class RecordRegistry
 		registerRecordType(2, RecordType.Interact, InteractRecord.class);
 		registerRecordType(2, RecordType.ItemTransaction, InventoryTransactionRecord.class);
 		registerRecordType(2, RecordType.ItemFrameChange, ItemFrameChangeRecord.class);
+		
+		// ===== Version 3 Records =====
+		registerRecordType(3, RecordType.DropItem, au.com.mineauz.PlayerSpy.Records.DropItemRecord.class);
+		registerRecordType(3, RecordType.Interact, au.com.mineauz.PlayerSpy.Records.InteractRecord.class);
+		registerRecordType(3, RecordType.FullInventory, au.com.mineauz.PlayerSpy.Records.InventoryRecord.class);
+		registerRecordType(3, RecordType.ItemTransaction, au.com.mineauz.PlayerSpy.Records.InventoryTransactionRecord.class);
+		registerRecordType(3, RecordType.ItemPickup, au.com.mineauz.PlayerSpy.Records.ItemPickupRecord.class);
+		registerRecordType(3, RecordType.RClickAction, au.com.mineauz.PlayerSpy.Records.RightClickActionRecord.class);
+		registerRecordType(3, RecordType.ItemFrameChange, au.com.mineauz.PlayerSpy.Records.ItemFrameChangeRecord.class);
+		registerRecordType(3, RecordType.UpdateInventory, au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord.class);
+		registerRecordType(3, RecordType.BlockChange, au.com.mineauz.PlayerSpy.Records.BlockChangeRecord.class);
+		registerRecordType(3, RecordType.PaintingChange, au.com.mineauz.PlayerSpy.Records.PaintingChangeRecord.class);
 	}
 }

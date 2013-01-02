@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy;
+package au.com.mineauz.PlayerSpy.legacy.v2;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -9,7 +9,7 @@ import org.bukkit.inventory.ItemStack;
 import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
 import au.com.mineauz.PlayerSpy.legacy.StoredItemStack;
 
-
+@Deprecated
 public class InventorySlot 
 {
 	public ItemStack Item;
