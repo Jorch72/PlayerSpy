@@ -7,7 +7,7 @@ import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
 public class FileHeader
 {
-	public byte VersionMajor = 2;
+	public byte VersionMajor = 3;
 	public byte VersionMinor = 0;
 	public String PlayerName;
 	public long IndexLocation;
@@ -38,7 +38,7 @@ public class FileHeader
 		file.writeShort((short)HolesIndexCount);
 		file.writeShort(HolesIndexPadding);
 		
-		if(VersionMajor == 2)
+		if(VersionMajor == 2 || VersionMajor == 3)
 		{
 			file.writeBoolean(RequiresOwnerTags);
 			file.writeInt((int)OwnerMapLocation);
@@ -55,7 +55,7 @@ public class FileHeader
 		
 		// Check the version
 		// The minor version can be different since minor versions dont change what fields are present or the type but may change the contents of them
-		if(VersionMajor != 1 && VersionMajor != 2)
+		if(VersionMajor != 1 && VersionMajor != 2 && VersionMajor != 3)
 			throw new RuntimeException("Unsupported file version!");
 		
 		PlayerName = file.readUTF();
@@ -69,7 +69,7 @@ public class FileHeader
 		HolesIndexCount = (int)file.readShort();
 		HolesIndexPadding = file.readShort();
 		
-		if(VersionMajor == 2)
+		if(VersionMajor == 2 || VersionMajor == 3)
 		{
 			RequiresOwnerTags = file.readBoolean();
 			OwnerMapLocation = file.readInt();
@@ -83,7 +83,7 @@ public class FileHeader
 	{
 		if(VersionMajor == 1)
 			return 24 + Utility.getUTFLength(PlayerName);
-		else if(VersionMajor == 2)
+		else if(VersionMajor == 2 || VersionMajor == 3)
 			return 49 +  + Utility.getUTFLength(PlayerName);
 		else
 			throw new IllegalArgumentException("Invalid Version " + VersionMajor);

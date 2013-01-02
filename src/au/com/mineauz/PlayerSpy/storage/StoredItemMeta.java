@@ -36,7 +36,7 @@ public class StoredItemMeta
 		Map(5, MapMeta.class),
 		Potion(6, PotionMeta.class),
 		Skull(7, SkullMeta.class),
-		
+		Invalid(8, null),
 		
 		Unspec(-1, null);
 		
@@ -64,6 +64,8 @@ public class StoredItemMeta
 		{
 			for(ItemMetaType type : values())
 			{
+				if(type.clazz == null)
+					continue;
 				if(type.clazz.isAssignableFrom(metaClass))
 					return type;
 			}
@@ -88,6 +90,11 @@ public class StoredItemMeta
 	
 	public void write(DataOutput output) throws IOException
 	{
+		if(mMeta == null) // It was an invalid item like air
+		{
+			output.writeByte(ItemMetaType.Invalid.id);
+			return;
+		}
 		ItemMetaType type = ItemMetaType.fromClass(mMeta.getClass());
 		
 		output.writeByte(type.id);
@@ -222,6 +229,9 @@ public class StoredItemMeta
 			
 			if(type == null)
 				throw new RecordFormatException("Bad meta type " + typeid);
+			
+			if(type == ItemMetaType.Invalid)
+				return;
 			
 			mMeta = getMatchingMeta(type);
 			

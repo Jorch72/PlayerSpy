@@ -43,7 +43,7 @@ public class Upgrader
 			// Check versions
 			FileHeader header = LogFile.scrapeHeader(file.getAbsolutePath());
 			
-			if(header != null && header.VersionMajor != 2)
+			if(header != null && header.VersionMajor != 3)
 			{
 				LogFile log = new LogFile();
 				if(log.load(file.getAbsolutePath()))
@@ -63,10 +63,10 @@ public class Upgrader
 	 */
 	private static boolean upgradeLog(LogFile log)
 	{
-		if(log.getVersionMajor() == 2)
+		if(log.getVersionMajor() == 3)
 			return false;
 		
-		LogUtil.info("Upgrading " + log.getFile().getName() + " From version " + log.getVersionMajor() + "." + log.getVersionMinor() + " to 2.0");
+		LogUtil.info("Upgrading " + log.getFile().getName() + " From version " + log.getVersionMajor() + "." + log.getVersionMinor() + " to 3.0");
 		
 		// Create a new temporary file
 		File logFilePath = new File(log.getFile().getAbsolutePath());
@@ -119,7 +119,16 @@ public class Upgrader
 					// Version 1 only had deep mode, so add these in
 					old.add(new SessionInfoRecord(false));
 				
-				newVersion.appendRecords(newList);
+				if(log.getVersionMajor() > 1)
+				{
+					String ownerTag = log.getOwnerTag(session);
+					if(ownerTag != null)
+						newVersion.appendRecords(newList, ownerTag);
+					else
+						newVersion.appendRecords(newList);
+				}
+				else
+					newVersion.appendRecords(newList);
 			}
 			else
 			{
