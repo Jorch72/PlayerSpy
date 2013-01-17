@@ -60,9 +60,6 @@ public class StoredItemStack
 		if(itemId < 0 || itemId > Short.MAX_VALUE)
 			throw new RecordFormatException("Bad item id " + itemId);
 		
-		if(amount < 0)
-			throw new RecordFormatException("Bad amount " + amount);
-		
 		if(enchantCount < 0)
 			throw new RecordFormatException("Bad enchantment count " + enchantCount);
 		
