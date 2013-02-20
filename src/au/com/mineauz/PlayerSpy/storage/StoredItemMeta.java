@@ -180,8 +180,6 @@ public class StoredItemMeta
 		NBTTagCompound root = (NBTTagCompound)makeTagFor(data);
 		root.setName("meta");
 		
-		if(root.getTypeId() != 10)
-			throw new RuntimeException("How?");
 		NBTBase.a(root, output);
 	}
 	

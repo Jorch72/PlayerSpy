@@ -1,10 +1,13 @@
 package au.com.mineauz.PlayerSpy.commands;
 
+import java.io.DataOutput;
+import java.io.DataOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 import java.util.logging.Level;
@@ -13,14 +16,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
 import au.com.mineauz.PlayerSpy.FileHeader;
 import au.com.mineauz.PlayerSpy.HoleEntry;
 import au.com.mineauz.PlayerSpy.IndexEntry;
 import au.com.mineauz.PlayerSpy.LogFile;
-import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
@@ -30,6 +30,7 @@ import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.debugging.Profiler;
 import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
+import au.com.mineauz.PlayerSpy.wrappers.nbt.*;
 
 
 public class DebugCommand implements ICommand
@@ -290,15 +291,37 @@ public class DebugCommand implements ICommand
 		}
 		else if(args[0].equalsIgnoreCase("test"))
 		{
-			ItemStack inHand = ((Player)sender).getItemInHand();
+			NBTTagCompound comp = new NBTTagCompound("");
+			comp.set("testString", new NBTTagString("","value!"));
+			comp.set("testByte", new NBTTagByte("",(byte)3));
+			comp.set("testInt", new NBTTagInt("",115));
+			comp.set("testShort", new NBTTagShort("",(short)4322));
+			comp.set("testLong", new NBTTagLong("",1235551122333L));
 			
-			if(inHand != null)
+			comp.set("testFloat", new NBTTagFloat("",1.234f));
+			comp.set("testDouble", new NBTTagDouble("",3.4567890123456));
+			
+			NBTTagList list = new NBTTagList("");
+			for(int i = 100; i < 200; ++i)
+				list.add(new NBTTagInt("",i));
+			comp.set("testList",list);
+			
+			NBTTagCompound testComp = new NBTTagCompound("");
+			testComp.set("Sub", list);
+			
+			comp.set("testCompound", testComp);
+			comp.setName("name");
+			
+			try
 			{
-				ItemMeta meta = inHand.getItemMeta();
-				
-				Map<String, Object> test = meta.serialize();
-				
-				LogUtil.info(test.size() + " keys");
+				FileOutputStream stream = new FileOutputStream("test.dat");
+				DataOutput output = new DataOutputStream(stream);
+				NBTBase.writeNamedTag(comp, output);
+				stream.close();
+			}
+			catch(IOException e)
+			{
+				e.printStackTrace();
 			}
 		}
 		else
