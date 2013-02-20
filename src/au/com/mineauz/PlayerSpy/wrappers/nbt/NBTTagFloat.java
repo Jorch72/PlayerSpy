@@ -22,6 +22,7 @@ public class NBTTagFloat extends NBTBase
 	{
 		instanciate(mConstructor, name, data);
 	}
+	protected NBTTagFloat() {}
 	
 	public Float getData()
 	{

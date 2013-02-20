@@ -24,6 +24,8 @@ public class NBTTagList extends NBTBase
 		instanciate(mConstructor, name);
 	}
 	
+	protected NBTTagList() {}
+	
 	@WrapperMethod(name="size",returnType=Integer.class, parameterTypes={})
 	private static Method mSizeMethod;
 	public int size()

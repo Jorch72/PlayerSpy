@@ -22,6 +22,7 @@ public class NBTTagByte extends NBTBase
 	{
 		instanciate(mConstructor, name, data);
 	}
+	protected NBTTagByte() {}
 	
 	public Byte getData()
 	{

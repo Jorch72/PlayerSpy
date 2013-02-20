@@ -23,6 +23,8 @@ public class NBTTagLong extends NBTBase
 		instanciate(mConstructor, name, data);
 	}
 	
+	protected NBTTagLong() {}
+	
 	public Long getData()
 	{
 		return getFieldInstance("data");

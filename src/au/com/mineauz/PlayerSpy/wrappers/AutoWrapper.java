@@ -130,13 +130,19 @@ public abstract class AutoWrapper
 	
 	protected static AutoWrapper instanciateWrapper(Object obj)
 	{
+		if(obj == null)
+			return null;
+		
 		try
 		{
-			if(mClassReverse.containsKey(obj))
+			if(mClassReverse.containsKey(obj.getClass()))
 			{
-				Class<? extends AutoWrapper> wrapperClass = mClassReverse.get(obj);
+				Class<? extends AutoWrapper> wrapperClass = mClassReverse.get(obj.getClass());
 				
-				AutoWrapper wrapper = wrapperClass.newInstance();
+				Constructor<? extends AutoWrapper> c = wrapperClass.getDeclaredConstructor();
+				c.setAccessible(true);
+				
+				AutoWrapper wrapper = c.newInstance();
 				wrapper.mInstance = obj;
 				
 				return wrapper;
@@ -216,10 +222,13 @@ public abstract class AutoWrapper
 		try
 		{
 			// Unwrap objects
-			for(int i = 0; i < args.length; ++i)
+			if(args != null)
 			{
-				if(args[i] instanceof AutoWrapper)
-					args[i] = ((AutoWrapper)args[i]).mInstance;
+				for(int i = 0; i < args.length; ++i)
+				{
+					if(args[i] instanceof AutoWrapper)
+						args[i] = ((AutoWrapper)args[i]).mInstance;
+				}
 			}
 			return (T)method.invoke(instance, args);
 		}
@@ -248,7 +257,7 @@ public abstract class AutoWrapper
 		
 		try
 		{
-			Field field = clazz.getDeclaredField("fieldName");
+			Field field = clazz.getDeclaredField(fieldName);
 			return (T) field.get(mInstance);
 		}
 		catch(Exception e)

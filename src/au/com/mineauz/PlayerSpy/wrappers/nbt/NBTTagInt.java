@@ -22,6 +22,7 @@ public class NBTTagInt extends NBTBase
 	{
 		instanciate(mConstructor, name, data);
 	}
+	protected NBTTagInt() {}
 	
 	public Integer getData()
 	{

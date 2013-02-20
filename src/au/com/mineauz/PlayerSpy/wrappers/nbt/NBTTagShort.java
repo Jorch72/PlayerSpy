@@ -23,6 +23,8 @@ public class NBTTagShort extends NBTBase
 		instanciate(mConstructor, name, data);
 	}
 	
+	protected NBTTagShort() {}
+	
 	public Short getData()
 	{
 		return getFieldInstance("data");

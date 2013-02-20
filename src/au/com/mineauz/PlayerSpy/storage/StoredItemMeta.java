@@ -13,20 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import net.minecraft.server.v1_4_R1.NBTBase;
-import net.minecraft.server.v1_4_R1.NBTTagByte;
-import net.minecraft.server.v1_4_R1.NBTTagCompound;
-import net.minecraft.server.v1_4_R1.NBTTagDouble;
-import net.minecraft.server.v1_4_R1.NBTTagFloat;
-import net.minecraft.server.v1_4_R1.NBTTagInt;
-import net.minecraft.server.v1_4_R1.NBTTagList;
-import net.minecraft.server.v1_4_R1.NBTTagLong;
-import net.minecraft.server.v1_4_R1.NBTTagShort;
-import net.minecraft.server.v1_4_R1.NBTTagString;
-
 import org.bukkit.inventory.meta.*;
 
 import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
+import au.com.mineauz.PlayerSpy.wrappers.nbt.*;
 
 public class StoredItemMeta
 {
@@ -46,27 +36,26 @@ public class StoredItemMeta
 		return mMeta;
 	}
 	
-	@SuppressWarnings( "unchecked" )
 	private Object makeObjectFor(NBTBase tag)
 	{
 		Object data = null;
 		
 		if(tag instanceof NBTTagByte)
-			data = ((NBTTagByte)tag).data;
+			data = ((NBTTagByte)tag).getData();
 		else if(tag instanceof NBTTagShort)
-			data = ((NBTTagShort)tag).data;
+			data = ((NBTTagShort)tag).getData();
 		else if(tag instanceof NBTTagInt)
-			data = ((NBTTagInt)tag).data;
+			data = ((NBTTagInt)tag).getData();
 		else if(tag instanceof NBTTagLong)
-			data = ((NBTTagLong)tag).data;
+			data = ((NBTTagLong)tag).getData();
 		
 		else if(tag instanceof NBTTagString)
-			data = ((NBTTagString)tag).data;
+			data = ((NBTTagString)tag).getData();
 		
 		else if(tag instanceof NBTTagFloat)
-			data = ((NBTTagFloat)tag).data;
+			data = ((NBTTagFloat)tag).getData();
 		else if(tag instanceof NBTTagDouble)
-			data = ((NBTTagDouble)tag).data;
+			data = ((NBTTagDouble)tag).getData();
 		
 		else if(tag instanceof NBTTagList)
 		{
@@ -85,7 +74,7 @@ public class StoredItemMeta
 		{
 			Map<String, Object> map = new HashMap<String, Object>();
 			
-			Collection<NBTBase> tags = (Collection<NBTBase>)((NBTTagCompound)tag).c();
+			Collection<NBTBase> tags = (Collection<NBTBase>)((NBTTagCompound)tag).getTags();
 			
 			for(NBTBase subTag : tags)
 			{
@@ -180,7 +169,7 @@ public class StoredItemMeta
 		NBTTagCompound root = (NBTTagCompound)makeTagFor(data);
 		root.setName("meta");
 		
-		NBTBase.a(root, output);
+		NBTBase.writeNamedTag(root, output);
 	}
 	
 	public void read(DataInput input) throws IOException, RecordFormatException
@@ -192,7 +181,7 @@ public class StoredItemMeta
 			if(typeid == -1)
 				return; // No metadata
 			
-			NBTTagCompound root = (NBTTagCompound)NBTBase.b(input);
+			NBTTagCompound root = (NBTTagCompound)NBTBase.readNamedTag(input);
 			@SuppressWarnings( "unchecked" )
 			Map<String,Object> data = (Map<String,Object>)makeObjectFor(root);
 			

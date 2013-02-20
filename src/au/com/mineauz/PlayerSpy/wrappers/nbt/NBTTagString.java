@@ -23,6 +23,8 @@ public class NBTTagString extends NBTBase
 		instanciate(mConstructor, name, data);
 	}
 	
+	protected NBTTagString() {}
+	
 	public String getData()
 	{
 		return getFieldInstance("data");

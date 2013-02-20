@@ -25,6 +25,7 @@ public class NBTTagCompound extends NBTBase
 	{
 		instanciate(mConstructor, name);
 	}
+	protected NBTTagCompound() {}
 	
 	@WrapperMethod(name="c", returnType=Collection.class, parameterTypes={})
 	private static Method mGetTags;

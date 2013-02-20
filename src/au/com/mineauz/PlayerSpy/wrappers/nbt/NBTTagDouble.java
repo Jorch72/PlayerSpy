@@ -22,6 +22,7 @@ public class NBTTagDouble extends NBTBase
 	{
 		instanciate(mConstructor, name, data);
 	}
+	protected NBTTagDouble() {}
 	
 	public Double getData()
 	{
