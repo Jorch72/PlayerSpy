@@ -10,8 +10,8 @@ import java.util.Map.Entry;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_4_6.CraftWorld;
-import org.bukkit.craftbukkit.v1_4_6.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_4_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_4_R1.inventory.CraftItemStack;
 import org.bukkit.enchantments.Enchantment;
 
 import au.com.mineauz.PlayerSpy.InventorySlot;
@@ -19,7 +19,7 @@ import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 
-import net.minecraft.server.v1_4_6.*;
+import net.minecraft.server.v1_4_R1.*;
 
 public class Utility 
 {
