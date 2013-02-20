@@ -14,17 +14,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import net.minecraft.server.v1_4_6.NBTBase;
-import net.minecraft.server.v1_4_6.NBTCompressedStreamTools;
-import net.minecraft.server.v1_4_6.NBTTagByte;
-import net.minecraft.server.v1_4_6.NBTTagCompound;
-import net.minecraft.server.v1_4_6.NBTTagDouble;
-import net.minecraft.server.v1_4_6.NBTTagFloat;
-import net.minecraft.server.v1_4_6.NBTTagInt;
-import net.minecraft.server.v1_4_6.NBTTagList;
-import net.minecraft.server.v1_4_6.NBTTagLong;
-import net.minecraft.server.v1_4_6.NBTTagShort;
-import net.minecraft.server.v1_4_6.NBTTagString;
+import net.minecraft.server.v1_4_R1.NBTBase;
+import net.minecraft.server.v1_4_R1.NBTTagByte;
+import net.minecraft.server.v1_4_R1.NBTTagCompound;
+import net.minecraft.server.v1_4_R1.NBTTagDouble;
+import net.minecraft.server.v1_4_R1.NBTTagFloat;
+import net.minecraft.server.v1_4_R1.NBTTagInt;
+import net.minecraft.server.v1_4_R1.NBTTagList;
+import net.minecraft.server.v1_4_R1.NBTTagLong;
+import net.minecraft.server.v1_4_R1.NBTTagShort;
+import net.minecraft.server.v1_4_R1.NBTTagString;
 
 import org.bukkit.inventory.meta.*;
 
@@ -171,7 +170,7 @@ public class StoredItemMeta
 	{
 		if(mMeta == null) // It was an invalid item like air
 		{
-			output.writeByte(255);
+			output.writeByte(-1);
 			return;
 		}
 		
@@ -180,8 +179,11 @@ public class StoredItemMeta
 		// Make it into a nbt tag
 		Map<String,Object> data = mMeta.serialize();
 		NBTTagCompound root = (NBTTagCompound)makeTagFor(data);
+		root.setName("meta");
 		
-		NBTCompressedStreamTools.a(root, output);
+		if(root.getTypeId() != 10)
+			throw new RuntimeException("How?");
+		NBTBase.a(root, output);
 	}
 	
 	public void read(DataInput input) throws IOException, RecordFormatException
@@ -190,20 +192,21 @@ public class StoredItemMeta
 		{
 			byte typeid = input.readByte(); 
 			
-			if(typeid == 255)
+			if(typeid == -1)
 				return; // No metadata
 			
-			NBTTagCompound root = NBTCompressedStreamTools.a(input);
+			NBTTagCompound root = (NBTTagCompound)NBTBase.b(input);
 			@SuppressWarnings( "unchecked" )
 			Map<String,Object> data = (Map<String,Object>)makeObjectFor(root);
 			
-			Class<?> itemMetaDeserializerClass = Class.forName("org.bukkit.craftbukkit.v1_4_6.inventory.CraftMetaItem$SerializableMeta");
+			Class<?> itemMetaDeserializerClass = Class.forName("org.bukkit.craftbukkit.v1_4_R1.inventory.CraftMetaItem$SerializableMeta");
 			
 			Method deserialize = itemMetaDeserializerClass.getDeclaredMethod("deserialize", Map.class);
 			
 			mMeta = (ItemMeta)deserialize.invoke(null,  data);
 			
 		}
+		// TODO: Catch IOException
 		catch(UTFDataFormatException e)
 		{
 			throw new RecordFormatException("Error reading UTF string. Malformed data.");
