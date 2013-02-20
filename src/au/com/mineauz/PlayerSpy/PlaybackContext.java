@@ -6,18 +6,18 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.Callable;
 
-import net.minecraft.server.v1_4_6.EntityItem;
-import net.minecraft.server.v1_4_6.EntityLiving;
-import net.minecraft.server.v1_4_6.MathHelper;
-import net.minecraft.server.v1_4_6.PlayerInventory;
-import net.minecraft.server.v1_4_6.World;
+import net.minecraft.server.v1_4_R1.EntityItem;
+import net.minecraft.server.v1_4_R1.EntityLiving;
+import net.minecraft.server.v1_4_R1.MathHelper;
+import net.minecraft.server.v1_4_R1.PlayerInventory;
+import net.minecraft.server.v1_4_R1.World;
 
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_4_6.CraftWorld;
-import org.bukkit.craftbukkit.v1_4_6.inventory.CraftInventoryPlayer;
+import org.bukkit.craftbukkit.v1_4_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_4_R1.inventory.CraftInventoryPlayer;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
