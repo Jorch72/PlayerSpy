@@ -1,7 +1,6 @@
 package au.com.mineauz.PlayerSpy.inspect;
 
 import java.util.HashMap;
-import java.util.HashSet;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -27,9 +26,8 @@ import au.com.mineauz.PlayerSpy.SpyPlugin;
 public class Inspector implements Listener
 {
 	public static Inspector instance = new Inspector();
-	private HashSet<Player> mInspectors = new HashSet<Player>();
+	private HashMap<Player, InspectInfo> mInspectors = new HashMap<Player, InspectInfo>();
 	private HashMap<Player, Location> mSelected = new HashMap<Player, Location>();
-	private HashMap<Player, Long> mLastInspectTime = new HashMap<Player, Long>();
 	
 	private Inspector()
 	{
@@ -37,35 +35,68 @@ public class Inspector implements Listener
 	}
 	public void toggleInspect(Player player)
 	{
-		if(mInspectors.contains(player))
+		if(mInspectors.containsKey(player))
 			disableInspect(player);
 		else
 			enableInspect(player);
 	}
 	public void enableInspect(Player player)
 	{
-		if(!mInspectors.contains(player))
+		if(!mInspectors.containsKey(player))
 		{
-			mInspectors.add(player);
+			InspectInfo info = new InspectInfo();
+			info.loadDefaults();
+			info.lastInspectTime = 0L;
+			
+			mInspectors.put(player, info);
 			mSelected.put(player, null);
-			mLastInspectTime.put(player, 0L);
 			player.sendMessage("You are now in inspect mode");
 		}
+	}
+	public void enableInspect(Player player, InspectInfo settings)
+	{
+		if(!mInspectors.containsKey(player))
+		{
+			if(settings.itemCount <= 0)
+				settings.itemCount = SpyPlugin.getSettings().inspectCount;
+			
+			settings.lastInspectTime = 0L;
+			
+			mInspectors.put(player, settings);
+			mSelected.put(player, null);
+			player.sendMessage("You are now in inspect mode");
+		}
+	}
+	public void updateInspect(Player player, InspectInfo settings)
+	{
+		if(!mInspectors.containsKey(player))
+			return;
+		
+		InspectInfo existing = mInspectors.get(player);
+		settings.lastInspectTime = existing.lastInspectTime;
+		mInspectors.put(player, settings);
+		
+		player.sendMessage("Updated inspect settings");
 	}
 	
 	public void disableInspect(Player player)
 	{
-		if(mInspectors.remove(player))
+		if(mInspectors.remove(player) != null)
 		{
 			player.sendMessage("You are no longer in inspect mode");
 		}
+	}
+	
+	public boolean isInspecting(Player player)
+	{
+		return mInspectors.containsKey(player);
 	}
 	public Location getSelectedBlock(Player player)
 	{
 		return mSelected.get(player);
 	}
 	
-	private void inspectBlock(Player player, Location loc)
+	private void inspectBlock(Player player, Location loc, InspectInfo settings)
 	{
 		// Change which block is selected
 		mSelected.put(player, loc);
@@ -98,15 +129,17 @@ public class Inspector implements Listener
 			
 			altType = loc.getBlock().getType();
 		}
-		SpyPlugin.getExecutor().submit(new InspectBlockTask(player, loc, altLocation, altType));
+		SpyPlugin.getExecutor().submit(new InspectBlockTask(player, loc, altLocation, altType, settings));
 	}
 	@EventHandler(priority = EventPriority.HIGHEST)
 	private void onClick(PlayerInteractEvent event)
 	{
-		if(event.getClickedBlock() != null && mInspectors.contains(event.getPlayer()) && event.getAction() != Action.PHYSICAL)
+		if(event.getClickedBlock() != null && mInspectors.containsKey(event.getPlayer()) && event.getAction() != Action.PHYSICAL)
 		{
+			InspectInfo inspectInfo = mInspectors.get(event.getPlayer());
+			
 			// Prevent double clicks
-			if(System.currentTimeMillis() < mLastInspectTime.get(event.getPlayer()) + SpyPlugin.getSettings().inspectTimeout)
+			if(System.currentTimeMillis() < inspectInfo.lastInspectTime + SpyPlugin.getSettings().inspectTimeout)
 			{
 				event.setCancelled(true);
 				event.setUseInteractedBlock(Result.DENY);
@@ -115,13 +148,13 @@ public class Inspector implements Listener
 				
 			// Right click is the block adjacent to the one we click on
 			if(event.getAction() == Action.RIGHT_CLICK_BLOCK)
-				inspectBlock(event.getPlayer(), event.getClickedBlock().getRelative(event.getBlockFace()).getLocation());
+				inspectBlock(event.getPlayer(), event.getClickedBlock().getRelative(event.getBlockFace()).getLocation(), inspectInfo);
 			
 			// Left click is the block we click on
 			else if(event.getAction() == Action.LEFT_CLICK_BLOCK)
-				inspectBlock(event.getPlayer(), event.getClickedBlock().getLocation());
+				inspectBlock(event.getPlayer(), event.getClickedBlock().getLocation(), inspectInfo);
 			
-			mLastInspectTime.put(event.getPlayer(), System.currentTimeMillis());
+			inspectInfo.lastInspectTime = System.currentTimeMillis();
 			
 			event.setCancelled(true);
 			event.setUseInteractedBlock(Result.DENY);
@@ -130,10 +163,10 @@ public class Inspector implements Listener
 	@EventHandler(priority = EventPriority.HIGHEST)
 	private void onClickEntity(PlayerInteractEntityEvent event)
 	{
-		if(mInspectors.contains(event.getPlayer()))
+		if(mInspectors.containsKey(event.getPlayer()))
 		{
 			// Prevent double clicks
-			if(System.currentTimeMillis() < mLastInspectTime.get(event.getPlayer()) + SpyPlugin.getSettings().inspectTimeout)
+			if(System.currentTimeMillis() < mInspectors.get(event.getPlayer()).lastInspectTime + SpyPlugin.getSettings().inspectTimeout)
 			{
 				event.setCancelled(true);
 				return;
@@ -151,10 +184,10 @@ public class Inspector implements Listener
 			return;
 		
 		Player player = (Player)event.getDamager();
-		if(mInspectors.contains(player))
+		if(mInspectors.containsKey(player))
 		{
 			// Prevent double clicks
-			if(System.currentTimeMillis() < mLastInspectTime.get(player) + SpyPlugin.getSettings().inspectTimeout)
+			if(System.currentTimeMillis() < mInspectors.get(player).lastInspectTime + SpyPlugin.getSettings().inspectTimeout)
 			{
 				event.setCancelled(true);
 				return;
@@ -173,10 +206,10 @@ public class Inspector implements Listener
 		
 		Player player = (Player)event.getRemover();
 		
-		if(mInspectors.contains(player))
+		if(mInspectors.containsKey(player))
 		{
 			// Prevent double clicks
-			if(System.currentTimeMillis() < mLastInspectTime.get(player) + SpyPlugin.getSettings().inspectTimeout)
+			if(System.currentTimeMillis() < mInspectors.get(player).lastInspectTime + SpyPlugin.getSettings().inspectTimeout)
 			{
 				event.setCancelled(true);
 				return;
@@ -196,10 +229,10 @@ public class Inspector implements Listener
 		
 		Player player = (Player)event.getAttacker();
 		
-		if(mInspectors.contains(player))
+		if(mInspectors.containsKey(player))
 		{
 			// Prevent double clicks
-			if(System.currentTimeMillis() < mLastInspectTime.get(player) + SpyPlugin.getSettings().inspectTimeout)
+			if(System.currentTimeMillis() <mInspectors.get(player).lastInspectTime + SpyPlugin.getSettings().inspectTimeout)
 			{
 				event.setCancelled(true);
 				return;
@@ -214,8 +247,8 @@ public class Inspector implements Listener
 	private void doInspectAtEntity(Entity entity,Player player)
 	{
 		Location loc = entity.getLocation().getBlock().getLocation();
-		inspectBlock(player, loc);
+		inspectBlock(player, loc, mInspectors.get(player));
 		
-		mLastInspectTime.put(player, System.currentTimeMillis());
+		mInspectors.get(player).lastInspectTime = System.currentTimeMillis();
 	}
 }

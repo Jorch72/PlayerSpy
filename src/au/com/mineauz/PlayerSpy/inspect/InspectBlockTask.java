@@ -44,10 +44,11 @@ public class InspectBlockTask implements Task<Void>
 	private Location mOffsetLocation;
 	private Location mAltLocation;
 	private Material mAltType;
+	private InspectInfo mSettings;
 	
 	private ArrayList<Pair<Cause, Record>> mostRecent;
 	
-	public InspectBlockTask(Player who, Location block, Location altLocation, Material altType)
+	public InspectBlockTask(Player who, Location block, Location altLocation, Material altType, InspectInfo settings)
 	{
 		mWho = who;
 		mLocation = block.clone();
@@ -55,6 +56,8 @@ public class InspectBlockTask implements Task<Void>
 		
 		mAltLocation = (altLocation != null ? altLocation.clone() : null);
 		mAltType = altType;
+		
+		mSettings = settings;
 	}
 	
 	private void processRecords(Cause cause, RecordList list)
@@ -62,10 +65,10 @@ public class InspectBlockTask implements Task<Void>
 		if(list.size() == 0)
 			return;
 		
-		if(mostRecent.size() < SpyPlugin.getSettings().inspectCount || list.getEndTimestamp() > mostRecent.get(mostRecent.size()-1).getArg2().getTimestamp())
+		if(mostRecent.size() < mSettings.itemCount || list.getEndTimestamp() > mostRecent.get(mostRecent.size()-1).getArg2().getTimestamp())
 		{
 			long minDate = 0;
-			if(mostRecent.size() >= SpyPlugin.getSettings().inspectCount)
+			if(mostRecent.size() >= mSettings.itemCount)
 				minDate = mostRecent.get(mostRecent.size()-1).getArg2().getTimestamp();
 			
 			ListIterator<Record> it = list.listIterator(list.size()-1);
@@ -92,7 +95,7 @@ public class InspectBlockTask implements Task<Void>
 				return true;
 			}
 		}
-		else if(record.getType() == RecordType.ItemTransaction && SpyPlugin.getSettings().inspectTransactions)
+		else if(record.getType() == RecordType.ItemTransaction && mSettings.showItems)
 		{
 			InventoryTransactionRecord transaction = (InventoryTransactionRecord)record;
 			StoredBlock block = transaction.getInventoryInfo().getBlock();
@@ -109,7 +112,7 @@ public class InspectBlockTask implements Task<Void>
 				return true;
 			}
 		}
-		else if(record.getType() == RecordType.Interact && SpyPlugin.getSettings().inspectUse)
+		else if(record.getType() == RecordType.Interact && mSettings.showUse)
 		{
 			InteractRecord interact = (InteractRecord)record;
 			StoredBlock block = interact.getBlock();
@@ -120,7 +123,7 @@ public class InspectBlockTask implements Task<Void>
 				return true;
 			}
 		}
-		else if(record instanceof ILocationAware && !(record instanceof IPlayerLocationAware) && SpyPlugin.getSettings().inspectEntities)
+		else if(record instanceof ILocationAware && !(record instanceof IPlayerLocationAware) && mSettings.showEntities && (record.getType() != RecordType.ItemTransaction && record.getType() != RecordType.Interact))
 		{
 			Location location = ((ILocationAware)record).getLocation();
 			if(location != null && location.getWorld() == mLocation.getWorld() && location.distanceSquared(mOffsetLocation) < 1.1)
@@ -147,7 +150,7 @@ public class InspectBlockTask implements Task<Void>
 		if(!added)
 			mostRecent.add(new Pair<Cause, Record>(cause, record));
 		
-		if(mostRecent.size() > SpyPlugin.getSettings().inspectCount)
+		if(mostRecent.size() > mSettings.itemCount)
 			mostRecent.remove(mostRecent.size()-1);
 	}
 	@Override
@@ -199,7 +202,7 @@ public class InspectBlockTask implements Task<Void>
 		for(SessionInFile fileSession : allSessions.foundSessions)
 		{
 			// Dont check ones that clearly have nothing of interest 
-			if(mostRecent.size() >= SpyPlugin.getSettings().inspectCount && fileSession.Session.EndTimestamp < mostRecent.get(mostRecent.size()-1).getArg2().getTimestamp())
+			if(mostRecent.size() >= mSettings.itemCount && fileSession.Session.EndTimestamp < mostRecent.get(mostRecent.size()-1).getArg2().getTimestamp())
 				continue;
 			
 			Cause cause;

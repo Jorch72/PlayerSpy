@@ -2,9 +2,11 @@ package au.com.mineauz.PlayerSpy.commands;
 
 import java.util.List;
 
+import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import au.com.mineauz.PlayerSpy.inspect.InspectInfo;
 import au.com.mineauz.PlayerSpy.inspect.Inspector;
 
 public class InspectCommand implements ICommand
@@ -30,7 +32,7 @@ public class InspectCommand implements ICommand
 	@Override
 	public String getUsageString(String label) 
 	{
-		return label;
+		return label + ChatColor.GREEN + " [entities] [transactions] [uses] [resultCount]";
 	}
 
 	@Override
@@ -39,10 +41,104 @@ public class InspectCommand implements ICommand
 	@Override
 	public boolean onCommand(CommandSender sender, String label, String[] args) 
 	{
-		if(args.length != 0)
+		if(args.length > 4)
 			return false;
 		
-		Inspector.instance.toggleInspect((Player)sender);
+		InspectInfo settings = new InspectInfo();
+		settings.loadDefaults();
+		
+		boolean ent = false;
+		boolean tra = false;
+		boolean use = false;
+		boolean res = false;
+		
+		for (int i = 0; i < args.length; ++i)
+		{
+			if(args[i].equalsIgnoreCase("entities"))
+			{
+				if(ent)
+				{
+					sender.sendMessage(ChatColor.RED + "entities already specified!");
+					return true;
+				}
+				
+				if(!ent && !tra && !use)
+					settings.showEntities = settings.showItems = settings.showUse = false;
+				
+				ent = true;
+				settings.showEntities = true;
+			}
+			else if(args[i].equalsIgnoreCase("transactions"))
+			{
+				if(tra)
+				{
+					sender.sendMessage(ChatColor.RED + "transactions already specified!");
+					return true;
+				}
+				
+				if(!ent && !tra && !use)
+					settings.showEntities = settings.showItems = settings.showUse = false;
+				
+				tra = true;
+				settings.showItems = true;
+			}
+			else if(args[i].equalsIgnoreCase("uses"))
+			{
+				if(use)
+				{
+					sender.sendMessage(ChatColor.RED + "uses already specified!");
+					return true;
+				}
+				
+				if(!ent && !tra && !use)
+					settings.showEntities = settings.showItems = settings.showUse = false;
+				
+				use = true;
+				settings.showUse = true;
+			}
+			else
+			{
+				try
+				{
+					int count = Integer.parseInt(args[i]);
+					
+					if(res)
+					{
+						sender.sendMessage(ChatColor.RED + "count already specified!");
+						return true;
+					}
+					
+					if(count <= 0)
+					{
+						sender.sendMessage(ChatColor.RED + "Expected count to be interger greater than 0");
+						return true;
+					}
+					if(count > 50)
+					{
+						sender.sendMessage(ChatColor.RED + "You think you will be able to see " + count + " items at once?");
+						return true;
+					}
+					
+					settings.itemCount = count;
+					res = true;
+				}
+				catch(NumberFormatException e)
+				{
+					sender.sendMessage(ChatColor.RED + "Unknown argument " + args[i]);
+					return true;
+				}
+			}
+		}
+		
+		if(Inspector.instance.isInspecting((Player)sender))
+		{
+			if(ent || tra || use || res)
+				Inspector.instance.updateInspect((Player)sender, settings);
+			else
+				Inspector.instance.disableInspect((Player)sender);
+		}
+		else
+			Inspector.instance.enableInspect((Player)sender, settings);
 		
 		return true;
 	}
