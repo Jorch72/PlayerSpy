@@ -5,7 +5,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.UTFDataFormatException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -206,10 +205,9 @@ public class StoredItemMeta
 			mMeta = (ItemMeta)deserialize.invoke(null,  data);
 			
 		}
-		// TODO: Catch IOException
-		catch(UTFDataFormatException e)
+		catch(IOException e)
 		{
-			throw new RecordFormatException("Error reading UTF string. Malformed data.");
+			throw new RecordFormatException("Error reading Item Meta. Malformed data.");
 		}
 		catch ( Exception e )
 		{
