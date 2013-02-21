@@ -12,7 +12,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.craftbukkit.v1_4_R1.CraftWorld;
 import org.bukkit.craftbukkit.v1_4_R1.inventory.CraftItemStack;
-import org.bukkit.enchantments.Enchantment;
 
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
@@ -27,32 +26,8 @@ public class Utility
 	{
 		if(item == null)
 			return null;
-		if(item instanceof CraftItemStack)
-			return CraftItemStack.asNMSCopy(item);
-		else
-		{
-			ItemStack nativeStack = new ItemStack(item.getTypeId(), item.getAmount(), item.getDurability());
-			
-			if(item.getEnchantments().size() != 0)
-			{
-				if(nativeStack.tag == null)
-					nativeStack.tag = new NBTTagCompound();
-			
-				NBTTagList list = new NBTTagList();
-				// Add enchants
-				for(Entry<Enchantment, Integer> ench : item.getEnchantments().entrySet())
-				{
-					NBTTagCompound tag = new NBTTagCompound();
-					tag.setShort("id", (short)ench.getKey().getId());
-					tag.setShort("lvl", (short)(int)ench.getValue());
-					list.add(tag);
-				}
-				
-				nativeStack.tag.set("ench", list);
-			}
-			
-			return nativeStack;
-		}
+		
+		return CraftItemStack.asNMSCopy(item);
 	}
 	
 	public static Packet5EntityEquipment makeEntityEquipmentPacket(int entity, int slot, org.bukkit.inventory.ItemStack item)

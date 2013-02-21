@@ -1,25 +1,18 @@
 package au.com.mineauz.PlayerSpy.wrappers;
 
-import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
+
+import au.com.mineauz.PlayerSpy.Utilities.ReflectionHelper;
 
 public abstract class AutoWrapper
 {
 	private static HashMap<Class<? extends AutoWrapper>, Class<?>> mClasses = new HashMap<Class<? extends AutoWrapper>, Class<?>>();
 	private static HashMap<Class<?>,Class<? extends AutoWrapper>> mClassReverse = new HashMap<Class<?>,Class<? extends AutoWrapper>>();
 	
-	private Object mInstance;
+	protected Object mInstance;
 	
 	protected AutoWrapper()
 	{
@@ -121,6 +114,18 @@ public abstract class AutoWrapper
 		try
 		{
 			mInstance = constructor.newInstance(args);
+		}
+		catch(Exception e)
+		{
+			throw new RuntimeException(e);
+		}
+	}
+	
+	protected void instanciate()
+	{
+		try
+		{
+			mInstance = mClasses.get(getClass()).newInstance();
 		}
 		catch(Exception e)
 		{
@@ -266,6 +271,22 @@ public abstract class AutoWrapper
 		}
 	}
 	
+	protected void setFieldInstance(String fieldName, Object value)
+	{
+		Class<?> clazz = getWrappedClass(getClass());
+		assert(clazz != null);
+		
+		try
+		{
+			Field field = clazz.getDeclaredField(fieldName);
+			field.set(mInstance, value);
+		}
+		catch(Exception e)
+		{
+			throw new RuntimeException(e);
+		}
+	}
+	
 	private static void findClass(Class<? extends AutoWrapper> thisClass) 
 	{
 		if (mClasses.containsKey(thisClass))
@@ -283,28 +304,8 @@ public abstract class AutoWrapper
 		try
 		{
 			// Find and load the class the wrapper is for
-			
-			String[] parts = desiredClassName.split("\\.");
-			
-			int startIndex = 0;
-			String startPath = "";
-			for(startIndex = 0; startIndex < parts.length; ++startIndex)
-			{
-				if(parts[startIndex].equals("*"))
-					break;
-				
-				if(startIndex != 0)
-					startPath += "/";
-				
-				startPath += parts[startIndex];
-			}
-			
-			String classPath = walkPath(startPath,parts,startIndex);
-			
-			if(classPath == null)
-				throw new RuntimeException("Error wrapping '" + desiredClassName + "'. No matching classes were found.");
-			
-			foundClass = Class.forName(classPath.replaceAll("/", "."));
+			foundClass = ReflectionHelper.forName(desiredClassName);
+
 			mClassReverse.put(foundClass, thisClass);
 		}
 		catch(Exception e)
@@ -316,91 +317,4 @@ public abstract class AutoWrapper
 			mClasses.put(thisClass, foundClass);
 		}
 	}
-	
-	private static String walkPath(String currentPath, String[] neededParts, int index) throws IOException, URISyntaxException
-	{
-		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        assert classLoader != null;
-        
-        
-        
-        String[] next = getNextParts(currentPath);
-        
-        for(String part : next)
-    	{
-        	if(neededParts[index].equals("*") || neededParts[index].equals(part))
-        	{
-        		if(index + 1 == neededParts.length)
-                	return currentPath + "/" + part;
-        		
-        		String path = walkPath(currentPath + "/" + part, neededParts, index+1);
-        		if(path != null)
-        			return path;
-        	}
-    	}
-        
-        return null;
-	}
-	
-	private static String[] getNextParts(String path) throws IOException, URISyntaxException
-	{
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        assert classLoader != null;
-        
-        URL packageURL;
-        HashSet<String> foundNames = new HashSet<String>();
-
-        packageURL = classLoader.getResource(path);
-
-        if(packageURL.getProtocol().equals("jar"))
-        {
-            String jarFileName;
-            JarFile jf;
-            Enumeration<JarEntry> jarEntries;
-            String entryName;
-
-            // build jar file name, then loop through zipped entries
-            jarFileName = URLDecoder.decode(packageURL.getFile(), "UTF-8");
-            jarFileName = jarFileName.substring(5,jarFileName.indexOf("!"));
-            jf = new JarFile(jarFileName);
-            jarEntries = jf.entries();
-            
-            while(jarEntries.hasMoreElements())
-            {
-                entryName = jarEntries.nextElement().getName();
-                
-                if(entryName.startsWith(path + "/"))
-                {
-                	entryName = entryName.substring(path.length()+1);
-
-                	if(entryName.contains("/"))
-                		entryName = entryName.substring(0, entryName.indexOf('/'));
-                	
-                	if(entryName.contains("."))
-                		entryName = entryName.substring(0, entryName.indexOf('.'));
-                	
-                	if(!entryName.isEmpty())
-                		foundNames.add(entryName);
-                }
-            }
-            
-            jf.close();
-
-        // loop through files in classpath
-        }
-        else
-        {
-            File folder = new File(packageURL.getFile());
-            File[] contenuti = folder.listFiles();
-            String entryName;
-            for(File actual: contenuti)
-            {
-                entryName = actual.getName();
-                entryName = entryName.substring(0, entryName.lastIndexOf('.'));
-                foundNames.add(entryName);
-            }
-        }
-        
-        return foundNames.toArray(new String[foundNames.size()]);
-    }
 }

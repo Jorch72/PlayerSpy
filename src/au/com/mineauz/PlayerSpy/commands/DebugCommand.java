@@ -21,6 +21,7 @@ import au.com.mineauz.PlayerSpy.FileHeader;
 import au.com.mineauz.PlayerSpy.HoleEntry;
 import au.com.mineauz.PlayerSpy.IndexEntry;
 import au.com.mineauz.PlayerSpy.LogFile;
+import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
@@ -291,38 +292,7 @@ public class DebugCommand implements ICommand
 		}
 		else if(args[0].equalsIgnoreCase("test"))
 		{
-			NBTTagCompound comp = new NBTTagCompound("");
-			comp.set("testString", new NBTTagString("","value!"));
-			comp.set("testByte", new NBTTagByte("",(byte)3));
-			comp.set("testInt", new NBTTagInt("",115));
-			comp.set("testShort", new NBTTagShort("",(short)4322));
-			comp.set("testLong", new NBTTagLong("",1235551122333L));
 			
-			comp.set("testFloat", new NBTTagFloat("",1.234f));
-			comp.set("testDouble", new NBTTagDouble("",3.4567890123456));
-			
-			NBTTagList list = new NBTTagList("");
-			for(int i = 100; i < 200; ++i)
-				list.add(new NBTTagInt("",i));
-			comp.set("testList",list);
-			
-			NBTTagCompound testComp = new NBTTagCompound("");
-			testComp.set("Sub", list);
-			
-			comp.set("testCompound", testComp);
-			comp.setName("name");
-			
-			try
-			{
-				FileOutputStream stream = new FileOutputStream("test.dat");
-				DataOutput output = new DataOutputStream(stream);
-				NBTBase.writeNamedTag(comp, output);
-				stream.close();
-			}
-			catch(IOException e)
-			{
-				e.printStackTrace();
-			}
 		}
 		else
 			return false;

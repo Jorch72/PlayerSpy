@@ -16,11 +16,26 @@ import java.util.Map.Entry;
 import org.bukkit.inventory.meta.*;
 
 import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
+import au.com.mineauz.PlayerSpy.Utilities.ReflectionHelper;
 import au.com.mineauz.PlayerSpy.wrappers.nbt.*;
 
 public class StoredItemMeta
 {
 	private ItemMeta mMeta;
+	private static Class<?> itemMetaDeserializerClass;
+	
+	static
+	{
+		try
+		{
+			itemMetaDeserializerClass = ReflectionHelper.forName("org.bukkit.craftbukkit.*.inventory.CraftMetaItem$SerializableMeta");
+		}
+		catch(ClassNotFoundException e)
+		{
+			throw new RuntimeException(e);
+		}
+	}
+	
 	
 	public StoredItemMeta(ItemMeta meta)
 	{
@@ -184,8 +199,6 @@ public class StoredItemMeta
 			NBTTagCompound root = (NBTTagCompound)NBTBase.readNamedTag(input);
 			@SuppressWarnings( "unchecked" )
 			Map<String,Object> data = (Map<String,Object>)makeObjectFor(root);
-			
-			Class<?> itemMetaDeserializerClass = Class.forName("org.bukkit.craftbukkit.v1_4_R1.inventory.CraftMetaItem$SerializableMeta");
 			
 			Method deserialize = itemMetaDeserializerClass.getDeclaredMethod("deserialize", Map.class);
 			
