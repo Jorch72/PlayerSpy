@@ -1,6 +1,5 @@
 package au.com.mineauz.PlayerSpy.Utilities;
 
-import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -10,15 +9,23 @@ import java.util.Map.Entry;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_4_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_4_R1.inventory.CraftItemStack;
 
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.storage.InventorySlot;
-
-import net.minecraft.server.v1_4_R1.*;
+import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftItemStack;
+import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftWorld;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.Entity;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.EntityItem;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.EntityLiving;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.Item;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.ItemPotion;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.ItemStack;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.MobEffect;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.PotionBrewer;
+import au.com.mineauz.PlayerSpy.wrappers.packet.Packet23VehicleSpawn;
+import au.com.mineauz.PlayerSpy.wrappers.packet.Packet5EntityEquipment;
 
 public class Utility 
 {
@@ -39,11 +46,11 @@ public class Utility
 	{
 		Debug.loggedAssert(location != null, "Cannot set a null location");
 		Debug.loggedAssert(item != null, "Cannot set a null item");
-		EntityItem entityItem = new EntityItem(((CraftWorld)location.getWorld()).getHandle(), location.getX(), location.getY(), location.getZ(), convertToNative(item));
+		EntityItem entityItem = new EntityItem(CraftWorld.castFrom(location.getWorld()).getHandle(), location.getX(), location.getY(), location.getZ(), convertToNative(item));
 		
-		entityItem.motX = 0;
-		entityItem.motY = 0;
-		entityItem.motZ = 0;
+		entityItem.motionX.set(0.0);
+		entityItem.motionY.set(0.0);
+		entityItem.motionZ.set(0.0);
 		
 		return entityItem;
 	}
@@ -56,34 +63,34 @@ public class Utility
 	{
 		Debug.loggedAssert(loc != null, "Cannot set a null location");
 		
-		ent.world = ((CraftWorld)loc.getWorld()).getHandle();
-		ent.lastX = ent.locX;
-		ent.lastY = ent.locY;
-		ent.lastZ = ent.locZ;
+		ent.world.set(CraftWorld.castFrom(loc.getWorld()).getHandle());
+		ent.lastX.set(ent.locationX.get());
+		ent.lastY.set(ent.locationY.get());
+		ent.lastZ.set(ent.locationZ.get());
 		
-		ent.locX = loc.getX();
-		ent.locY = loc.getY();
-		ent.locZ = loc.getZ();
+		ent.locationX.set(loc.getX());
+		ent.locationY.set(loc.getY());
+		ent.locationZ.set(loc.getZ());
 		
-		ent.lastYaw = ent.yaw;
-		ent.yaw = loc.getYaw();
-		ent.lastPitch = ent.pitch;
-		ent.pitch = loc.getPitch();
+		ent.lastYaw.set(ent.yaw.get());
+		ent.yaw.set(loc.getYaw());
+		ent.lastPitch.set(ent.pitch.get());
+		ent.pitch.set(loc.getPitch());
 
-		ent.positionChanged = true;
+		ent.positionChanged.set(true);
 	}
 	
 	public static void setEntityHeadLook(EntityLiving ent, float yaw, float pitch)
 	{
 		// Last cam yaw
-		ent.aA = ent.az;
+		ent.lastCamYaw.set(ent.camYaw.get());
 		// Cam yaw
-		ent.az = yaw;
+		ent.camYaw.set(yaw);
 		
 		// Last camera pitch
-		ent.ba = ent.bb;
+		ent.lastCamPitch.set(ent.camPitch.get());
 		// cam pitch
-		ent.bb = pitch;
+		ent.camPitch.set(pitch);
 	}
 	
 	public static org.bukkit.inventory.ItemStack splitStack(org.bukkit.inventory.ItemStack stack, int amount)
@@ -191,7 +198,7 @@ public class Utility
 	
 	public static Location getLocation(Entity ent)
 	{
-		Location loc = new Location(ent.world.getWorld(), ent.locX, ent.locY, ent.locZ);
+		Location loc = new Location(ent.world.get().getWorld(), ent.locationX.get(), ent.locationY.get(), ent.locationZ.get());
 		return loc;
 	}
 	
@@ -236,53 +243,31 @@ public class Utility
 	        {
 	            String prefix = "";
 
-	            if (ItemPotion.g(nativeStack.getData()))
+	            if (ItemPotion.isSplash(nativeStack.getData()))
 	            {
 	                prefix = StringTranslator.translateString("potion.prefix.grenade").trim() + " ";
 	            }
 
-	            List<?> effects = Item.POTION.g(nativeStack);
+	            List<?> effects = Item.POTION.get().getEffects(nativeStack);
 	            String name;
 
 	            if (effects != null && !effects.isEmpty())
 	            {
-	                name = ((MobEffect)effects.get(0)).f();
+	                name = ((MobEffect)effects.get(0)).getEffectName();
 	                name += ".postfix";
 	                return prefix + StringTranslator.translateString(name).trim();
 	            }
 	            else
 	            {
-	            	
-	            	try
-	            	{
-	            		Field field = PotionBrewer.class.getDeclaredField("appearances");
-	            		field.setAccessible(true);
-	            		String[] potionPrefixes = (String[])field.get(null);
-	            		
-	            		int damage = nativeStack.getData();
-	            		int index = (PotionBrewer.a(damage,5) ? 16 : 0) | (PotionBrewer.a(damage,4) ? 8 : 0) | (PotionBrewer.a(damage,3) ? 4 : 0) | (PotionBrewer.a(damage,2) ? 2 : 0) | (PotionBrewer.a(damage,1) ? 1 : 0);
-	            		name = StringTranslator.translateString(potionPrefixes[index]) + " " + StringTranslator.translateName(nativeStack.getItem().d(nativeStack));
-	            		return name;
-	            	}
-	            	catch(NoSuchFieldException e)
-	            	{
-	            		e.printStackTrace();
-	            	}
-	            	catch(IllegalArgumentException e)
-	            	{
-	            		e.printStackTrace();
-	            	}
-					catch ( IllegalAccessException e )
-					{
-						e.printStackTrace();
-					}
-	            	
-	            	
+            		int damage = nativeStack.getData();
+            		int index = (PotionBrewer.checkFlag(damage,5) ? 16 : 0) | (PotionBrewer.checkFlag(damage,4) ? 8 : 0) | (PotionBrewer.checkFlag(damage,3) ? 4 : 0) | (PotionBrewer.checkFlag(damage,2) ? 2 : 0) | (PotionBrewer.checkFlag(damage,1) ? 1 : 0);
+            		name = StringTranslator.translateString(PotionBrewer.potionPrefixes.get()[index]) + " " + StringTranslator.translateName(nativeStack.getItem().getItemNameIS(nativeStack));
+            		return name;
 	            }
 	        }
 		}
 		
-		String result = StringTranslator.translateName(nativeStack.getItem().d(nativeStack));
+		String result = StringTranslator.translateName(nativeStack.getItem().getItemNameIS(nativeStack));
 		if(result.trim().isEmpty())
 		{
 	        String name = new StringBuilder().append( Character.toUpperCase(myItem.getType().name().charAt(0)) )
@@ -351,24 +336,24 @@ public class Utility
 		
 		keyName = keyName.substring(0, keyName.indexOf(".name"));
 		// Now search items for a key match
-		for(Item item : Item.byId)
+		for(Item item : Item.byId.get())
 		{
 			if(item == null)
 				continue;
 			
-			if(item.l()) // Item has subtypes
+			if(item.hasSubtypes()) // Item has subtypes
 			{
 				// Search the first 16 ids
 				for(int i = 0; i < 16; i++)
 				{
-					String name = item.d(new ItemStack(item,1,i));
+					String name = item.getItemNameIS(new ItemStack(item,1,i));
 					if(keyName.equals(name))
-						return new org.bukkit.inventory.ItemStack(item.id,1,(short)i);
+						return new org.bukkit.inventory.ItemStack(item.id.get(),1,(short)i);
 				}
 			}
 			else if(keyName.equals(item.getName()))
 			{
-				return new org.bukkit.inventory.ItemStack(item.id, 1, (short)0);
+				return new org.bukkit.inventory.ItemStack(item.id.get(), 1, (short)0);
 			}
 		}
 		

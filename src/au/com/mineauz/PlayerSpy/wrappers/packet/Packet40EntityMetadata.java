@@ -2,9 +2,9 @@ package au.com.mineauz.PlayerSpy.wrappers.packet;
 
 import java.lang.reflect.Constructor;
 
-import au.com.mineauz.PlayerSpy.wrappers.DataWatcher;
 import au.com.mineauz.PlayerSpy.wrappers.WrapperClass;
 import au.com.mineauz.PlayerSpy.wrappers.WrapperConstructor;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.DataWatcher;
 
 @WrapperClass("net.minecraft.server.*.Packet40EntityMetadata")
 public class Packet40EntityMetadata extends Packet

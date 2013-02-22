@@ -5,14 +5,13 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UTFDataFormatException;
 
-import net.minecraft.server.v1_4_R1.EntityTypes;
-
-import org.bukkit.craftbukkit.v1_4_R1.CraftWorld;
 import org.bukkit.entity.*;
 
 import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
 import au.com.mineauz.PlayerSpy.Utilities.EntityShadowPlayer;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftWorld;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.EntityTypes;
 
 public class StoredEntity 
 {
@@ -81,15 +80,15 @@ public class StoredEntity
  		return 6 + mLocation.getSize(true) + (mTypeId == (EntityType.PLAYER.ordinal() | 1024) ? Utility.getUTFLength(mPlayerName) : 0);
 	}
 	
-	public net.minecraft.server.v1_4_R1.Entity createEntity()
+	public au.com.mineauz.PlayerSpy.wrappers.minecraft.Entity createEntity()
 	{
-		net.minecraft.server.v1_4_R1.Entity ent;
+		au.com.mineauz.PlayerSpy.wrappers.minecraft.Entity ent;
 		if(mTypeId == (EntityType.PLAYER.ordinal() | 1024))
 		{
-			ent = new EntityShadowPlayer(((CraftWorld)mLocation.getLocation().getWorld()).getHandle(), mPlayerName);
+			ent = new EntityShadowPlayer(CraftWorld.castFrom(mLocation.getLocation().getWorld()).getHandle(), mPlayerName);
 		}
 		else if((mTypeId & 1024) == 0)
-			ent = EntityTypes.a(mTypeId, ((CraftWorld)mLocation.getLocation().getWorld()).getHandle());
+			ent = EntityTypes.createEntityByID(mTypeId, CraftWorld.castFrom(mLocation.getLocation().getWorld()).getHandle());
 		else
 			return null;
 		

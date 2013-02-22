@@ -1,8 +1,12 @@
-package au.com.mineauz.PlayerSpy.wrappers;
+package au.com.mineauz.PlayerSpy.wrappers.craftbukkit;
 
 import java.lang.reflect.Method;
 
 import org.bukkit.Sound;
+
+import au.com.mineauz.PlayerSpy.wrappers.AutoWrapper;
+import au.com.mineauz.PlayerSpy.wrappers.WrapperClass;
+import au.com.mineauz.PlayerSpy.wrappers.WrapperMethod;
 
 @WrapperClass("org.bukkit.craftbukkit.*.CraftSound")
 public class CraftSound extends AutoWrapper

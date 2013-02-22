@@ -1,6 +1,11 @@
 package au.com.mineauz.PlayerSpy.wrappers.packet;
 
+import java.lang.reflect.Constructor;
+
+import au.com.mineauz.PlayerSpy.wrappers.FieldWrapper;
 import au.com.mineauz.PlayerSpy.wrappers.WrapperClass;
+import au.com.mineauz.PlayerSpy.wrappers.WrapperConstructor;
+import au.com.mineauz.PlayerSpy.wrappers.WrapperField;
 
 @WrapperClass("net.minecraft.server.*.Packet29DestroyEntity")
 public class Packet29DestroyEntity extends Packet
@@ -8,12 +13,21 @@ public class Packet29DestroyEntity extends Packet
 	static
 	{
 		initialize(Packet29DestroyEntity.class);
-		
-		validateField(Packet29DestroyEntity.class, "a", int[].class);
 	}
 	
-	public void setIds(int[] ids)
+	public Packet29DestroyEntity()
 	{
-		setFieldInstance("a", ids);
+		instanciate();
 	}
+	
+	@WrapperConstructor(Integer.class)
+	private static Constructor<?> mConstructor;
+	
+	public Packet29DestroyEntity(int id)
+	{
+		instanciate(mConstructor, id);
+	}
+	
+	@WrapperField(name="a", type=int[].class)
+	public FieldWrapper<int[]> ids;
 }

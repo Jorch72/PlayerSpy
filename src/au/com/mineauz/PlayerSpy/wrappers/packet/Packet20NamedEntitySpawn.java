@@ -3,6 +3,7 @@ package au.com.mineauz.PlayerSpy.wrappers.packet;
 import java.lang.reflect.Constructor;
 
 import au.com.mineauz.PlayerSpy.wrappers.*;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.EntityHuman;
 
 @WrapperClass("net.minecraft.server.*.Packet20NamedEntitySpawn")
 public class Packet20NamedEntitySpawn extends Packet
@@ -10,8 +11,6 @@ public class Packet20NamedEntitySpawn extends Packet
 	static
 	{
 		initialize(Packet20NamedEntitySpawn.class);
-		
-		validateField(Packet20NamedEntitySpawn.class, "b", String.class);
 	}
 	
 	@WrapperConstructor(EntityHuman.class)
@@ -22,13 +21,6 @@ public class Packet20NamedEntitySpawn extends Packet
 		instanciate(mConstructor, human);
 	}
 	
-	public String getName()
-	{
-		return getFieldInstance("b");
-	}
-	
-	public void setName(String name)
-	{
-		setFieldInstance("b", name);
-	}
+	@WrapperField(name="b", type=String.class)
+	public FieldWrapper<String> name;
 }

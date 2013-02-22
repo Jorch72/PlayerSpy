@@ -3,7 +3,10 @@ package au.com.mineauz.PlayerSpy.wrappers;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import au.com.mineauz.PlayerSpy.Utilities.ReflectionHelper;
 
@@ -41,6 +44,73 @@ public abstract class AutoWrapper
 		
 		return other;
 	}
+	
+	static Object wrapObjects(Object obj)
+	{
+		if(obj == null)
+			return null;
+		
+		if(obj instanceof List<?>)
+		{
+			// Make safe all the items
+			List<Object> copy = new ArrayList<Object>(((List<?>)obj).size());
+			
+			for(int i = 0; i < copy.size(); ++i)
+				copy.add(wrapObjects(((List<?>)obj).get(i)));
+			
+			return copy;
+		}
+		else if(mClassReverse.containsKey(obj.getClass()))
+		{
+			return instanciateWrapper(obj);
+		}
+		else if(obj.getClass().isArray())
+		{
+			// Make safe all the items
+			Object[] copy = ((Object[])obj).clone();
+			
+			for(int i = 0; i < copy.length; ++i)
+				copy[i] = wrapObjects(copy[i]);
+			
+			return copy;
+		}
+		else
+			return obj;
+	}
+	
+	static Object unwrapObjects(Object obj)
+	{
+		if(obj == null)
+			return null;
+		
+		if(obj instanceof List<?>)
+		{
+			// Make safe all the items
+			List<Object> copy = new ArrayList<Object>(((List<?>)obj).size());
+			
+			for(int i = 0; i < copy.size(); ++i)
+				copy.add(unwrapObjects(((List<?>)obj).get(i)));
+			
+			return copy;
+		}
+		else if(obj instanceof AutoWrapper)
+		{
+			return ((AutoWrapper)obj).mInstance;
+		}
+		else if(obj.getClass().isArray())
+		{
+			// Make safe all the items
+			Object[] copy = ((Object[])obj).clone();
+			
+			for(int i = 0; i < copy.length; ++i)
+				copy[i] = unwrapObjects(copy[i]);
+			
+			return copy;
+		}
+		else
+			return obj;
+	}
+	
 	/**
 	 * This is only needed if a class has static methods that you need to use. You should put it in the static constructor
 	 */
@@ -97,6 +167,56 @@ public abstract class AutoWrapper
 					field.set(null, constructor);
 				}
 			}
+			
+			// Validate and map fields
+			for(Field field : thisClass.getDeclaredFields())
+			{
+				WrapperField annotation = field.getAnnotation(WrapperField.class);
+				
+				if(annotation != null)
+				{
+					// Swap out this class for the wrapped class
+					Class<?> type = convert(annotation.type());
+					
+					validateField(thisClass, annotation.name(), type);
+					
+					if(Modifier.isStatic(field.getModifiers()))
+					{
+						Field wrappedField = clazz.getDeclaredField(annotation.name());
+						FieldWrapper<?> wrapper = new FieldWrapper<Object>(wrappedField, null);
+						
+						field.setAccessible(true);
+						field.set(null, wrapper);
+					}
+				}
+			}
+		}
+		catch(Exception e)
+		{
+			throw new RuntimeException(e);
+		}
+	}
+	
+	private void initializeFields()
+	{
+		try
+		{
+			Class<?> clazz = getWrappedClass(getClass());
+			
+			// Validate and map fields
+			for(Field field : getClass().getDeclaredFields())
+			{
+				WrapperField annotation = field.getAnnotation(WrapperField.class);
+				
+				if(annotation != null)
+				{
+					Field wrappedField = clazz.getDeclaredField(annotation.name());
+					FieldWrapper<?> wrapper = new FieldWrapper<Object>(wrappedField, mInstance);
+					
+					field.setAccessible(true);
+					field.set(mInstance, wrapper);
+				}
+			}
 		}
 		catch(Exception e)
 		{
@@ -114,6 +234,8 @@ public abstract class AutoWrapper
 		try
 		{
 			mInstance = constructor.newInstance(args);
+			
+			initializeFields();
 		}
 		catch(Exception e)
 		{
@@ -126,6 +248,8 @@ public abstract class AutoWrapper
 		try
 		{
 			mInstance = mClasses.get(getClass()).newInstance();
+			
+			initializeFields();
 		}
 		catch(Exception e)
 		{
@@ -230,12 +354,9 @@ public abstract class AutoWrapper
 			if(args != null)
 			{
 				for(int i = 0; i < args.length; ++i)
-				{
-					if(args[i] instanceof AutoWrapper)
-						args[i] = ((AutoWrapper)args[i]).mInstance;
-				}
+					args[i] = unwrapObjects(args[i]);
 			}
-			return (T)method.invoke(instance, args);
+			return (T)wrapObjects(method.invoke(instance, args));
 		}
 		catch(Exception e)
 		{
@@ -263,7 +384,7 @@ public abstract class AutoWrapper
 		try
 		{
 			Field field = clazz.getDeclaredField(fieldName);
-			return (T) field.get(mInstance);
+			return (T) wrapObjects(field.get(mInstance));
 		}
 		catch(Exception e)
 		{
@@ -279,7 +400,7 @@ public abstract class AutoWrapper
 		try
 		{
 			Field field = clazz.getDeclaredField(fieldName);
-			field.set(mInstance, value);
+			field.set(mInstance, unwrapObjects(value));
 		}
 		catch(Exception e)
 		{

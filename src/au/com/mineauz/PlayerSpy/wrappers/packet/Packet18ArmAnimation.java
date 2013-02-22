@@ -2,9 +2,9 @@ package au.com.mineauz.PlayerSpy.wrappers.packet;
 
 import java.lang.reflect.Constructor;
 
-import au.com.mineauz.PlayerSpy.wrappers.Entity;
 import au.com.mineauz.PlayerSpy.wrappers.WrapperClass;
 import au.com.mineauz.PlayerSpy.wrappers.WrapperConstructor;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.Entity;
 
 @WrapperClass("net.minecraft.server.*.Packet18ArmAnimation")
 public class Packet18ArmAnimation extends Packet

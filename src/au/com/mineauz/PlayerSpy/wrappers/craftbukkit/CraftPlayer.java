@@ -1,6 +1,11 @@
-package au.com.mineauz.PlayerSpy.wrappers;
+package au.com.mineauz.PlayerSpy.wrappers.craftbukkit;
 
 import java.lang.reflect.Method;
+
+import au.com.mineauz.PlayerSpy.wrappers.AutoWrapper;
+import au.com.mineauz.PlayerSpy.wrappers.WrapperClass;
+import au.com.mineauz.PlayerSpy.wrappers.WrapperMethod;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.EntityPlayer;
 
 @WrapperClass("org.bukkit.craftbukkit.*.entity.CraftPlayer")
 public class CraftPlayer extends AutoWrapper

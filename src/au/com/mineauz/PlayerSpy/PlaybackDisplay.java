@@ -3,15 +3,10 @@ package au.com.mineauz.PlayerSpy;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
-import net.minecraft.server.v1_4_R1.*;
-
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.World;
-import org.bukkit.craftbukkit.v1_4_R1.CraftSound;
-import org.bukkit.craftbukkit.v1_4_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_4_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -20,6 +15,15 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 import au.com.mineauz.PlayerSpy.Utilities.EntityShadowPlayer;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.storage.StoredBlock;
+import au.com.mineauz.PlayerSpy.wrappers.*;
+import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftPlayer;
+import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftSound;
+import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftWorld;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.Entity;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.EntityHuman;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.EntityItem;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.EntityLiving;
+import au.com.mineauz.PlayerSpy.wrappers.packet.*;
 
 public class PlaybackDisplay implements Listener
 {
@@ -30,9 +34,9 @@ public class PlaybackDisplay implements Listener
 	{
 		mViewers = new ArrayList<Player>();
 		
-		mShadowPlayers = new ArrayList<EntityShadowPlayer>();
-		mAddedPlayers = new LinkedList<EntityShadowPlayer>();
-		mRemovedPlayers = new LinkedList<EntityShadowPlayer>();
+		mShadowPlayers = new ArrayList<EntityHuman>();
+		mAddedPlayers = new LinkedList<EntityHuman>();
+		mRemovedPlayers = new LinkedList<EntityHuman>();
 		
 		mShadowItems = new ArrayList<EntityItem>();
 		mAddedItems = new LinkedList<EntityItem>();
@@ -62,11 +66,11 @@ public class PlaybackDisplay implements Listener
 			player.sendMessage(message);
 			
 			// Resend all entities for this world
-			for(EntityShadowPlayer ent : mShadowPlayers)
+			for(EntityHuman ent : mShadowPlayers)
 			{
 				Packet20NamedEntitySpawn packet = new Packet20NamedEntitySpawn(ent);
-				packet.b = "§e" + packet.b;
-				sendPacketTo(player, packet, ent.world.getWorld());
+				packet.name.set("§e" + packet.name.get());
+				sendPacketTo(player, packet, ent.world.get().getWorld());
 				
 				// Resend the equipment data
 				doUpdateEquipment(ent);
@@ -82,11 +86,11 @@ public class PlaybackDisplay implements Listener
 				if(mob instanceof EntityHuman)
 				{
 					Packet20NamedEntitySpawn packet = new Packet20NamedEntitySpawn((EntityHuman)mob);
-					packet.b = "§e" + packet.b;
-					sendPacketTo(player, packet, mob.world.getWorld());
+					packet.name.set("§e" + packet.name.get());
+					sendPacketTo(player, packet, mob.world.get().getWorld());
 				}
 				else
-					sendPacketTo(player, new Packet24MobSpawn(mob), mob.world.getWorld());
+					sendPacketTo(player, new Packet24MobSpawn(mob), mob.world.get().getWorld());
 			}
 		}
 	}
@@ -221,11 +225,11 @@ public class PlaybackDisplay implements Listener
 		if(mViewers.contains(event.getPlayer()))
 		{
 			// Resend all entities for this world
-			for(EntityShadowPlayer ent : mShadowPlayers)
+			for(EntityHuman ent : mShadowPlayers)
 			{
 				Packet20NamedEntitySpawn packet = new Packet20NamedEntitySpawn(ent);
-				packet.b = "§e" + packet.b;
-				sendPacketTo(event.getPlayer(), packet, ent.world.getWorld());
+				packet.name.set("§e" + packet.name.get());
+				sendPacketTo(event.getPlayer(), packet, ent.world.get().getWorld());
 				
 				// Resend the equipment data
 				doUpdateEquipment(ent);
@@ -241,11 +245,11 @@ public class PlaybackDisplay implements Listener
 				if(mob instanceof EntityHuman)
 				{
 					Packet20NamedEntitySpawn packet = new Packet20NamedEntitySpawn((EntityHuman)mob);
-					packet.b = "§e" + packet.b;
-					sendPacketTo(event.getPlayer(), packet, mob.world.getWorld());
+					packet.name.set("§e" + packet.name.get());
+					sendPacketTo(event.getPlayer(), packet, mob.world.get().getWorld());
 				}
 				else
-					sendPacketTo(event.getPlayer(), new Packet24MobSpawn(mob), mob.world.getWorld());
+					sendPacketTo(event.getPlayer(), new Packet24MobSpawn(mob), mob.world.get().getWorld());
 			}
 		}
 	}
@@ -260,20 +264,20 @@ public class PlaybackDisplay implements Listener
 		int i = 0;
 		
 		// Add all the ids
-		for(EntityShadowPlayer ent : mRemovedPlayers)
-			ids[i++] = ent.id;
+		for(EntityHuman ent : mRemovedPlayers)
+			ids[i++] = ent.id.get();
 		
-		for(EntityShadowPlayer ent : mShadowPlayers)
-			ids[i++] = ent.id;
+		for(EntityHuman ent : mShadowPlayers)
+			ids[i++] = ent.id.get();
 		
 		for(EntityLiving ent : mShadowMobs)
-			ids[i++] = ent.id;
+			ids[i++] = ent.id.get();
 		
 		for(EntityItem ent : mShadowItems)
-			ids[i++] = ent.id;
+			ids[i++] = ent.id.get();
 		
 		Packet29DestroyEntity packet = new Packet29DestroyEntity();
-		packet.a = ids;
+		packet.ids.set(ids);
 		
 		// Send the packet
 		if(player == null)
@@ -291,23 +295,23 @@ public class PlaybackDisplay implements Listener
 	 */
 	public void update()
 	{
-		for(EntityShadowPlayer player : mRemovedPlayers)
+		for(EntityHuman player : mRemovedPlayers)
 		{
-			sendPacket(new Packet29DestroyEntity(player.id), player.world.getWorld());
+			sendPacket(new Packet29DestroyEntity(player.id.get()), player.world.get().getWorld());
 		}
 		mRemovedPlayers.clear();
 		
-		for(EntityShadowPlayer player : mAddedPlayers)
+		for(EntityHuman player : mAddedPlayers)
 		{
 			Packet20NamedEntitySpawn packet = new Packet20NamedEntitySpawn(player);
-			packet.b = "§e" + packet.b;
-			sendPacket(packet, player.world.getWorld());
+			packet.name.set("§e" + packet.name.get());
+			sendPacket(packet, player.world.get().getWorld());
 		}
 		mAddedPlayers.clear();
 		
 		
 		// Do updates
-		for(EntityShadowPlayer player : mShadowPlayers)
+		for(EntityHuman player : mShadowPlayers)
 		{
 			updateEntity(player);
 		}
@@ -320,7 +324,7 @@ public class PlaybackDisplay implements Listener
 		
 		for(EntityItem item : mRemovedItems)
 		{
-			sendPacket(new Packet29DestroyEntity(item.id), item.world.getWorld());
+			sendPacket(new Packet29DestroyEntity(item.id.get()), item.world.get().getWorld());
 		}
 		mRemovedItems.clear();
 		
@@ -330,18 +334,18 @@ public class PlaybackDisplay implements Listener
 			if(mob instanceof EntityHuman)
 			{
 				Packet20NamedEntitySpawn packet = new Packet20NamedEntitySpawn((EntityHuman)mob);
-				packet.b = "§e" + packet.b;
-				sendPacket(packet, mob.world.getWorld());
+				packet.name.set("§e" + packet.name.get());
+				sendPacket(packet, mob.world.get().getWorld());
 			}
 			else
-				sendPacket(new Packet24MobSpawn(mob), mob.world.getWorld());
+				sendPacket(new Packet24MobSpawn(mob), mob.world.get().getWorld());
 			
 		}
 		mAddedMobs.clear();
 		
 		for(EntityLiving mob : mRemovedMobs)
 		{
-			sendPacket(new Packet29DestroyEntity(mob.id), mob.world.getWorld());
+			sendPacket(new Packet29DestroyEntity(mob.id.get()), mob.world.get().getWorld());
 		}
 		mRemovedMobs.clear();
 		
@@ -354,10 +358,10 @@ public class PlaybackDisplay implements Listener
 	
 	private void updateEntity(Entity ent)
 	{
-		if(ent.positionChanged || (Math.abs(ent.lastYaw - ent.yaw) > 3 || Math.abs(ent.lastPitch - ent.pitch) > 3))
+		if(ent.positionChanged.get() || (Math.abs(ent.lastYaw.get() - ent.yaw.get()) > 3 || Math.abs(ent.lastPitch.get() - ent.pitch.get()) > 3))
 			doPositionUpdate(ent);
 		
-		if(ent.velocityChanged)
+		if(ent.velocityChanged.get())
 			doVelocityUpdate(ent);
 		
 		if(ent.getDataWatcher().a())
@@ -376,20 +380,20 @@ public class PlaybackDisplay implements Listener
 	{
 		if(ent.inventory.items[ent.inventory.itemInHandIndex] == null || ent.inventory.items[ent.inventory.itemInHandIndex].id == 0)
 		{
-			Packet5EntityEquipment packet = new Packet5EntityEquipment(ent.id, 0, null);
-			sendPacket(packet, ent.world.getWorld());
+			Packet5EntityEquipment packet = new Packet5EntityEquipment(ent.id.get(), 0, null);
+			sendPacket(packet, ent.world.get().getWorld());
 		}
 		else
 		{
-			Packet5EntityEquipment packet = new Packet5EntityEquipment(ent.id, 0, ent.inventory.items[ent.inventory.itemInHandIndex]);
-			sendPacket(packet, ent.world.getWorld());
+			Packet5EntityEquipment packet = new Packet5EntityEquipment(ent.id.get(), 0, ent.inventory.items[ent.inventory.itemInHandIndex]);
+			sendPacket(packet, ent.world.get().getWorld());
 		}
 		
 	}
 	private void spawnEntityItem(EntityItem item)
 	{
-		sendPacket(new Packet23VehicleSpawn(item, 2, 1), item.world.getWorld());
-		sendPacket(new Packet40EntityMetadata(item.id, item.getDataWatcher(), true), item.world.getWorld());
+		sendPacket(new Packet23VehicleSpawn(item, 2, 1), item.world.get().getWorld());
+		sendPacket(new Packet40EntityMetadata(item.id.get(), item.getDataWatcher(), true), item.world.get().getWorld());
 	}
 	private void doUpdateEquipment(EntityHuman ent)
 	{
@@ -397,24 +401,24 @@ public class PlaybackDisplay implements Listener
 		{
 			if(ent.inventory.armor[i] != null && ent.inventory.armor[i].id != 0)
 			{
-				Packet5EntityEquipment packet = new Packet5EntityEquipment(ent.id, i+1, ent.inventory.armor[i]);
-				sendPacket(packet, ent.world.getWorld());
+				Packet5EntityEquipment packet = new Packet5EntityEquipment(ent.id.get(), i+1, ent.inventory.armor[i]);
+				sendPacket(packet, ent.world.get().getWorld());
 			}
 			else
 			{
-				Packet5EntityEquipment packet = new Packet5EntityEquipment(ent.id, i+1, null);
-				sendPacket(packet, ent.world.getWorld());
+				Packet5EntityEquipment packet = new Packet5EntityEquipment(ent.id.get(), i+1, null);
+				sendPacket(packet, ent.world.get().getWorld());
 			}
 		}
 		
-		Packet5EntityEquipment packet = new Packet5EntityEquipment(ent.id, 0, (ent.inventory.items[ent.inventory.itemInHandIndex] == null || ent.inventory.items[ent.inventory.itemInHandIndex].id == 0 ? null : ent.inventory.items[ent.inventory.itemInHandIndex]));
-		sendPacket(packet, ent.world.getWorld());
+		Packet5EntityEquipment packet = new Packet5EntityEquipment(ent.id.get(), 0, (ent.inventory.items[ent.inventory.itemInHandIndex] == null || ent.inventory.items[ent.inventory.itemInHandIndex].id == 0 ? null : ent.inventory.items[ent.inventory.itemInHandIndex]));
+		sendPacket(packet, ent.world..get()getWorld());
 	}
 	private void doMetaDataUpdate(Entity ent)
 	{
-		Packet40EntityMetadata packet = new Packet40EntityMetadata(ent.id, ent.getDataWatcher(), true);
+		Packet40EntityMetadata packet = new Packet40EntityMetadata(ent.id.get(), ent.getDataWatcher(), true);
 		
-		sendPacket(packet, ent.world.getWorld());
+		sendPacket(packet, ent.world.get().getWorld());
 	}
 	private void doPositionUpdate(Entity ent)
 	{
@@ -428,34 +432,34 @@ public class PlaybackDisplay implements Listener
 //		else
 //			packet = new Packet33RelEntityMoveLook(ent.id, (byte)((ent.locX - ent.lastX) * 32D), (byte)((ent.locY - ent.lastY) * 32D), (byte)((ent.locZ - ent.lastZ) * 32D), (byte)(ent.yaw * 256D / 360D), (byte)(ent.pitch * 256D / 360D));
 //		
-		sendPacket(packet, ent.world.getWorld());
+		sendPacket(packet, ent.world.get().getWorld());
 	}
 	private void doVelocityUpdate(Entity ent)
 	{
 		Packet28EntityVelocity packet = new Packet28EntityVelocity(ent);
-		sendPacket(packet, ent.world.getWorld());
+		sendPacket(packet, ent.world.get().getWorld());
 	}
 	public void doHeadLook(EntityLiving ent)
 	{
 		if(ent instanceof EntityShadowPlayer && !mShadowPlayers.contains(ent))
 			addShadowPlayer((EntityShadowPlayer)ent);
 		
-		Packet32EntityLook look = new Packet32EntityLook(ent.id, (byte)(ent.az * 256D / 360D), (byte)(ent.bb * 256D / 360D));
-		Packet35EntityHeadRotation head = new Packet35EntityHeadRotation(ent.id, (byte)(ent.az * 256D / 360D));
+		Packet32EntityLook look = new Packet32EntityLook(ent.id.get(), (byte)(ent.camYaw.get() * 256D / 360D), (byte)(ent.camPitch.get() * 256D / 360D));
+		Packet35EntityHeadRotation head = new Packet35EntityHeadRotation(ent.id.get(), (byte)(ent.camYaw.get() * 256D / 360D));
 		
-		sendPacket(look, ent.world.getWorld());
-		sendPacket(head, ent.world.getWorld());
+		sendPacket(look, ent.world.get().getWorld());
+		sendPacket(head, ent.world.get().getWorld());
 	}
 	
 	public void doArmAnimation(EntityHuman ent)
 	{
 		Packet18ArmAnimation packet = new Packet18ArmAnimation(ent, 1);
-		sendPacket(packet, ent.world.getWorld());
+		sendPacket(packet, ent.world.get().getWorld());
 	}
 	public void doEntityDamage(EntityLiving ent)
 	{
 		Packet18ArmAnimation packet = new Packet18ArmAnimation(ent, 2);
-		sendPacket(packet, ent.world.getWorld());
+		sendPacket(packet, ent.world.get().getWorld());
 		playSound(Utility.getLocation(ent),Sound.HURT_FLESH, 1, 1);
 	}
 	public void pickupItem(EntityItem item, EntityHuman player)
@@ -463,8 +467,8 @@ public class PlaybackDisplay implements Listener
 		if(mShadowItems.contains(item))
 		{
 			//LogUtil.finest("@" + player.id + " pickup " + item.id);
-			Packet22Collect packet = new Packet22Collect(item.id, player.id);
-			sendPacket(packet,player.world.getWorld());
+			Packet22Collect packet = new Packet22Collect(item.id.get(), player.id.get());
+			sendPacket(packet,player.world.get().getWorld());
 			// Dont add it to the removed items list becuase collect also removes it
 			mShadowItems.remove(item);
 		}
@@ -472,25 +476,19 @@ public class PlaybackDisplay implements Listener
 	
 	public void doBlockChange(StoredBlock block)
 	{
-		Packet53BlockChange packet = new Packet53BlockChange();
-		packet.a = block.getLocation().getBlockX();
-		packet.b = block.getLocation().getBlockY();
-		packet.c = block.getLocation().getBlockZ();
-		
-		packet.material = block.getTypeId();
-		packet.data = block.getData();
+		Packet53BlockChange packet = new Packet53BlockChange(block);
 		
 		sendPacket(packet, block.getLocation().getWorld());
 	}
 	public void doChangeWorld(EntityHuman ent, World newWorld)
 	{
-		Packet29DestroyEntity packet1 = new Packet29DestroyEntity(ent.id);
+		Packet29DestroyEntity packet1 = new Packet29DestroyEntity(ent.id.get());
 		Packet20NamedEntitySpawn packet2 = new Packet20NamedEntitySpawn(ent);
-		packet2.b = "§e" + packet2.b;
+		packet2.name.set("§e" + packet2.name.get());
 		
-		sendPacket(packet1, ent.world.getWorld());
-		ent.world = ((CraftWorld)newWorld).getHandle();
-		sendPacket(packet2, ent.world.getWorld());
+		sendPacket(packet1, ent.world.get().getWorld());
+		ent.world.set(CraftWorld.castFrom(newWorld).getHandle());
+		sendPacket(packet2, ent.world.get().getWorld());
 	}
 	
 	private void playSound(Location loc, Sound sound, float volume, float pitch)
@@ -509,7 +507,7 @@ public class PlaybackDisplay implements Listener
 		for(Player viewer : mViewers)
 		{
 			if(world == null || viewer.getWorld() == world)
-				((CraftPlayer)viewer).getHandle().playerConnection.sendPacket(packet);
+				CraftPlayer.castFrom(viewer).getHandle().getPlayerConnection().sendPacket(packet);
 		}
 	}
 	
@@ -522,14 +520,14 @@ public class PlaybackDisplay implements Listener
 	private void sendPacketTo(Player player, Packet packet, World world)
 	{
 		if(world == null || player.getWorld() == world)
-			((CraftPlayer)player).getHandle().playerConnection.sendPacket(packet);
+			CraftPlayer.castFrom(player).getHandle().getPlayerConnection().sendPacket(packet);
 	}
 	
 	private ArrayList<Player> mViewers;
 	
-	private LinkedList<EntityShadowPlayer> mAddedPlayers;
-	private LinkedList<EntityShadowPlayer> mRemovedPlayers;
-	private ArrayList<EntityShadowPlayer> mShadowPlayers;
+	private LinkedList<EntityHuman> mAddedPlayers;
+	private LinkedList<EntityHuman> mRemovedPlayers;
+	private ArrayList<EntityHuman> mShadowPlayers;
 	
 	private LinkedList<EntityItem> mAddedItems;
 	private LinkedList<EntityItem> mRemovedItems;

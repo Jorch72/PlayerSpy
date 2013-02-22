@@ -1,4 +1,6 @@
-package au.com.mineauz.PlayerSpy.wrappers;
+package au.com.mineauz.PlayerSpy.wrappers.minecraft;
+
+import au.com.mineauz.PlayerSpy.wrappers.WrapperClass;
 
 @WrapperClass("net.minecraft.server.*.EntityPlayer")
 public class EntityPlayer extends EntityHuman
