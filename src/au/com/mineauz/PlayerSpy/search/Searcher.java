@@ -18,6 +18,7 @@ import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Utilities.Pager;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.search.interfaces.ExtraDataModifier;
 import au.com.mineauz.PlayerSpy.search.interfaces.FormatterModifier;
 import au.com.mineauz.PlayerSpy.search.interfaces.Modifier;
@@ -54,11 +55,11 @@ public class Searcher
 				} 
 				catch (InterruptedException e) 
 				{
-					e.printStackTrace();
+					Debug.logException(e);
 				} 
 				catch (ExecutionException e) 
 				{
-					e.printStackTrace();
+					Debug.logException(e);
 				}
 				it.remove();
 			}

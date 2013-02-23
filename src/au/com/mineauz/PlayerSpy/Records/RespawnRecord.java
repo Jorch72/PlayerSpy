@@ -7,8 +7,8 @@ import java.io.IOException;
 import org.bukkit.Location;
 import org.bukkit.World;
 
-import au.com.mineauz.PlayerSpy.*;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.storage.StoredLocation;
 
 public class RespawnRecord extends Record implements IPlayerLocationAware
 {
@@ -28,7 +28,7 @@ public class RespawnRecord extends Record implements IPlayerLocationAware
 		mLocation.writeLocation(stream,true);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
 		mLocation = StoredLocation.readLocationFull(stream);
 	}

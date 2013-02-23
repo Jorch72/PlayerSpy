@@ -9,6 +9,8 @@ import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
+import au.com.mineauz.PlayerSpy.storage.InventorySlot;
 
 public class RecordList extends ArrayList<Record> 
 {
@@ -90,7 +92,7 @@ public class RecordList extends ArrayList<Record>
 	/// gets the current location at that index
 	public Location getCurrentLocation(int index)
 	{
-		assert index >= 0 && index < size();
+		Debug.loggedAssert( index >= 0 && index < size());
 		
 		Location location = null;
 		for(int i = index; i >= 0; i--)
@@ -164,7 +166,7 @@ public class RecordList extends ArrayList<Record>
 	/// if keep lower is not set, every record >= splitIndex, will be kept in this list, and the rest will be returned.
 	public RecordList splitRecords(int splitIndex, boolean keepLower)
 	{
-		assert splitIndex >= 0 && splitIndex < size();
+		Debug.loggedAssert( splitIndex >= 0 && splitIndex < size());
 		
 		// Handle cases where there is no need for splitting
 		if(splitIndex == 0)

@@ -3,12 +3,13 @@ package au.com.mineauz.PlayerSpy.Records;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.UTFDataFormatException;
 
 import org.bukkit.Location;
 import org.bukkit.World;
 
-import au.com.mineauz.PlayerSpy.*;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.storage.StoredLocation;
 
 public class DeathRecord extends Record implements IPlayerLocationAware
 {
@@ -32,13 +33,20 @@ public class DeathRecord extends Record implements IPlayerLocationAware
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
-		if(absolute)
-			mLocation = StoredLocation.readLocationFull(stream);
-		else
-			mLocation = StoredLocation.readLocation(stream, currentWorld);
-		mReason = stream.readUTF();
+		try
+		{
+			if(absolute)
+				mLocation = StoredLocation.readLocationFull(stream);
+			else
+				mLocation = StoredLocation.readLocation(stream, currentWorld);
+			mReason = stream.readUTF();
+		}
+		catch(UTFDataFormatException e)
+		{
+			throw new RecordFormatException("Error reading UTF string. Malformed data.");
+		}
 	}
 	
 	public Location getLocation()

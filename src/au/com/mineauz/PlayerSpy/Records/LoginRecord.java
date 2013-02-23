@@ -7,7 +7,8 @@ import java.io.IOException;
 import org.bukkit.Location;
 import org.bukkit.World;
 
-import au.com.mineauz.PlayerSpy.*;
+import au.com.mineauz.PlayerSpy.storage.StoredLocation;
+
 
 public class LoginRecord extends Record implements IPlayerLocationAware
 {
@@ -28,7 +29,7 @@ public class LoginRecord extends Record implements IPlayerLocationAware
 	}
 	
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
 		mLocation = StoredLocation.readLocationFull(stream);
 	}

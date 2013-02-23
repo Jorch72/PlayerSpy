@@ -4,8 +4,9 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
-import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.PlaybackContext;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 
 public class TpCommand extends Command
 {
@@ -21,7 +22,7 @@ public class TpCommand extends Command
 		else
 		{
 			sender.sendMessage(ChatColor.RED + "Unable to tp. Either nothing is loaded yet, or the world was deleted");
-			LogUtil.fine("Tp request failed. either location == null or world == null");
+			Debug.info("Tp request failed. location: %s world: %s", (location != null ? Utility.locationToStringShort(location) : "null"), location.getWorld() != null ? location.getWorld().getName() : "null");
 		}
 		
 		return true;

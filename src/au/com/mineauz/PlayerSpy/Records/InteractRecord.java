@@ -13,12 +13,14 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.event.block.Action;
 import org.bukkit.inventory.ItemStack;
 
-import au.com.mineauz.PlayerSpy.StoredBlock;
-import au.com.mineauz.PlayerSpy.StoredEntity;
-import au.com.mineauz.PlayerSpy.StoredItemStack;
+import au.com.mineauz.PlayerSpy.Records.ILocationAware;
 import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.storage.StoredItemStack;
+import au.com.mineauz.PlayerSpy.storage.StoredBlock;
+import au.com.mineauz.PlayerSpy.storage.StoredEntity;
 
 public class InteractRecord extends Record implements ILocationAware
 {
@@ -46,6 +48,21 @@ public class InteractRecord extends Record implements ILocationAware
 		if(ent != null)
 			mEntity = ent;
 	}
+	
+	@SuppressWarnings( "deprecation" )
+	public InteractRecord(au.com.mineauz.PlayerSpy.legacy.v2.InteractRecord old)
+	{
+		super(RecordType.Interact);
+		
+		mType = old.getAction();
+		
+		if(old.getBlock() != null)
+			mBlock = old.getBlock();
+		if(old.getItem() != null)
+			mItem = new StoredItemStack(old.getItem());
+		if(old.getEntity() != null)
+			mEntity = old.getEntity();
+	}
 
 	public InteractRecord() 
 	{
@@ -71,9 +88,13 @@ public class InteractRecord extends Record implements ILocationAware
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
-		mType = Action.values()[stream.readByte()];
+		int actionType = stream.readByte();
+		if(actionType < 0 || actionType >= Action.values().length)
+			throw new RecordFormatException("Bad action type " + actionType);
+		
+		mType = Action.values()[actionType];
 		
 		// Block
 		if(stream.readBoolean())

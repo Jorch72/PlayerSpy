@@ -10,7 +10,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 
-import au.com.mineauz.PlayerSpy.StoredEntity;
+import au.com.mineauz.PlayerSpy.storage.StoredEntity;
 
 public class DamageRecord extends Record implements ILocationAware
 {
@@ -41,7 +41,7 @@ public class DamageRecord extends Record implements ILocationAware
 	}
 	
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
 		mAmount = stream.readShort();
 		boolean hasDamager = stream.readBoolean();

@@ -8,8 +8,8 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 
-import au.com.mineauz.PlayerSpy.*;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.storage.StoredLocation;
 
 public class TeleportRecord extends Record implements IPlayerLocationAware
 {
@@ -31,7 +31,7 @@ public class TeleportRecord extends Record implements IPlayerLocationAware
 		stream.writeByte(mCause);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
 		mLocation = StoredLocation.readLocationFull(stream);
 		mCause = stream.readByte();

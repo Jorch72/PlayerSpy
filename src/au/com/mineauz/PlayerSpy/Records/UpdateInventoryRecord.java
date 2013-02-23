@@ -7,7 +7,10 @@ import java.util.ArrayList;
 
 import org.bukkit.World;
 
-import au.com.mineauz.PlayerSpy.InventorySlot;
+import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
+import au.com.mineauz.PlayerSpy.Records.RecordType;
+import au.com.mineauz.PlayerSpy.storage.InventorySlot;
 
 public class UpdateInventoryRecord extends Record
 {
@@ -22,6 +25,19 @@ public class UpdateInventoryRecord extends Record
 		super(RecordType.UpdateInventory);
 		Slots = slots;
 	}
+	
+	@SuppressWarnings( "deprecation" )
+	public UpdateInventoryRecord(au.com.mineauz.PlayerSpy.legacy.v2.UpdateInventoryRecord old)
+	{
+		super(RecordType.UpdateInventory);
+
+		Slots = new ArrayList<InventorySlot>();
+		
+		for(au.com.mineauz.PlayerSpy.legacy.v2.InventorySlot oldSlot : old.Slots)
+		{
+			Slots.add(new InventorySlot(oldSlot.Item, oldSlot.Slot));
+		}
+	}
 
 	@Override
 	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
@@ -32,9 +48,11 @@ public class UpdateInventoryRecord extends Record
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
 		int count = stream.readByte();
+		if(count < 0 || count >= 40)
+			throw new RecordFormatException("Slot count out of range");
 		Slots = new ArrayList<InventorySlot>(count);
 		
 		for(int i = 0; i < count; i++)

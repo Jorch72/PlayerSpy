@@ -5,6 +5,8 @@ import java.util.Calendar;
 
 import org.bukkit.World;
 
+import au.com.mineauz.PlayerSpy.debugging.Debug;
+
 public abstract class Record 
 {
 	protected Record(RecordType type)
@@ -25,6 +27,7 @@ public abstract class Record
 		}
 		catch(IOException e)
 		{
+			Debug.logException(e);
 			return false;
 		}
 	}
@@ -40,7 +43,12 @@ public abstract class Record
 		}
 		catch (IOException e)
 		{
-			e.printStackTrace();
+			Debug.logException(e);
+			return false;
+		}
+		catch (RecordFormatException e)
+		{
+			Debug.info("Encoutered invalid record format for type %s. %s", mType.toString(), e.getMessage());
 			return false;
 		}
 	}
@@ -57,7 +65,7 @@ public abstract class Record
 		return mType;
 	}
 	protected abstract void writeContents(DataOutputStream stream, boolean absolute) throws IOException;
-	protected abstract void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException;
+	protected abstract void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException;
 	
 	public static Record readRecord(DataInputStream stream, World currentWorld, int version, boolean absolute)
 	{
@@ -70,7 +78,7 @@ public abstract class Record
 		}
 		catch(IOException e)
 		{
-			e.printStackTrace();
+			Debug.logException(e);
 		}
 		
 		return null;

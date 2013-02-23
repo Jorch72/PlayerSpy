@@ -10,8 +10,13 @@ import org.bukkit.World;
 import org.bukkit.entity.Item;
 import org.bukkit.inventory.ItemStack;
 
-import au.com.mineauz.PlayerSpy.*;
+import au.com.mineauz.PlayerSpy.Records.ILocationAware;
+import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
+import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.storage.StoredItemStack;
+import au.com.mineauz.PlayerSpy.storage.StoredLocation;
 
 public class ItemPickupRecord extends Record implements ILocationAware
 {
@@ -27,6 +32,14 @@ public class ItemPickupRecord extends Record implements ILocationAware
 	{
 		super(RecordType.ItemPickup);
 	}
+	@SuppressWarnings( "deprecation" )
+	public ItemPickupRecord(au.com.mineauz.PlayerSpy.legacy.v2.ItemPickupRecord old)
+	{
+		super(RecordType.ItemPickup);
+		
+		mLocation = new StoredLocation(old.getLocation());
+		mItem = new StoredItemStack(old.getItemStack());
+	}
 
 	@Override
 	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
@@ -35,7 +48,7 @@ public class ItemPickupRecord extends Record implements ILocationAware
 		mLocation.writeLocation(stream, absolute);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
 		mItem = StoredItemStack.readItemStack(stream);
 		if(absolute)

@@ -1,8 +1,8 @@
 package au.com.mineauz.PlayerSpy.LogTasks;
 
 import au.com.mineauz.PlayerSpy.LogFile;
-import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.RecordList;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 
 public class AppendRecordsTask implements Task<Boolean> 
 {
@@ -25,7 +25,7 @@ public class AppendRecordsTask implements Task<Boolean>
 	@Override
 	public Boolean call() throws Exception 
 	{
-		LogUtil.finer("AppendRecordsTask starting");
+		Debug.fine("AppendRecordsTask starting");
 		boolean res;
 		try
 		{
@@ -40,7 +40,7 @@ public class AppendRecordsTask implements Task<Boolean>
 			throw e;
 		}
 		
-		LogUtil.finer("AppendRecordsTask completed");
+		Debug.fine("AppendRecordsTask completed");
 		return res;
 	}
 	@Override

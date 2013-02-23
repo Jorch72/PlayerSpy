@@ -23,12 +23,13 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
-import au.com.mineauz.PlayerSpy.InventorySlot;
-import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
+import au.com.mineauz.PlayerSpy.storage.InventorySlot;
+
 
 /**
  * Keeps track of the flow of items across the server.
@@ -101,7 +102,7 @@ public class ItemFlowTracker implements Listener
 			{
 				if(Utility.getStackOrNull(event.getCursor()) != null) // Still holding an item for some reason
 				{
-					LogUtil.fine("Already: " + event.getCursor().toString());
+					Debug.fine("Already holding an item on open inventory: " + event.getCursor().toString());
 					scheduleTransactionInSlot((Player)event.getWhoClicked(), dest, event.getSlot());
 				}
 				else
@@ -548,7 +549,7 @@ public class ItemFlowTracker implements Listener
 			{
 				if(Utility.getStackOrNull(mWho.getItemOnCursor()) == null && mLastCursor != null)
 				{
-					LogUtil.finer("Thrown out");
+					Debug.finer("Threw out an item");
 					// Item thrown out
 					if(mon != null)
 						mon.doTransaction(mLastCursor, mCurrentTransactions.get(mWho).getArg2() != mWho.getInventory());
@@ -561,7 +562,7 @@ public class ItemFlowTracker implements Listener
 				{
 					// Item picked up
 					mCurrentTransactions.put(mWho, new Pair<ItemStack, Inventory>(mWho.getItemOnCursor().clone(), mInventory));
-					LogUtil.finer("Picked up " + mWho.getItemOnCursor().toString());
+					Debug.finer("Picked up " + mWho.getItemOnCursor().toString());
 				}
 			}
 			

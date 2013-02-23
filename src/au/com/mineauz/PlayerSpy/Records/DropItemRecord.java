@@ -8,8 +8,12 @@ import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.inventory.ItemStack;
 
-import au.com.mineauz.PlayerSpy.StoredItemStack;
+import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
+import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.storage.StoredItemStack;
+
 
 public class DropItemRecord extends Record
 {
@@ -23,6 +27,13 @@ public class DropItemRecord extends Record
 	{
 		super(RecordType.DropItem);
 	}
+	
+	@SuppressWarnings( "deprecation" )
+	public DropItemRecord(au.com.mineauz.PlayerSpy.legacy.v2.DropItemRecord old)
+	{
+		super(RecordType.DropItem);
+		mStack = new StoredItemStack(old.getItem());
+	}
 
 	@Override
 	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
@@ -31,7 +42,7 @@ public class DropItemRecord extends Record
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
 		mStack = StoredItemStack.readItemStack(stream);
 	}

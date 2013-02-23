@@ -22,6 +22,8 @@ import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
 import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
+import au.com.mineauz.PlayerSpy.debugging.Profiler;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 
@@ -71,7 +73,7 @@ public class LogFile
 	{
 		return mHeader.RequiresOwnerTags;
 	}
-	
+	 
 	public long getStartDate()
 	{
 		mLock.readLock().lock();
@@ -155,7 +157,12 @@ public class LogFile
 		}
 		catch(IOException e)
 		{
+			LogUtil.severe("Failed to create log file for " + playerName);
 			e.printStackTrace();
+			
+			Debug.severe("Failed to create log file for %s", playerName);
+			Debug.logException(e);
+			
 			file.rollback();
 			
 			return null;
@@ -180,7 +187,7 @@ public class LogFile
 		log.rebuildTagMap();
 		log.rebuildIndexMap();
 		
-		LogUtil.fine("Created a log file for '" + playerName + "'.");
+		Debug.fine("Created a log file for '" + playerName + "'.");
 		
 		CrossReferenceIndex.instance.addLogFile(log);
 		return log;
@@ -191,6 +198,7 @@ public class LogFile
 	 * @param the name of the world to use including the global prefix
 	 * @param filename The filename to create the log at
 	 * @return An instance with an open log or null if unable to create it
+	 * @deprecated Use create() instead
 	 */
 	@Deprecated
 	public static LogFile createGlobal(String worldName, String filename)
@@ -237,7 +245,7 @@ public class LogFile
 		} 
 		catch (Exception e) 
 		{
-			e.printStackTrace();
+			Debug.logException(e);
 		}
 		
 		return null;
@@ -249,7 +257,7 @@ public class LogFile
 	 */
 	public boolean load(String filename)
 	{
-		assert !mIsLoaded;
+		Debug.loggedAssert(!mIsLoaded);
 		
 		boolean ok = false;
 		mLock.writeLock().lock();
@@ -257,7 +265,7 @@ public class LogFile
 		mIsCorrupt = false;
 		try
 		{
-			LogUtil.info("Loading '" + filename + "'...");
+			Debug.info("Loading '" + filename + "'...");
 			mFilePath = new File(filename);
 			file = new ACIDRandomAccessFile(filename, "rw");
 			
@@ -300,14 +308,14 @@ public class LogFile
 				}
 			}
 			
-			LogUtil.info("Load Succeeded:");
-			LogUtil.info(" Player: " + mPlayerName);
-			LogUtil.fine(" Sessions found: " + mHeader.SessionCount);
-			LogUtil.fine(" Holes found: " + mHeader.HolesIndexCount);
+			Debug.info("Load Succeeded:");
+			Debug.info(" Player: " + mPlayerName);
+			Debug.fine(" Sessions found: " + mHeader.SessionCount);
+			Debug.fine(" Holes found: " + mHeader.HolesIndexCount);
 			if(mIndex.size() > 0)
 			{
-				LogUtil.fine(" Earliest Date: " + Util.dateToString(mIndex.get(0).StartTimestamp));
-				LogUtil.fine(" Latest Date: " + Util.dateToString(mIndex.get(mIndex.size()-1).EndTimestamp));
+				Debug.fine(" Earliest Date: " + Util.dateToString(mIndex.get(0).StartTimestamp));
+				Debug.fine(" Latest Date: " + Util.dateToString(mIndex.get(mIndex.size()-1).EndTimestamp));
 			}
 			
 			mIsLoaded = true;
@@ -315,7 +323,7 @@ public class LogFile
 		}
 		catch(IOException e)
 		{
-			e.printStackTrace();
+			Debug.logException(e);
 			try
 			{
 				if(file != null)
@@ -323,14 +331,14 @@ public class LogFile
 			}
 			catch(IOException ex)
 			{
-				
+				Debug.logException(ex);
 			}
 			ok = false;
 			mIsCorrupt = true;
 		}
 		catch(Exception e)
 		{
-			e.printStackTrace();
+			Debug.logException(e);
 			try
 			{
 				if(file != null)
@@ -338,7 +346,7 @@ public class LogFile
 			}
 			catch(IOException ex)
 			{
-				
+				Debug.logException(ex);
 			}
 			ok = false;
 			mIsCorrupt = true;
@@ -351,7 +359,7 @@ public class LogFile
 
 	public Future<Boolean> loadAsync(String filename)
 	{
-		assert !mIsLoaded;
+		Debug.loggedAssert(!mIsLoaded);
 		
 		return SpyPlugin.getExecutor().submit(new LogLoadTask(this, filename));
 	}
@@ -361,7 +369,7 @@ public class LogFile
 	 */
 	public void close(boolean noTimeout)
 	{
-		assert mIsLoaded && !mIsClosing && mTimeoutId == -1;
+		Debug.loggedAssert(mIsLoaded && !mIsClosing && mTimeoutId == -1);
 		
 		mReferenceLock.lock();
 		
@@ -383,11 +391,11 @@ public class LogFile
 				} 
 				catch (InterruptedException e1) 
 				{
-					e1.printStackTrace();
+					Debug.logException(e1);
 				} 
 				catch (ExecutionException e) 
 				{
-					e.printStackTrace();
+					Debug.logException(e);
 				}
 			}
 			else
@@ -399,7 +407,7 @@ public class LogFile
 					{
 						mIsClosing = true;
 						mTimeoutId = -1;
-						LogUtil.finer("Submitting the close task");
+						Debug.finer("Submitting the close task");
 						//mAsyncService.submit(new CloseTask());
 						SpyPlugin.getExecutor().submit(new CloseTask());
 					}
@@ -418,7 +426,7 @@ public class LogFile
 	 */
 	public void closeAsync(boolean noTimeout)
 	{
-		assert mIsLoaded && !mIsClosing && mTimeoutId == -1;
+		Debug.loggedAssert(mIsLoaded && !mIsClosing && mTimeoutId == -1);
 		
 		mReferenceLock.lock();
 		
@@ -431,7 +439,7 @@ public class LogFile
 			if(noTimeout || sNoTimeoutOverride)
 			{
 				mIsClosing = true;
-				LogUtil.finer("Submitting the close task");
+				Debug.finer("Submitting the close task");
 				//mAsyncService.submit(new CloseTask());
 				SpyPlugin.getExecutor().submit(new CloseTask());
 			}
@@ -444,7 +452,7 @@ public class LogFile
 					{
 						mIsClosing = true;
 						mTimeoutId = -1;
-						LogUtil.finer("Submitting the close task");
+						Debug.finer("Submitting the close task");
 						//mAsyncService.submit(new CloseTask());
 						SpyPlugin.getExecutor().submit(new CloseTask());
 					}
@@ -510,12 +518,12 @@ public class LogFile
 	 */
 	public RecordList loadRecords(long startDate, long endDate, String owner)
 	{
-		assert mIsLoaded;
-		assert mHeader.VersionMajor >= 2 : "Owner tags are only suppored in version 2 and above";
+		Debug.loggedAssert(mIsLoaded);
+		Debug.loggedAssert(mHeader.VersionMajor >= 2, "Owner tags are only suppored in version 2 and above");
 		if(!mHeader.RequiresOwnerTags)
 			throw new IllegalStateException("Owner tags are not enabled in this log");
 		
-		DebugHelper.beginTimingSection("loadRecords");
+		Profiler.beginTimingSection("loadRecords");
 		RecordList allRecords = loadRecordChunks(startDate,endDate,owner);
 		
 		int trimStart = 0;
@@ -538,8 +546,8 @@ public class LogFile
 		allRecords.splitRecords(trimEnd, true);
 		allRecords.splitRecords(trimStart, false);
 
-		LogUtil.fine("  " + allRecords.size() + " returned records");
-		DebugHelper.endTimingSection();
+		Debug.fine("  " + allRecords.size() + " returned records");
+		Profiler.endTimingSection();
 		
 		return allRecords;
 	}
@@ -553,7 +561,7 @@ public class LogFile
 	 */
 	public Future<RecordList> loadRecordsAsync(long startDate, long endDate, String owner)
 	{
-		LogUtil.finer("Submitting loadRecords async task");
+		Debug.finer("Submitting loadRecords async task");
 //		synchronized (mAsyncService)
 //		{
 //			return mAsyncService.submit(new LoadRecordsAsyncTask(this, startDate, endDate, false, owner));
@@ -568,9 +576,9 @@ public class LogFile
 	 */
 	public RecordList loadRecords(long startDate, long endDate)
 	{
-		assert mIsLoaded;
+		Debug.loggedAssert(mIsLoaded);
 		
-		DebugHelper.beginTimingSection("loadRecords");
+		Profiler.beginTimingSection("loadRecords");
 		RecordList allRecords = loadRecordChunks(startDate, endDate);
 		
 		int trimStart = 0;
@@ -593,8 +601,8 @@ public class LogFile
 		allRecords.splitRecords(trimEnd, true);
 		allRecords.splitRecords(trimStart, false);
 
-		LogUtil.fine("  " + allRecords.size() + " returned records");
-		DebugHelper.endTimingSection();
+		Debug.fine("  " + allRecords.size() + " returned records");
+		Profiler.endTimingSection();
 		
 		return allRecords;
 	}
@@ -607,10 +615,10 @@ public class LogFile
 	 */
 	public Future<RecordList> loadRecordsAsync(long startDate, long endDate)
 	{
-		LogUtil.finer("Submitting loadRecords async task");
+		Debug.finer("Submitting loadRecords async task");
 //		synchronized (mAsyncService)
 //		{
-//			LogUtil.finer("Submitting loadRecords async task");
+//			Debug.finer("Submitting loadRecords async task");
 //			return mAsyncService.submit(new LoadRecordsAsyncTask(this, startDate, endDate, false));
 //		}
 		return SpyPlugin.getExecutor().submit(new LoadRecordsAsyncTask(this, startDate, endDate, false));
@@ -662,15 +670,15 @@ public class LogFile
 	 */
 	public RecordList loadRecordChunks(long startDate, long endDate, String owner)
 	{
-		assert mIsLoaded;
-		assert mHeader.VersionMajor >= 2 : "Owner tags are only suppored in version 2 and above";
+		Debug.loggedAssert(mIsLoaded);
+		Debug.loggedAssert(mHeader.VersionMajor >= 2, "Owner tags are only suppored in version 2 and above");
 		if(!mHeader.RequiresOwnerTags)
 			throw new IllegalStateException("Owner tags are not enabled in this log");
 		
-		DebugHelper.beginTimingSection("loadChunks");
+		Profiler.beginTimingSection("loadChunks");
 		ArrayList<IndexEntry> relevantEntries = new ArrayList<IndexEntry>();
 		
-		LogUtil.fine("Loading records from " + Util.dateToString(startDate) + " to " + Util.dateToString(endDate));
+		Debug.fine("Loading records from " + Util.dateToString(startDate) + " to " + Util.dateToString(endDate));
 		
 		// We will hold the write lock because accessing the file concurrently through the same object with have issues i think.
 		mLock.writeLock().lock();
@@ -693,7 +701,7 @@ public class LogFile
 			}
 			
 		}
-		LogUtil.finer("  " + relevantEntries.size() + " Matching Sessions");
+		Debug.finer("  " + relevantEntries.size() + " Matching Sessions");
 		// Now load up the records
 		RecordList allRecords = new RecordList();
 		for(IndexEntry session : relevantEntries)
@@ -702,9 +710,9 @@ public class LogFile
 		}
 		
 		mLock.writeLock().unlock();
-		DebugHelper.endTimingSection();
+		Profiler.endTimingSection();
 		
-		LogUtil.finer("  " + allRecords.size() + " loaded records");
+		Debug.finer("  " + allRecords.size() + " loaded records");
 
 		return allRecords;
 	}
@@ -719,10 +727,10 @@ public class LogFile
 	 */
 	public Future<RecordList> loadRecordChunksAsync(long startDate, long endDate, String owner)
 	{
-		LogUtil.finer("Submitting loadRecordChunks async task");
+		Debug.finer("Submitting loadRecordChunks async task");
 //		synchronized (mAsyncService)
 //		{
-//			LogUtil.finer("Submitting loadRecordChunks async task");
+//			Debug.finer("Submitting loadRecordChunks async task");
 //			return mAsyncService.submit(new LoadRecordsAsyncTask(this, startDate, endDate, true, owner));
 //		}
 		return SpyPlugin.getExecutor().submit(new LoadRecordsAsyncTask(this, startDate, endDate, true, owner));
@@ -736,9 +744,9 @@ public class LogFile
 	 */
 	public RecordList loadRecordChunks(long startDate, long endDate)
 	{
-		assert mIsLoaded;
-		DebugHelper.beginTimingSection("loadChunks");
-		LogUtil.fine("Loading chunks from " + Util.dateToString(startDate) + " to " + Util.dateToString(endDate));
+		Debug.loggedAssert(mIsLoaded);
+		Profiler.beginTimingSection("loadChunks");
+		Debug.fine("Loading chunks from " + Util.dateToString(startDate) + " to " + Util.dateToString(endDate));
 		ArrayList<IndexEntry> relevantEntries = new ArrayList<IndexEntry>();
 		
 		// We will hold the write lock because accessing the file concurrently through the same object with have issues i think.
@@ -757,17 +765,17 @@ public class LogFile
 					relevantEntries.add(entry);
 			}
 		}
-		LogUtil.finer("  " + relevantEntries.size() + " Matching Sessions");
+		Debug.finer("  " + relevantEntries.size() + " Matching Sessions");
 		// Now load up the records
 		RecordList allRecords = new RecordList();
 		for(IndexEntry session : relevantEntries)
 		{
 			allRecords.addAll(loadSession(session));
 		}
-		LogUtil.fine("  " + allRecords.size() + " loaded records");
+		Debug.fine("  " + allRecords.size() + " loaded records");
 		
 		mLock.writeLock().unlock();
-		DebugHelper.endTimingSection();
+		Profiler.endTimingSection();
 		
 		// No need to trim it
 		return allRecords;
@@ -782,26 +790,27 @@ public class LogFile
 	 */
 	public Future<RecordList> loadRecordChunksAsync(long startDate, long endDate)
 	{
-		LogUtil.finer("Submitting loadRecordChunks async task");
+		Debug.finer("Submitting loadRecordChunks async task");
 //		synchronized (mAsyncService)
 //		{
-//			LogUtil.finer("Submitting loadRecordChunks async task");
+//			Debug.finer("Submitting loadRecordChunks async task");
 //			return mAsyncService.submit(new LoadRecordsAsyncTask(this, startDate, endDate, true));
 //		}
 		return SpyPlugin.getExecutor().submit(new LoadRecordsAsyncTask(this, startDate, endDate, true));
 	}
 	public RecordList loadSession(IndexEntry session)
 	{
-		assert mIsLoaded;
+		Debug.loggedAssert(mIsLoaded);
 		
 		RecordList records = null;
-		DebugHelper.beginTimingSection("loadSession");
+		Profiler.beginTimingSection("loadSession");
 		
 		boolean isAbsolute = getOwnerTag(session) != null;
 		
 		// We will hold the write lock because accessing the file concurrently through the same object with have issues i think.
 		mLock.writeLock().lock();
 		
+		Debug.fine("Loading Session %d from %s", session.Id, mPlayerName);
 		
 		try
 		{
@@ -835,7 +844,11 @@ public class LogFile
 				Record record = Record.readRecord(stream, lastWorld, mHeader.VersionMajor, isAbsolute);
 				if(record == null)
 				{
-					LogUtil.severe("Read NULL record");
+					if(i == 0)
+						Debug.severe("Record read fail at index 0");
+					else
+						Debug.severe("Record read fail at index %d after record type %s", i, records.get(records.size()-1).getClass().getName());
+					
 					break;
 				}
 				
@@ -846,7 +859,7 @@ public class LogFile
 					lastWorld = ((WorldChangeRecord)record).getWorld();
 				else if((lastWorld == null && record.getType() != RecordType.FullInventory && record.getType() != RecordType.EndOfSession) && !isAbsolute)
 				{
-					LogUtil.warning("Corruption in " + mPlayerName + ".tracdata session " +mIndex.indexOf(session) + " found. Attempting to fix");
+					Debug.warning("Corruption in " + mPlayerName + ".tracdata session " +mIndex.indexOf(session) + " found. Attempting to fix");
 					lastWorld = Bukkit.getWorlds().get(0);
 					Record worldRecord = new WorldChangeRecord(lastWorld);
 					worldRecord.setTimestamp(record.getTimestamp());
@@ -861,13 +874,13 @@ public class LogFile
 				
 				if(lastWorld == null && i > 3 && !isAbsolute)
 				{
-					LogUtil.warning("Issue detected with " + mPlayerName + ".trackdata in session " + mIndex.indexOf(session) + ". No world has been set. Defaulting to main world");
+					Debug.warning("Issue detected with " + mPlayerName + ".trackdata in session " + mIndex.indexOf(session) + ". No world has been set. Defaulting to main world");
 					lastWorld = Bukkit.getWorlds().get(0);
 					records.add(new WorldChangeRecord(lastWorld));
 				}
 				if(!hadInv && i > 3 && !isAbsolute)
 				{
-					LogUtil.warning("Issue detected with " + mPlayerName + ".trackdata in session " + mIndex.indexOf(session) + ". No inventory state has been set. ");
+					Debug.warning("Issue detected with " + mPlayerName + ".trackdata in session " + mIndex.indexOf(session) + ". No inventory state has been set. ");
 					hadInv = true;
 				}
 				records.add(record);
@@ -876,11 +889,11 @@ public class LogFile
 		}
 		catch(IOException e)
 		{
-			e.printStackTrace();
+			Debug.logException(e);
 		}
 		mLock.writeLock().unlock();
 		
-		DebugHelper.endTimingSection();
+		Profiler.endTimingSection();
 		
 		return records;
 	}
@@ -893,13 +906,13 @@ public class LogFile
 	 */
 	private RecordList appendRecords(RecordList records, IndexEntry session) throws IOException
 	{
-		LogUtil.fine("Appending " + records.size() + " records:");
+		Debug.info("Begining append of %d records to Session %d", records.size(), session.Id);
 		
 		// This will be populated if there are too many records to put into this session
 		RecordList splitSession = null;
 		boolean isAbsolute = getOwnerTag(session) != null;
 		
-		DebugHelper.beginTimingSection("appendRecordsInternal");
+		Profiler.beginTimingSection("appendRecordsInternal");
 		mLock.writeLock().lock();
 		
 		
@@ -926,7 +939,7 @@ public class LogFile
 			if(session.Location + session.TotalSize == mFile.length())
 				availableSpace = Long.MAX_VALUE;
 			
-			LogUtil.finer(" Avaiable Space: " + availableSpace);
+			Debug.fine("*Avaiable Space: " + availableSpace);
 			
 			// Calculate the size of the records
 			long totalSize = 0;
@@ -956,12 +969,13 @@ public class LogFile
 			}
 			else
 			{
+				Debug.warning("Attempting to write to compressed session. Moving to new session");
 				splitSession = records.splitRecords(cutoffIndex, true);
 			}
 			
-			LogUtil.finer(" Total size to write: " + totalSize);
+			Debug.fine("*Total size to write: " + totalSize);
 			if(splitSession != null)
-				LogUtil.finer(" Cutoff at: " + cutoffIndex);
+				Debug.fine("*Cutoff at: " + cutoffIndex);
 			
 			if(records.size() != 0)
 			{
@@ -979,16 +993,18 @@ public class LogFile
 					
 					if(expectedSize != actualSize)
 					{
-						LogUtil.severe(records.get(i).getType().toString() + " is returning incorrect size. Expected: " + expectedSize + " got " + actualSize);
+						Debug.severe(records.get(i).getType().toString() + " is returning incorrect size. Expected: " + expectedSize + " got " + actualSize);
 					}
 					lastSize = dstream.size();
 				}
 		
 				// ensure i havent messed up the implementation of getSize()
-				assert totalSize == bstream.size();
+				Debug.loggedAssert(totalSize == bstream.size(), "Get size returned bad size");
 				
 				// Write it into the file
 				mFile.seek(session.Location + session.TotalSize);
+				Debug.finest("*Writing from %X -> %X", session.Location + session.TotalSize, session.Location + session.TotalSize + bstream.size()-1);
+				
 				mFile.write(bstream.toByteArray());
 	
 				// Consume the space
@@ -1002,12 +1018,13 @@ public class LogFile
 				updateSession(mIndex.indexOf(session), session);
 				
 				CrossReferenceIndex.instance.updateSession(this, session, records.getAllChunks());
+				Debug.info("Completed append to Session %d", session.Id);
 			}
 			
 			if(splitSession != null && !session.Compressed)
 			{
 				// Finalize the old session by compressing it
-				LogUtil.fine("Finalizing session. Compressing: ");
+				Debug.info("Found more records to write in new session. Compressing session");
 				
 				byte[] sessionData = new byte[(int)session.TotalSize];
 				mFile.seek(session.Location);
@@ -1021,7 +1038,7 @@ public class LogFile
 				
 				if(ostream.size() < session.TotalSize)
 				{
-					LogUtil.fine("Compressed to " + ostream.size() + " from " + session.TotalSize + ". Reduction of " + String.format("%.1f%%",(session.TotalSize-ostream.size()) / (double)session.TotalSize * 100F));
+					Debug.fine("Compressed to %d from %d. Reduction of %.1f%%", ostream.size(), session.TotalSize, (session.TotalSize-ostream.size()) / (double)session.TotalSize * 100F);
 					
 					HoleEntry freedSpace = new HoleEntry();
 					freedSpace.Location = session.Location + ostream.size();
@@ -1043,14 +1060,19 @@ public class LogFile
 					pullData(freedSpace.Location);
 				}
 				else
-					LogUtil.fine("Compression cancelled as the result was larger than the original");
+					Debug.fine("Compression cancelled as the result was larger than the original");
 				
 			}
+		}
+		catch (Exception e)
+		{
+			Debug.logException(e);
+			throw e;
 		}
 		finally
 		{
 			mLock.writeLock().unlock();
-			DebugHelper.endTimingSection();
+			Profiler.endTimingSection();
 		}
 
 		return splitSession;
@@ -1065,17 +1087,17 @@ public class LogFile
 	 */
 	public boolean appendRecords(RecordList records, String owner)
 	{
-		assert mIsLoaded;
-		assert mHeader.VersionMajor >= 2 : "Owner tags are only suppored in version 2 and above";
+		Debug.loggedAssert(mIsLoaded);
+		Debug.loggedAssert(mHeader.VersionMajor >= 2, "Owner tags are only suppored in version 2 and above");
 		if(mOwnerTagList == null)
 		{
-			LogUtil.severe("OwnerMap is null. Log: " + getName() + " Version: " + mHeader.VersionMajor + "." + mHeader.VersionMinor);
+			Debug.severe("OwnerMap is null. Log: " + getName() + " Version: " + mHeader.VersionMajor + "." + mHeader.VersionMinor);
 			return false;
 		}
 
 		boolean result;
 		
-		DebugHelper.beginTimingSection("appendRecords");
+		Profiler.beginTimingSection("appendRecords");
 		synchronized (CrossReferenceIndex.instance)
 		{
 			mLock.writeLock().lock();
@@ -1084,13 +1106,16 @@ public class LogFile
 			{
 				mFile.beginTransaction();
 				
-				LogUtil.info("Appending " + records.size() + " records to " + mPlayerName + ">" + owner);
+				Debug.info("Appending " + records.size() + " records to " + mPlayerName + ">" + owner);
 				
 				if(!mActiveSessions.containsKey(owner) || getSessionById(mActiveSessions.get(owner)) == null)
 				{
+					Debug.info("No active session for %s>%s. Creating one", mPlayerName, owner);
+					
 					int index = initialiseSession(records, true);
 					if(index != -1)
 					{
+						
 						mActiveSessions.put(owner, mIndex.get(index).Id);
 	
 						IndexEntry session = mIndex.get(index);
@@ -1179,7 +1204,7 @@ public class LogFile
 			}
 			catch(Exception e)
 			{
-				e.printStackTrace();
+				Debug.logException(e);
 				mFile.rollback();
 				result = false;
 			}
@@ -1190,7 +1215,7 @@ public class LogFile
 			}
 		}
 		
-		DebugHelper.endTimingSection();
+		Profiler.endTimingSection();
 		return result;
 	}
 	/**
@@ -1202,7 +1227,7 @@ public class LogFile
 	 */
 	public boolean appendRecords(RecordList records)
 	{
-		assert mIsLoaded;
+		Debug.loggedAssert(mIsLoaded);
 		if(mHeader.RequiresOwnerTags && mHeader.VersionMajor >= 2)
 			throw new IllegalStateException("Owner tags are required. You can only append records through appendRecords(records, tag)");
 		
@@ -1211,10 +1236,10 @@ public class LogFile
 		
 		boolean result;
 		
-		DebugHelper.beginTimingSection("appendRecords");
+		Profiler.beginTimingSection("appendRecords");
 		synchronized(CrossReferenceIndex.instance)
 		{
-			LogUtil.info("Appending " + records.size() + " records to " + mPlayerName);
+			Debug.info("Appending " + records.size() + " records to " + mPlayerName);
 			
 			mLock.writeLock().lock();
 			
@@ -1224,7 +1249,7 @@ public class LogFile
 				
 				if(!mActiveSessions.containsKey(null) || getSessionById(mActiveSessions.get(null)) == null)
 				{
-					LogUtil.finer("Tried to append records. No active session was found.");
+					Debug.finer("Tried to append records. No active session was found.");
 					int index = initialiseSession(records, false);
 					if(index != -1)
 					{
@@ -1271,7 +1296,7 @@ public class LogFile
 			}
 			catch(Exception e)
 			{
-				e.printStackTrace();
+				Debug.logException(e);
 				mFile.rollback();
 				result = false;
 			}
@@ -1281,7 +1306,7 @@ public class LogFile
 				
 			}
 		}
-		DebugHelper.endTimingSection();
+		Profiler.endTimingSection();
 		return result;
 	}
 	
@@ -1290,23 +1315,23 @@ public class LogFile
 		if(mHeader.RequiresOwnerTags && mHeader.VersionMajor >= 2)
 			throw new IllegalStateException("Owner tags are required. You can only append records through appendRecords(records, tag)");
 		
-		LogUtil.finest("Submitting appendRecords async task");
+		Debug.finest("Submitting appendRecords async task");
 		return SpyPlugin.getExecutor().submit(new AppendRecordsTask(this, records));
 //		synchronized (mAsyncService)
 //		{
-//			LogUtil.finest("Submitting appendRecords async task");
+//			Debug.finest("Submitting appendRecords async task");
 //			return mAsyncService.submit(new AppendRecordsTask(this, records));
 //		}
 	}
 	public Future<Boolean> appendRecordsAsync(RecordList records, String owner)
 	{
-		assert mHeader.VersionMajor >= 2 : "Owner tags are only suppored in version 2 and above";
+		Debug.loggedAssert(mHeader.VersionMajor >= 2, "Owner tags are only suppored in version 2 and above");
 		
-		LogUtil.finest("Submitting appendRecords async task");
+		Debug.finest("Submitting appendRecords async task");
 		return SpyPlugin.getExecutor().submit(new AppendRecordsTask(this, records, owner));
 //		synchronized (mAsyncService)
 //		{
-//			LogUtil.finest("Submitting appendRecords async task");
+//			Debug.finest("Submitting appendRecords async task");
 //			
 //			return mAsyncService.submit(new AppendRecordsTask(this, records, owner));
 //		}
@@ -1314,11 +1339,11 @@ public class LogFile
 	
 	private int initialiseSession(RecordList records, boolean absolute) throws IOException
 	{
-		assert mIsLoaded;
-		assert records.size() > 0;
+		Debug.loggedAssert(mIsLoaded);
+		Debug.loggedAssert(records.size() > 0);
 		
-		LogUtil.fine("Initializing New Session with " + records.size() + " records");
-		DebugHelper.beginTimingSection("initSession");
+		Debug.fine("Initializing New Session with " + records.size() + " records");
+		Profiler.beginTimingSection("initSession");
 		mLock.writeLock().lock();
 		
 		
@@ -1353,8 +1378,8 @@ public class LogFile
 			for(Record record : records)
 				totalSize += record.getSize(absolute);
 			
-			LogUtil.finer(" Total size of records: " + totalSize);
-			LogUtil.finer(" Actual session size: " + Math.max(totalSize, DesiredMaximumSessionSize));
+			Debug.finer(" Total size of records: " + totalSize);
+			Debug.finer(" Actual session size: " + Math.max(totalSize, DesiredMaximumSessionSize));
 			
 			// Write the records to memory
 			ByteArrayOutputStream bstream = new ByteArrayOutputStream(totalSize);
@@ -1371,7 +1396,7 @@ public class LogFile
 				
 				if(expectedSize != actualSize)
 				{
-					LogUtil.severe(record.getType().toString() + " is returning incorrect size. Expected: " + expectedSize + " got " + actualSize);
+					Debug.severe(record.getType().toString() + " is returning incorrect size. Expected: " + expectedSize + " got " + actualSize);
 				}
 				// Update deep mode
 				if(record instanceof SessionInfoRecord)
@@ -1382,9 +1407,9 @@ public class LogFile
 			}
 			
 			// Ensure i didnt mess up the implementation of getSize()
-			assert bstream.size() == totalSize;
+			Debug.loggedAssert( bstream.size() == totalSize);
 			
-			LogUtil.finest(" Produced byte stream");
+			Debug.finest(" Produced byte stream");
 			// Calculate size and prepare index entry
 			session.Location = 0;
 			session.TotalSize = stream.size();
@@ -1412,10 +1437,11 @@ public class LogFile
 				// Append to the file
 				session.Location = mFile.length();
 				
-				LogUtil.finest(" writing byte stream to file");
+				Debug.finest(" Writing session %d to %X -> %X", session.Id, session.Location, session.Location + bstream.size() - 1);
+				
 				mFile.seek(session.Location);
 				mFile.write(bstream.toByteArray());
-				LogUtil.finest(" done");
+				Debug.finest(" done");
 				// Keep some space for fast appends
 				if(session.TotalSize < DesiredMaximumSessionSize)
 				{
@@ -1435,6 +1461,7 @@ public class LogFile
 			{
 				// Write it in the hole
 				mFile.seek(session.Location);
+				Debug.finest(" Writing session %d to %X -> %X", session.Id, session.Location, session.Location + bstream.size() - 1);
 				mFile.write(bstream.toByteArray());
 			}
 			
@@ -1443,9 +1470,9 @@ public class LogFile
 			int id = addSession(session);
 			
 			if(!CrossReferenceIndex.instance.addSession(this, session, records.getAllChunks()))
-				LogUtil.warning("Failed to add session to xreference");
+				Debug.warning("Failed to add session to xreference");
 			else
-				LogUtil.finer("Added session to cross reference");
+				Debug.finer("Added session to cross reference");
 			
 			if(!absolute)
 			{
@@ -1464,7 +1491,7 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			DebugHelper.endTimingSection();
+			Profiler.endTimingSection();
 		}
 	}
 
@@ -1473,10 +1500,10 @@ public class LogFile
 	 */
 	public boolean purgeRecords(long fromDate, long toDate)
 	{
-		assert mIsLoaded;
+		Debug.loggedAssert( mIsLoaded);
 		
 		boolean result;
-		DebugHelper.beginTimingSection("purgeRecords");
+		Profiler.beginTimingSection("purgeRecords");
 		synchronized(CrossReferenceIndex.instance)
 		{
 			mLock.writeLock().lock();
@@ -1485,7 +1512,7 @@ public class LogFile
 			{
 				mFile.beginTransaction();
 				
-				LogUtil.info("Purging records from " + Util.dateToString(fromDate) + " to " + Util.dateToString(toDate));
+				Debug.info("Purging records from " + Util.dateToString(fromDate) + " to " + Util.dateToString(toDate));
 				ArrayList<IndexEntry> relevantEntries = new ArrayList<IndexEntry>();
 				
 				// Find the relevant sessions
@@ -1497,7 +1524,7 @@ public class LogFile
 					   (entry.EndTimestamp > fromDate && entry.EndTimestamp < toDate))
 						relevantEntries.add(entry);
 				}
-				LogUtil.finer("  " + relevantEntries.size() + " Matching Sessions");
+				Debug.finer("  " + relevantEntries.size() + " Matching Sessions");
 				
 				// Purge data
 				for(IndexEntry entry : relevantEntries)
@@ -1530,6 +1557,7 @@ public class LogFile
 						}
 						
 						if(count == 0)
+							// FIXME: Something is removing owner tags prematurely. I sometimes find nullptr excepts here
 							removeOwnerMap(mOwnerTagMap.get(entry.OwnerTagId));
 						
 						// So that anything else using this object through a reference, wont do any damage
@@ -1595,7 +1623,7 @@ public class LogFile
 								
 								if(expectedSize != actualSize)
 								{
-									LogUtil.severe(record.getType().toString() + " is returning incorrect size. Expected: " + expectedSize + " got " + actualSize);
+									Debug.severe(record.getType().toString() + " is returning incorrect size. Expected: " + expectedSize + " got " + actualSize);
 								}
 								lastSize = stream.size();
 							}
@@ -1637,13 +1665,13 @@ public class LogFile
 			}
 			catch (IOException e)
 			{
-				e.printStackTrace();
+				Debug.logException(e);
 				result = false;
 				mFile.rollback();
 			}
 			catch(Exception e)
 			{
-				e.printStackTrace();
+				Debug.logException(e);
 				result = false;
 				mFile.rollback();
 			}
@@ -1653,34 +1681,34 @@ public class LogFile
 				
 			}
 		}
-		DebugHelper.endTimingSection();
+		Profiler.endTimingSection();
 		return result;
 	}
 
 	
 	private void pullData(long location) throws IOException
 	{
-		DebugHelper.beginTimingSection("pullData");
+		Profiler.beginTimingSection("pullData");
 		// Grab what ever is next after this
 		long nextLocation;
 		long nextSize = 0;
 		int hole = getHoleAfter(location);
-		
+		// TODO: Remove the recursion here
 		if(hole != -1)
 		{
 			HoleEntry holeData = mHoleIndex.get(hole);
 			if(holeData.AttachedTo != null)
 			{
-				LogUtil.finest("Skipping over reserved space");
+				Debug.finest("Skipping over reserved space from %X -> %X attached to %d", holeData.Location, holeData.Location + holeData.Size - 1, holeData.AttachedTo.Id);
 				pullData(holeData.Location + holeData.Size);
 			}
 			
-			LogUtil.finest("Pulling data to " + location);
-
 			// Find what data needs to be pulled
 			nextLocation = holeData.Location + holeData.Size;
 			int type = 0;
 			int index = 0;
+			
+			Debug.finest("Pulling data from %X to %X", nextLocation, holeData.Location);
 			
 			for(IndexEntry nextSession : mIndex)
 			{
@@ -1716,7 +1744,7 @@ public class LogFile
 			if(nextSize != 0)
 			{
 				// Shift the data
-				long shiftAmount = nextLocation - location;
+				long shiftAmount = holeData.Size;
 				
 				byte[] buffer = new byte[1024];
 				int rcount = 0;
@@ -1749,25 +1777,25 @@ public class LogFile
 				case 0: // session
 				{
 					IndexEntry nextSession = mIndex.get(index);
-					LogUtil.finest("Shifted session " + nextSession.Id + " from " + nextSession.Location + " to " + holeData.Location);
+					Debug.finest("Shifted session %d from %X -> (%X-%X)", nextSession.Id, nextSession.Location, holeData.Location, holeData.Location + nextSize - 1);
 					nextSession.Location = holeData.Location;
 					updateSession(index, nextSession);
 					break;
 				}
 				case 1: // Index
-					LogUtil.finest("Shifted index from " + mHeader.IndexLocation + " to " + holeData.Location);
+					Debug.finest("Shifted index from %X -> (%X-%X)", mHeader.IndexLocation, holeData.Location, holeData.Location + nextSize - 1);
 					mHeader.IndexLocation = holeData.Location;
 					mFile.seek(0);
 					mHeader.write(mFile);
 					break;
 				case 2: // Hole Index
-					LogUtil.finest("Shifted hole index from " + mHeader.HolesIndexLocation + " to " + holeData.Location);
+					Debug.finest("Shifted hole index from %X -> (%X-%X)", mHeader.HolesIndexLocation, holeData.Location, holeData.Location + nextSize - 1);
 					mHeader.HolesIndexLocation = holeData.Location;
 					mFile.seek(0);
 					mHeader.write(mFile);
 					break;
 				case 3: // OwnerMap
-					LogUtil.finest("Shifted owner map from " + mHeader.OwnerMapLocation + " to " + holeData.Location);
+					Debug.finest("Shifted owner map from %X -> (%X-%X)", mHeader.OwnerMapLocation, holeData.Location, holeData.Location + nextSize - 1);
 					mHeader.OwnerMapLocation = holeData.Location;
 					mFile.seek(0);
 					mHeader.write(mFile);
@@ -1791,17 +1819,17 @@ public class LogFile
 				mFile.setLength(holeData.Location);
 			}
 		}
-		DebugHelper.endTimingSection();
+		Profiler.endTimingSection();
 	}
 	/**
 	 * Optimises file useage, compressing and relocating sessions to minimise the file size
 	 */
 	public boolean compactLog()
 	{
-		assert mIsLoaded;
+		Debug.loggedAssert( mIsLoaded);
 		
 		boolean result = false;
-		DebugHelper.beginTimingSection("compactLog");
+		Profiler.beginTimingSection("compactLog");
 		mLock.writeLock().lock();
 		
 		try
@@ -1834,8 +1862,8 @@ public class LogFile
 					totalAvailableFreespace += hole.Size;
 			}
 			
-			LogUtil.info("Compacting " + getName());
-			LogUtil.info("Free space: " + totalAvailableFreespace + " " + (totalAvailableFreespace / (double)oldFileSize) + "%");
+			Debug.info("Compacting " + getName());
+			Debug.info("Free space: " + totalAvailableFreespace + " " + (totalAvailableFreespace / (double)oldFileSize) + "%");
 			
 			// Shift all index entries so they consume all the free space before them
 			int i = 0;
@@ -2078,21 +2106,21 @@ public class LogFile
 			// Reclaim the space at the end of the file
 			mFile.setLength(lastLocation);
 			
-			LogUtil.info("Compacting complete. New file size: " + mFile.length() + ". " + (mFile.length() / (double)oldFileSize) + "%");
+			Debug.info("Compacting complete. New file size: " + mFile.length() + ". " + (mFile.length() / (double)oldFileSize) + "%");
 			result = true;
 			
 			mFile.commit();
 		}
 		catch(IOException e)
 		{
-			e.printStackTrace();
+			Debug.logException(e);
 			result = false;
 			mFile.rollback();
 		}
 		finally
 		{
 			mLock.writeLock().unlock();
-			DebugHelper.endTimingSection();
+			Profiler.endTimingSection();
 		}
 		
 		return result;
@@ -2127,7 +2155,7 @@ public class LogFile
 		}
 		catch(IOException e) 
 		{
-			e.printStackTrace();
+			Debug.logException(e);
 			mLock.readLock().unlock();
 			
 			return -1;
@@ -2192,7 +2220,7 @@ public class LogFile
 		if(entry.Size == 0)
 			return;
 		
-		DebugHelper.beginTimingSection("addHole");
+		Profiler.beginTimingSection("addHole");
 		mLock.writeLock().lock();
 		
 		
@@ -2211,7 +2239,7 @@ public class LogFile
 					mFile.seek(mHeader.HolesIndexLocation + i * HoleEntry.cSize);
 					newHole.write(mFile);
 					
-					LogUtil.finer("Merging Hole");
+					Debug.finest("Merging new hole into @%d changing range from (%X->%X) into (%X->%X)", i, existing.Location, existing.Location + existing.Size-1,newHole.Location, newHole.Location + newHole.Size-1);
 					
 					return;
 				}
@@ -2238,7 +2266,7 @@ public class LogFile
 				mHeader.HolesIndexSize = mHoleIndex.size() * HoleEntry.cSize;
 				mHeader.HolesIndexPadding -= HoleEntry.cSize;
 				
-				LogUtil.finest("Hole inserted into padding");
+				Debug.finest("Writing %d hole entries to %X -> %X Using padding. Remaining: %d bytes", mHoleIndex.size() - index, mHeader.HolesIndexLocation + index * HoleEntry.cSize, mHeader.HolesIndexLocation + mHeader.HolesIndexSize-1, mHeader.HolesIndexPadding);
 			}
 			else
 			{
@@ -2250,6 +2278,7 @@ public class LogFile
 					// There isnt a hole appended to the index
 					// Relocate the holes index
 					HoleEntry oldIndexHole = new HoleEntry();
+					long oldLocation = mHeader.HolesIndexLocation;
 					oldIndexHole.Location = mHeader.HolesIndexLocation;
 					oldIndexHole.Size = mHeader.HolesIndexSize + mHeader.HolesIndexPadding;
 					// Try to merge it
@@ -2310,7 +2339,7 @@ public class LogFile
 					// Padding
 					mFile.write(new byte[HoleEntry.cSize]);
 
-					LogUtil.finer("Hole index relocated");
+					Debug.finest("Moving hole index from %X to (%X -> %X) setting %d bytes padding", oldLocation, mHeader.HolesIndexLocation, mHeader.HolesIndexLocation + mHeader.HolesIndexSize - 1, mHeader.HolesIndexPadding);
 					
 					if(targetHole != -1) // Found a hole big enough
 						// Consume the hole
@@ -2327,7 +2356,7 @@ public class LogFile
 					mHeader.HolesIndexCount = mHoleIndex.size();
 					mHeader.HolesIndexSize = mHoleIndex.size() * HoleEntry.cSize;
 					
-					LogUtil.finer("Hole inserted into hole");
+					Debug.finest("Writing %d hole entries to %X -> %X", mHoleIndex.size() - index, mHeader.HolesIndexLocation + index * HoleEntry.cSize, mHeader.HolesIndexLocation + mHeader.HolesIndexSize-1);
 					
 					if(hole != mHoleIndex.size())
 						fillHole(hole,mFile.getFilePointer() - HoleEntry.cSize,HoleEntry.cSize);
@@ -2341,12 +2370,12 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			DebugHelper.endTimingSection();
+			Profiler.endTimingSection();
 		}
 	}
 	private void fillHole(int index, long start, long size) throws IOException
 	{
-		assert index >= 0 && index < mHoleIndex.size();
+		Debug.loggedAssert( index >= 0 && index < mHoleIndex.size());
 		
 		mLock.writeLock().lock();
 		
@@ -2402,8 +2431,8 @@ public class LogFile
 	}
 	private void updateHole(int index, HoleEntry entry) throws IOException
 	{
-		assert index >= 0 && index < mHoleIndex.size();
-		DebugHelper.beginTimingSection("updateHole");
+		Debug.loggedAssert( index >= 0 && index < mHoleIndex.size());
+		Profiler.beginTimingSection("updateHole");
 		mLock.writeLock().lock();
 		
 		
@@ -2412,18 +2441,18 @@ public class LogFile
 			mFile.seek(mHeader.HolesIndexLocation + index * HoleEntry.cSize);
 			mHoleIndex.set(index,entry);
 			entry.write(mFile);
-			LogUtil.finest("Updated hole");
+			Debug.finest("Updated hole at %X -> %X", mHeader.HolesIndexLocation + index * HoleEntry.cSize, mHeader.HolesIndexLocation + index * HoleEntry.cSize + HoleEntry.cSize - 1);
 		}
 		finally
 		{
 			mLock.writeLock().unlock();
-			DebugHelper.endTimingSection();
+			Profiler.endTimingSection();
 		}
 	}
 	private void removeHole(int index) throws IOException
 	{
-		assert index >= 0 && index < mHoleIndex.size();
-		DebugHelper.beginTimingSection("removeHole");
+		Debug.loggedAssert( index >= 0 && index < mHoleIndex.size());
+		Profiler.beginTimingSection("removeHole");
 		mLock.writeLock().lock();
 		
 		
@@ -2447,7 +2476,7 @@ public class LogFile
 			mHeader.HolesIndexCount = mHoleIndex.size();
 			mHeader.HolesIndexSize = mHoleIndex.size() * HoleEntry.cSize;
 			
-			LogUtil.finer("Hole removed");
+			Debug.finer("Hole removed");
 			// Write the file header
 			mFile.seek(0);
 			mHeader.write(mFile);
@@ -2455,7 +2484,7 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			DebugHelper.endTimingSection();
+			Profiler.endTimingSection();
 		}
 	}
 	
@@ -2463,7 +2492,7 @@ public class LogFile
 	{
 		int sessionIndex;
 		
-		DebugHelper.beginTimingSection("addSession");
+		Profiler.beginTimingSection("addSession");
 		mLock.writeLock().lock();
 		
 		try
@@ -2501,7 +2530,7 @@ public class LogFile
 				for(int i = 0; i < mIndex.size(); i++)
 					mIndex.get(i).write(mHeader.VersionMajor,mFile);
 				
-				LogUtil.fine("Index relocated");
+				Debug.finest("Index relocated from %X -> (%X->%X)", oldIndexHole.Location, mHeader.IndexLocation, mHeader.IndexLocation + mHeader.IndexSize-1);
 				// Add the hole info
 				addHole(oldIndexHole);
 			}
@@ -2516,7 +2545,7 @@ public class LogFile
 				for(int i = insertIndex; i < mIndex.size(); i++)
 					mIndex.get(i).write(mHeader.VersionMajor, mFile);
 				
-				LogUtil.finer("Session inserted");
+				Debug.finest("Writing %d index entries from %X -> %X", mIndex.size() - insertIndex, mHeader.IndexLocation + insertIndex * IndexEntry.cSize[mHeader.VersionMajor], mHeader.IndexLocation + mHeader.IndexSize - 1);
 				// Consume the hole
 				if(hole != mHoleIndex.size())
 					fillHole(hole,mHeader.IndexLocation + (mIndex.size()-1) * IndexEntry.cSize[mHeader.VersionMajor],IndexEntry.cSize[mHeader.VersionMajor]);
@@ -2536,21 +2565,22 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			DebugHelper.endTimingSection();
+			Profiler.endTimingSection();
 		}
 		
 		return sessionIndex;
 	}
 	private void removeSession(int index) throws IOException
 	{
-		assert index >= 0 && index < mIndex.size();
+		Debug.loggedAssert( index >= 0 && index < mIndex.size());
 		
-		DebugHelper.beginTimingSection("removeSession");
+		Profiler.beginTimingSection("removeSession");
 		mLock.writeLock().lock();
 		
 		
 		try
 		{
+			IndexEntry removedSession = mIndex.get(index);
 			CrossReferenceIndex.instance.removeSession(this, mIndex.get(index));
 			
 			// Shift the existing entries
@@ -2571,7 +2601,7 @@ public class LogFile
 			mHeader.IndexSize = mIndex.size() * IndexEntry.cSize[mHeader.VersionMajor];
 			mHeader.SessionCount = mIndex.size();
 			
-			LogUtil.finer("Session removed");
+			Debug.finer("Session %d removed from %d", removedSession.Id, index);
 			// Write the file header
 			mFile.seek(0);
 			mHeader.write(mFile);
@@ -2583,13 +2613,13 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			DebugHelper.endTimingSection();
+			Profiler.endTimingSection();
 		}
 	}
 	private void updateSession(int index, IndexEntry session) throws IOException
 	{
-		assert index >= 0 && index < mIndex.size() : "Tried to update session " + index + "/" + mIndex.size();
-		DebugHelper.beginTimingSection("updateSession");
+		Debug.loggedAssert( index >= 0 && index < mIndex.size(), "Tried to update session " + index + "/" + mIndex.size());
+		Profiler.beginTimingSection("updateSession");
 		mLock.writeLock().lock();
 		
 		
@@ -2599,12 +2629,12 @@ public class LogFile
 			mIndex.set(index,session);
 			session.write(mHeader.VersionMajor,mFile);
 			
-			LogUtil.finest("Session updated");
+			Debug.finest("Session %d(@%d) updated at %X -> %X", session.Id, index, mHeader.IndexLocation + index * IndexEntry.cSize[mHeader.VersionMajor], mHeader.IndexLocation + index * IndexEntry.cSize[mHeader.VersionMajor] + IndexEntry.cSize[mHeader.VersionMajor] - 1);
 		}
 		finally
 		{
 			mLock.writeLock().unlock();
-			DebugHelper.endTimingSection();
+			Profiler.endTimingSection();
 		}
 	}
 	
@@ -2612,7 +2642,7 @@ public class LogFile
 	{
 		int resultIndex;
 		
-		DebugHelper.beginTimingSection("addOwnerMap");
+		Profiler.beginTimingSection("addOwnerMap");
 		mLock.writeLock().lock();
 		
 		try
@@ -2638,8 +2668,9 @@ public class LogFile
 				mFile.seek(mFile.length());
 				for(int i = 0; i < mOwnerTagList.size(); i++)
 					mOwnerTagList.get(i).write(mFile);
+
+				Debug.fine("Owner tag Index relocated from %X -> (%X->%X)", oldIndexHole.Location, mHeader.OwnerMapLocation, mHeader.OwnerMapLocation + mHeader.OwnerMapSize-1);
 				
-				LogUtil.fine("Owner Map Index relocated");
 				// Add the hole info
 				addHole(oldIndexHole);
 			}
@@ -2653,7 +2684,7 @@ public class LogFile
 				mFile.seek(mHeader.OwnerMapLocation + (mOwnerTagList.size()-1) * OwnerMapEntry.cSize);
 				map.write(mFile);
 				
-				LogUtil.finer("Owner Map inserted");
+				Debug.finer("Owner tag written at %X -> %X", mHeader.OwnerMapLocation + (mOwnerTagList.size()-1) * OwnerMapEntry.cSize, mHeader.OwnerMapLocation + mHeader.OwnerMapSize - 1);
 				// Consume the hole
 				if(hole != mHoleIndex.size())
 					fillHole(hole,mHeader.OwnerMapLocation + (mOwnerTagList.size()-1) * OwnerMapEntry.cSize,OwnerMapEntry.cSize);
@@ -2668,16 +2699,16 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			DebugHelper.endTimingSection();
+			Profiler.endTimingSection();
 		}
 		return resultIndex;
 	}
 	
 	private void removeOwnerMap(int index) throws IOException
 	{
-		assert index >= 0 && index < mOwnerTagList.size();
+		Debug.loggedAssert( index >= 0 && index < mOwnerTagList.size());
 		
-		DebugHelper.beginTimingSection("removeOwnerMap");
+		Profiler.beginTimingSection("removeOwnerMap");
 		mLock.writeLock().lock();
 		
 		
@@ -2701,7 +2732,7 @@ public class LogFile
 			mHeader.OwnerMapSize = mOwnerTagList.size() * OwnerMapEntry.cSize;
 			mHeader.OwnerMapCount = mOwnerTagList.size();
 			
-			LogUtil.finer("Owner Map removed");
+			Debug.finer("Owner Map removed");
 			// Write the file header
 			mFile.seek(0);
 			mHeader.write(mFile);
@@ -2711,7 +2742,7 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			DebugHelper.endTimingSection();
+			Profiler.endTimingSection();
 		}
 	}
 	
@@ -2765,7 +2796,7 @@ public class LogFile
 
 	private void readIndex(RandomAccessFile file, FileHeader header) throws IOException
 	{
-		DebugHelper.beginTimingSection("readIndex");
+		Profiler.beginTimingSection("readIndex");
 		mLock.writeLock().lock();
 		
 		
@@ -2786,12 +2817,12 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			DebugHelper.endTimingSection();
+			Profiler.endTimingSection();
 		}
 	}
 	private void readHoles(RandomAccessFile file, FileHeader header) throws IOException
 	{
-		DebugHelper.beginTimingSection("readHoles");
+		Profiler.beginTimingSection("readHoles");
 		mLock.writeLock().lock();
 		
 
@@ -2824,12 +2855,12 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			DebugHelper.endTimingSection();
+			Profiler.endTimingSection();
 		}
 	}
 	private void readOwnerMap(RandomAccessFile file, FileHeader header) throws IOException
 	{
-		DebugHelper.beginTimingSection("readOwnerMap");
+		Profiler.beginTimingSection("readOwnerMap");
 		mLock.writeLock().lock();
 		
 		
@@ -2850,7 +2881,7 @@ public class LogFile
 		finally
 		{
 			mLock.writeLock().unlock();
-			DebugHelper.endTimingSection();
+			Profiler.endTimingSection();
 		}
 	}
 	private int mReferenceCount = 0;
@@ -2893,13 +2924,16 @@ public class LogFile
 		@Override
 		public Void call() 
 		{
-			LogUtil.info("Closing log " + mPlayerName);
+			Debug.info("Closing log " + mPlayerName);
 			
 			try 
 			{
 				mFile.close();
 			} 
-			catch (IOException e) {}
+			catch (IOException e) 
+			{
+				Debug.logException(e);
+			}
 			
 			mIsLoaded = false;
 			mIndex.clear();
@@ -2911,7 +2945,7 @@ public class LogFile
 				mOwnerTagList.clear();
 				mOwnerTagList = null;
 			}
-			LogUtil.finest("CloseTask is completed");
+			Debug.finest("CloseTask is completed");
 			
 			return null;
 		}

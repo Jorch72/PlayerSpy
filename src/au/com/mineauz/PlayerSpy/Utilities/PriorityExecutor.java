@@ -8,9 +8,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
-import au.com.mineauz.PlayerSpy.DebugHelper;
-import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.LogTasks.Task;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
+import au.com.mineauz.PlayerSpy.debugging.Profiler;
 
 public class PriorityExecutor
 {
@@ -32,7 +32,7 @@ public class PriorityExecutor
 		{
 			if(taskQueue.isEmpty())
 			{
-				DebugHelper.setValue("thread-" + id + "-queue", 0);
+				Profiler.setValue("thread-" + id + "-queue", 0);
 				isExecuting = false;
 				return;
 			}
@@ -42,17 +42,17 @@ public class PriorityExecutor
 			while((nextTask.future.isCancelled() || nextTask.future.isDone()) && taskQueue.size() > 0)
 				nextTask = taskQueue.poll();
 
-			DebugHelper.setValue("thread-" + id + "-queue", taskQueue.size() + (isExecuting ? 1 : 0));
+			Profiler.setValue("thread-" + id + "-queue", taskQueue.size() + (isExecuting ? 1 : 0));
 			if(nextTask.future.isCancelled() || nextTask.future.isDone())
 			{
 				isExecuting = false;
-				DebugHelper.setValue("thread-" + id + "-queue", taskQueue.size());
+				Profiler.setValue("thread-" + id + "-queue", taskQueue.size());
 				return;
 			}
 			
 			final Future<?> future = nextTask.future;
 			
-			LogUtil.finest("Executing task " + nextTask.task.getClass().getSimpleName());
+			Debug.finest("Executing task " + nextTask.task.getClass().getSimpleName());
 			
 			isExecuting = true;
 			executingTargetId = nextTask.task.getTaskTargetId();
@@ -131,15 +131,14 @@ public class PriorityExecutor
 		if(best == -1)
 			throw new RuntimeException("Error assigning work thread. No threads available.");
 		
-		LogUtil.finer("Task submitted to thread " + best);
 		// Submit the task
 		Future<T> future = new FutureTask<T>((Callable<T>)task);
 		SubmittedTask sTask = new SubmittedTask();
 		sTask.task = task;
 		sTask.future = future;
 		
-		DebugHelper.setValue("thread-" + best + "-queue", mThreadPool.get(best).taskQueue.size() + (mThreadPool.get(best).isExecuting ? 1 : 0));
-		DebugHelper.debugMessage("" + task.getClass().getSimpleName() + " submitted to thread " + best + ". QS: " + (mThreadPool.get(best).taskQueue.size() + (mThreadPool.get(best).isExecuting ? 1 : 0)));
+		Profiler.setValue("thread-" + best + "-queue", mThreadPool.get(best).taskQueue.size() + (mThreadPool.get(best).isExecuting ? 1 : 0));
+		Debug.info("" + task.getClass().getSimpleName() + " submitted to thread " + best + ". QS: " + (mThreadPool.get(best).taskQueue.size() + (mThreadPool.get(best).isExecuting ? 1 : 0)));
 		
 		boolean empty = mThreadPool.get(best).taskQueue.size() == 0 && !mThreadPool.get(best).isExecuting;
 		mThreadPool.get(best).taskQueue.add(sTask);

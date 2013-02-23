@@ -14,16 +14,14 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
 import au.com.mineauz.PlayerSpy.Cause;
-import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.LogTasks.Task;
-import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
-import au.com.mineauz.PlayerSpy.Records.Record;
-import au.com.mineauz.PlayerSpy.Records.RecordType;
+import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex.SessionInFile;
 
 /**
@@ -50,7 +48,7 @@ public class CauseFinder
 	public Cause getCauseFor(Location loc)
 	{
 		// Search through the currently buffered data for an answer
-		LogUtil.fine("Looking for cause of " + Utility.locationToStringShort(loc));
+		Debug.fine("Looking for cause of " + Utility.locationToStringShort(loc));
 		
 		Pair<Long, Cause> answer = null;
 		for(ShallowMonitor mon : GlobalMonitor.instance.getAllMonitors())
@@ -89,7 +87,7 @@ public class CauseFinder
 		// Now see if we have an answer
 		if(answer != null)
 		{
-			LogUtil.fine("already had cause");
+			Debug.fine("Found cause in active buffers. Result: %s", answer.getArg2().friendlyName());
 			return answer.getArg2();
 		}
 		else
@@ -101,7 +99,7 @@ public class CauseFinder
 				cause = mCurrentBlockTasks.get(loc);
 			else
 			{
-				LogUtil.fine("Cause not found in buffered records for " + Utility.locationToStringShort(loc) + ". Submitting search task.");
+				Debug.fine("Cause not found in buffered records for " + Utility.locationToStringShort(loc) + ". Submitting search task.");
 				cause = Cause.placeholderCause();
 			
 				mCurrentBlockTasks.put(loc, cause);
@@ -130,10 +128,11 @@ public class CauseFinder
 				} 
 				catch (InterruptedException e) 
 				{
+					Debug.logException(e);
 				} 
 				catch (ExecutionException e) 
 				{
-					e.printStackTrace();
+					Debug.logException(e);
 				}
 				
 				mCurrentBlockTasks.remove(ent.getKey());
@@ -211,11 +210,16 @@ public class CauseFinder
 			
 			results.release();
 			
-			LogUtil.finest("BlockSearchTask finished");
 			if(answer == null)
+			{
+				Debug.fine("BlockSearchTask finished. Result: Unknown");
 				return Cause.unknownCause();
+			}
 			else
+			{
+				Debug.fine("BlockSearchTask finished. Result: %s", answer.getArg2().friendlyName());
 				return answer.getArg2();
+			}
 		}
 		@Override
 		public int getTaskTargetId() 

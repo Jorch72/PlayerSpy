@@ -6,7 +6,7 @@ import java.io.RandomAccessFile;
 // Represents a session declaration
 public class IndexEntry
 {
-	public static final int[] cSize = new int[] {0, 27, 35};
+	public static final int[] cSize = new int[] {0, 27, 35, 35};
 	
 	public long StartTimestamp;
 	public long EndTimestamp;
@@ -27,7 +27,7 @@ public class IndexEntry
 			file.writeInt((int)Location);
 			file.writeInt((int)TotalSize);
 			file.writeByte(Compressed == true ? 1 : 0);
-			if(version == 2)
+			if(version == 2 || version == 3)
 			{
 				file.writeInt(Id);
 				file.writeInt(OwnerTagId);
@@ -50,7 +50,7 @@ public class IndexEntry
 			Location = (long)file.readInt();
 			TotalSize = (long)file.readInt();
 			Compressed = (file.readByte() == 0 ? false : true);
-			if(version == 2)
+			if(version == 2 || version == 3)
 			{
 				Id = file.readInt();
 				OwnerTagId = file.readInt();

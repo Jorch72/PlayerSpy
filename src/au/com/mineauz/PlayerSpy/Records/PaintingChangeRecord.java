@@ -12,8 +12,13 @@ import org.bukkit.entity.Painting;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import au.com.mineauz.PlayerSpy.StoredPainting;
+import au.com.mineauz.PlayerSpy.Records.ILocationAware;
+import au.com.mineauz.PlayerSpy.Records.IRollbackable;
+import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
+import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.storage.StoredPainting;
 
 public class PaintingChangeRecord extends Record implements IRollbackable, ILocationAware
 {
@@ -30,27 +35,32 @@ public class PaintingChangeRecord extends Record implements IRollbackable, ILoca
 		super(RecordType.PaintingChange);
 		mIsRolledBack = false;
 	}
+	@SuppressWarnings( "deprecation" )
+	public PaintingChangeRecord(au.com.mineauz.PlayerSpy.legacy.v2.PaintingChangeRecord old)
+	{
+		super(RecordType.PaintingChange);
+		mPainting = old.getPainting();
+		mPlaced = old.getPlaced();
+	}
 
 	@Override
 	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		stream.writeBoolean(mPlaced);
 		mPainting.writePainting(stream, absolute);
-		stream.writeBoolean(mIsRolledBack);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
 		mPlaced = stream.readBoolean();
 		
 		mPainting = StoredPainting.readPainting(stream, currentWorld, absolute);
-		mIsRolledBack = stream.readBoolean();
 	}
 	
 	@Override
 	protected int getContentSize(boolean absolute) 
 	{
-		return mPainting.getSize(absolute) + 2; 
+		return mPainting.getSize(absolute) + 1; 
 	}
 
 	public StoredPainting getPainting()
@@ -85,12 +95,6 @@ public class PaintingChangeRecord extends Record implements IRollbackable, ILoca
 	{
 		return mIsRolledBack;
 	}
-
-	@Override
-	public Location getLocation()
-	{
-		return mPainting.getLocation();
-	}
 	@Override
 	public boolean rollback( boolean preview, Player previewTarget )
 	{
@@ -109,5 +113,10 @@ public class PaintingChangeRecord extends Record implements IRollbackable, ILoca
 	{
 		// TODO Auto-generated method stub
 		return false;
+	}
+	@Override
+	public Location getLocation()
+	{
+		return mPainting.getLocation();
 	}
 }

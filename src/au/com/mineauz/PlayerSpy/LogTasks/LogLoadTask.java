@@ -8,6 +8,7 @@ import com.google.common.io.Files;
 import au.com.mineauz.PlayerSpy.FileHeader;
 import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.LogUtil;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 
 public class LogLoadTask implements Task<Boolean>
@@ -60,17 +61,19 @@ public class LogLoadTask implements Task<Boolean>
 					mLog.load(mFilename);
 					// Should be all good now
 					LogUtil.warning("Log Load fail: " + mFilename + ". Replacement log has been installed and old log backed up.");
+					Debug.warning("Log Load fail: " + mFilename + ". Replacement log has been installed and old log backed up.");
 				}
 				else
 				{
 					LogUtil.severe("Log Load fail: " + mFilename + ". Replacement log also failed. IO Error");
+					Debug.severe("Log Load fail: " + mFilename + ". Replacement log also failed. IO Error.");
 					return false;
 				}
 			}
 			catch(IOException e)
 			{
-				e.printStackTrace();
-				LogUtil.severe("Cannot generate replacement log file!");
+				Debug.logException(e);
+				Debug.severe("Cannot generate replacement log file!");
 				// What do you do when your error handler fails :/
 				return false;
 			}

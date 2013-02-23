@@ -30,11 +30,11 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.LogFile;
-import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 
 public class ShallowMonitor 
 {
@@ -181,11 +181,11 @@ public class ShallowMonitor
 		mCurrentTransactions = new ArrayList<ItemStack>();
 		mCurrentTransactionInventoryLocation = enderChestLocation;
 		
-		LogUtil.finer("Beginning Transaction");
+		Debug.finer("Beginning Transaction");
 	}
 	public void doTransaction(ItemStack item, boolean take)
 	{
-		assert mCurrentTransactionInventory != null;
+		Debug.loggedAssert(mCurrentTransactionInventory != null);
 		
 		// Total up transactions
 		for(ItemStack transaction : mCurrentTransactions)
@@ -210,7 +210,7 @@ public class ShallowMonitor
 	}
 	public void endTransaction()
 	{
-		assert mCurrentTransactionInventory != null;
+		Debug.loggedAssert(mCurrentTransactionInventory != null);
 		// Log what ever is left
 		for(ItemStack transaction : mCurrentTransactions)
 		{
@@ -226,12 +226,12 @@ public class ShallowMonitor
 				else
 					record = InventoryTransactionRecord.newAddToInventory(transaction, mCurrentTransactionInventory, mCurrentTransactionInventoryLocation);
 				
-				LogUtil.finer(record.toString());
+				Debug.finer(record.toString());
 				logRecord(record);
 			}
 		}
 		
-		LogUtil.finer("Ended Transaction");
+		Debug.finer("Ended Transaction");
 		mCurrentTransactionInventory = null;
 		mCurrentTransactionInventoryLocation = null;
 		mCurrentTransactions.clear();
@@ -290,13 +290,13 @@ public class ShallowMonitor
 			if(damageEnt instanceof Projectile)
 			{
 				// We are being damaged
-				LogUtil.finest("Target was shot by " + ((Projectile)damageEnt).getShooter().getType().toString());
+				Debug.finest("Target was shot by " + ((Projectile)damageEnt).getShooter().getType().toString());
 				logRecord(new DamageRecord(((Projectile)damageEnt).getShooter(),damageAmount));
 			}
 			else
 			{
 				// We are being damaged
-				LogUtil.finest("Target was damaged by entity");
+				Debug.finest("Target was damaged by entity");
 				logRecord(new DamageRecord(damageEnt,damageAmount));
 			}
 		}

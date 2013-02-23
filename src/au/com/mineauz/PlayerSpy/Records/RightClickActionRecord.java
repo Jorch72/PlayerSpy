@@ -11,9 +11,13 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.ItemStack;
 
-import au.com.mineauz.PlayerSpy.StoredEntity;
-import au.com.mineauz.PlayerSpy.StoredItemStack;
+import au.com.mineauz.PlayerSpy.Records.ILocationAware;
+import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
+import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.storage.StoredItemStack;
+import au.com.mineauz.PlayerSpy.storage.StoredEntity;
 
 public class RightClickActionRecord extends Record implements ILocationAware
 {
@@ -41,6 +45,14 @@ public class RightClickActionRecord extends Record implements ILocationAware
 	{
 		super(RecordType.RClickAction);
 	}
+	@SuppressWarnings( "deprecation" )
+	public RightClickActionRecord(au.com.mineauz.PlayerSpy.legacy.v2.RightClickActionRecord old)
+	{
+		super(RecordType.RClickAction);
+		mAction = Action.values()[old.getAction().ordinal()];
+		mItem = new StoredItemStack(old.getItem());
+		mEntity = old.getEntity();
+	}
 
 	@Override
 	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
@@ -55,9 +67,13 @@ public class RightClickActionRecord extends Record implements ILocationAware
 	}
 
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
-		mAction = Action.values()[stream.readByte()];
+		int actionType = stream.readByte();
+		if(actionType < 0 || actionType >= Action.values().length)
+			throw new RecordFormatException("Bad action type " + actionType);
+		
+		mAction = Action.values()[actionType];
 		mItem = StoredItemStack.readItemStack(stream);
 		
 		if(stream.readBoolean())

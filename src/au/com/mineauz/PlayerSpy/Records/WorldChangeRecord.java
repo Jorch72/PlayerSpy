@@ -3,6 +3,7 @@ package au.com.mineauz.PlayerSpy.Records;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.UTFDataFormatException;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -29,14 +30,21 @@ public class WorldChangeRecord extends Record {
 		stream.writeUTF(mWorldString);
 	}
 	@Override
-	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException 
+	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
-		mWorldString = stream.readUTF();
-		mWorld = Bukkit.getWorld(mWorldString);
-		if(mWorld == null)
+		try
 		{
-			mWorld = Bukkit.getWorlds().get(0);
-			//LogUtil.warning("Invalid world '" + mWorldString + "'in record. Defaulting to '" + mWorld.getName() + "'. Did you delete a world?");
+			mWorldString = stream.readUTF();
+			mWorld = Bukkit.getWorld(mWorldString);
+			if(mWorld == null)
+			{
+				mWorld = Bukkit.getWorlds().get(0);
+				//LogUtil.warning("Invalid world '" + mWorldString + "'in record. Defaulting to '" + mWorld.getName() + "'. Did you delete a world?");
+			}
+		}
+		catch(UTFDataFormatException e)
+		{
+			throw new RecordFormatException("Error reading UTF string. Malformed data.");
 		}
 	}
 

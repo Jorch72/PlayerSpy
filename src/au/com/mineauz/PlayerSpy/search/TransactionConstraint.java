@@ -3,11 +3,11 @@ package au.com.mineauz.PlayerSpy.search;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 
-import au.com.mineauz.PlayerSpy.StoredInventoryInformation.InventoryType;
 import au.com.mineauz.PlayerSpy.Records.InventoryTransactionRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
+import au.com.mineauz.PlayerSpy.storage.StoredInventoryInformation.InventoryType;
 
 public class TransactionConstraint extends Constraint
 {

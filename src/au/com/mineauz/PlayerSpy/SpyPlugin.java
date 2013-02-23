@@ -6,8 +6,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.logging.Level;
-//import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -16,11 +14,13 @@ import org.bukkit.plugin.java.JavaPlugin;
 import au.com.mineauz.PlayerSpy.Upgrading.Upgrader;
 import au.com.mineauz.PlayerSpy.Utilities.PriorityExecutor;
 import au.com.mineauz.PlayerSpy.commands.*;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
 import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 import au.com.mineauz.PlayerSpy.rollback.RollbackManager;
 import au.com.mineauz.PlayerSpy.search.Searcher;
+import au.com.mineauz.PlayerSpy.wrappers.PreLoadValidator;
 
 public class SpyPlugin extends JavaPlugin
 {
@@ -31,10 +31,7 @@ public class SpyPlugin extends JavaPlugin
 			getDataFolder().mkdirs();
 		
 		LogUtil.setLogger(getLogger());
-		//*****DEBUG******
-		getLogger().setLevel(Level.FINE);
-		//getLogger().getParent().getHandlers()[0].setLevel(Level.FINEST);
-		//****END DEBUG****
+		Debug.init(new File(getDataFolder(), "debug.log"));
 		
 		mConfig = new Config(new File(getDataFolder(), "config.yml"));
 		// Load the config
@@ -43,6 +40,7 @@ public class SpyPlugin extends JavaPlugin
 		getSettings().save();
 
 		sPluginInstance = this;
+		PreLoadValidator.validateWrappers();
 		
 		CommandDispatcher dispatch = new CommandDispatcher();
 		getCommand("playerspy").setExecutor(dispatch);

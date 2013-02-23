@@ -4,9 +4,9 @@ import org.bukkit.Material;
 
 import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.RecordList;
-import au.com.mineauz.PlayerSpy.StoredBlock;
 import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
+import au.com.mineauz.PlayerSpy.storage.StoredBlock;
 
 public class SearchForBlockChangeTask implements Task<Long>
 {
