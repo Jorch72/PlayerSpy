@@ -83,14 +83,10 @@ public abstract class AutoWrapper
 			// Make safe all the items
 			List<Object> copy = new ArrayList<Object>(((List<?>)obj).size());
 			
-			for(int i = 0; i < copy.size(); ++i)
+			for(int i = 0; i < ((List<?>)obj).size(); ++i)
 				copy.add(wrapObjects(((List<?>)obj).get(i)));
 			
 			return copy;
-		}
-		else if(mClassReverse.containsKey(obj.getClass()))
-		{
-			return instanciateWrapper(obj);
 		}
 		else if(obj.getClass().isArray())
 		{
@@ -103,7 +99,22 @@ public abstract class AutoWrapper
 			return copy;
 		}
 		else
-			return obj;
+		{
+			Class<?> clazz = obj.getClass();
+			if(clazz.getSuperclass() == null)
+				return obj;
+			
+			while (!mClassReverse.containsKey(clazz))
+			{
+				clazz = clazz.getSuperclass();
+				if(clazz.equals(Object.class))
+					break;
+			}
+			if(clazz.equals(Object.class))
+				return obj;
+			
+			return instanciateWrapper(obj);
+		}
 	}
 	
 	static Object unwrapObjects(Object obj)
