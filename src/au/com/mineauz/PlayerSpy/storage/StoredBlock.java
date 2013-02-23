@@ -195,6 +195,7 @@ public class StoredBlock
 			((Skull)state).setSkullType(data.type);
 			((Skull)state).setRotation(data.facing);
 			((Skull)state).setOwner(data.player);
+			break;
 		}
 		case NormalBlock:
 			break;
