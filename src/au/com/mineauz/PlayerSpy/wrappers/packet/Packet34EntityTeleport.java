@@ -14,11 +14,14 @@ public class Packet34EntityTeleport extends Packet
 		initialize(Packet34EntityTeleport.class);
 	}
 	
+	Packet34EntityTeleport(){}
+	
 	@WrapperConstructor(Entity.class)
 	private static Constructor<?> mConstructor;
 	
 	public Packet34EntityTeleport(Entity entity)
 	{
+		super();
 		instanciate(mConstructor, entity);
 	}
 }

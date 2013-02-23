@@ -63,11 +63,38 @@ public class Entity extends AutoWrapper
 	@WrapperField(name="locZ",type=Double.class)
 	public FieldWrapper<Double> locationZ;
 	
+	@WrapperField(name="height", type=Float.class)
+	public FieldWrapper<Float> height;
+	
 	@WrapperMethod(name="getDataWatcher", returnType=DataWatcher.class,parameterTypes={})
 	private static Method mGetDataWatcher;
 	
 	public DataWatcher getDataWatcher()
 	{
 		return callMethod(mGetDataWatcher);
+	}
+	
+	@WrapperMethod(name="setLocation", returnType=Void.class, parameterTypes={Double.class, Double.class, Double.class, Float.class, Float.class})
+	private static Method mSetLocation;
+	
+	public void setLocation(double x, double y, double z, float yaw, float pitch)
+	{
+		callMethod(mSetLocation, x, y, z, yaw, pitch);
+	}
+	
+	@WrapperMethod(name="setSneaking", returnType=Void.class, parameterTypes=Boolean.class)
+	private static Method mSetSneaking;
+	
+	public void setSneaking(boolean value)
+	{
+		callMethod(mSetSneaking, value);
+	}
+	
+	@WrapperMethod(name="setSprinting", returnType=Void.class, parameterTypes=Boolean.class)
+	private static Method mSetSprinting;
+	
+	public void setSprinting(boolean value)
+	{
+		callMethod(mSetSprinting, value);
 	}
 }

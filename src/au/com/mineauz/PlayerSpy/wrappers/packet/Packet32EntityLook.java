@@ -13,11 +13,14 @@ public class Packet32EntityLook extends Packet
 		initialize(Packet32EntityLook.class);
 	}
 	
+	Packet32EntityLook() {}
+	
 	@WrapperConstructor({Integer.class, Byte.class, Byte.class})
 	private static Constructor<?> mConstructor;
 	
 	public Packet32EntityLook(int entityId, byte yaw, byte pitch)
 	{
+		super();
 		instanciate(mConstructor, entityId, yaw, pitch);
 	}
 }

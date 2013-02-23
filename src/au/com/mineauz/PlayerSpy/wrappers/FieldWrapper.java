@@ -31,7 +31,7 @@ public class FieldWrapper<T>
 	{
 		try
 		{
-			mField.set(mInstance, value);
+			mField.set(mInstance, AutoWrapper.unwrapObjects(value));
 		}
 		catch(Exception e)
 		{

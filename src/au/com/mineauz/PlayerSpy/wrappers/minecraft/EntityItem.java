@@ -13,11 +13,14 @@ public class EntityItem extends Entity
 		initialize(EntityItem.class);
 	}
 	
+	EntityItem() {}
+	
 	@WrapperConstructor({World.class, Double.class, Double.class, Double.class, ItemStack.class})
 	private static Constructor<?> mConstructor;
 	
 	public EntityItem(World world, double x, double y, double z, ItemStack item)
 	{
+		super();
 		instanciate(mConstructor, world, x, y, z, item);
 	}
 	

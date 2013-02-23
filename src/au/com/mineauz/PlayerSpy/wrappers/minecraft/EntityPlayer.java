@@ -14,6 +14,6 @@ public class EntityPlayer extends EntityHuman
 	
 	public PlayerConnection getPlayerConnection()
 	{
-		return (PlayerConnection)instanciateWrapper(getFieldInstance("playerConnection"));
+		return getFieldInstance("playerConnection");
 	}
 }

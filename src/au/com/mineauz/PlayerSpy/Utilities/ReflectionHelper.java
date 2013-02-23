@@ -2,6 +2,7 @@ package au.com.mineauz.PlayerSpy.Utilities;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -12,6 +13,19 @@ import java.util.jar.JarFile;
 
 public class ReflectionHelper
 {
+	@SuppressWarnings( "unchecked" )
+	public static <T> Constructor<T> getDeclaredConstructor(Class<?> clazz, Class<?>... args)
+	{
+		try
+		{
+			return (Constructor<T>)clazz.getDeclaredConstructor(args);
+		}
+		catch (Exception e)
+		{
+			return null;
+		}
+	}
+	
 	/**
 	 * Does the same as Class.forName, but supports the wildchar 
 	 * @throws ClassNotFoundException *
@@ -20,6 +34,9 @@ public class ReflectionHelper
 	{
 		try
 		{
+			if(!path.contains("*"))
+				return Class.forName(path);
+			
 			String[] parts = path.split("\\.");
 			
 			int startIndex = 0;
@@ -61,9 +78,7 @@ public class ReflectionHelper
         String[] next = getNextParts(currentPath);
         
         String needed = neededParts[index];
-        if(needed.contains("$"))
-        	needed = needed.substring(0, needed.indexOf("$"));
-        
+                
         for(String part : next)
     	{
         	
@@ -91,6 +106,9 @@ public class ReflectionHelper
 
         packageURL = classLoader.getResource(path.replaceAll("\\.", "/"));
 
+        if(packageURL == null)
+        	return new String[]{};
+        
         if(packageURL.getProtocol().equals("jar"))
         {
             String jarFileName;
@@ -108,7 +126,7 @@ public class ReflectionHelper
             {
                 entryName = jarEntries.nextElement().getName();
                 
-                if(entryName.startsWith(path + "/"))
+                if(entryName.startsWith(path.replaceAll("\\.","/") + "/"))
                 {
                 	entryName = entryName.substring(path.length()+1);
 

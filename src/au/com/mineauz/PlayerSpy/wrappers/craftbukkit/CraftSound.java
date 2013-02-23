@@ -16,7 +16,7 @@ public class CraftSound extends AutoWrapper
 		initialize(CraftSound.class);
 	}
 	
-	private CraftSound() {}
+	CraftSound() {}
 	
 	@WrapperMethod(name="getSound",returnType=String.class, parameterTypes=Sound.class)
 	private static Method mGetSound;

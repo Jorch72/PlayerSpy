@@ -14,11 +14,14 @@ public class Packet23VehicleSpawn extends Packet
 		initialize(Packet23VehicleSpawn.class);
 	}
 	
+	Packet23VehicleSpawn() {}
+	
 	@WrapperConstructor({Entity.class, Integer.class, Integer.class})
 	private static Constructor<?> mConstructor;
 	
 	public Packet23VehicleSpawn(Entity entity, int arg1, int arg2)
 	{
-		instanciate(mConstructor, arg1, arg2);
+		super();
+		instanciate(mConstructor, entity, arg1, arg2);
 	}
 }

@@ -19,6 +19,7 @@ import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
 import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 import au.com.mineauz.PlayerSpy.search.Searcher;
+import au.com.mineauz.PlayerSpy.wrappers.PreLoadValidator;
 
 public class SpyPlugin extends JavaPlugin
 {
@@ -38,6 +39,7 @@ public class SpyPlugin extends JavaPlugin
 		getSettings().save();
 
 		sPluginInstance = this;
+		PreLoadValidator.validateWrappers();
 		
 		CommandDispatcher dispatch = new CommandDispatcher();
 		getCommand("playerspy").setExecutor(dispatch);

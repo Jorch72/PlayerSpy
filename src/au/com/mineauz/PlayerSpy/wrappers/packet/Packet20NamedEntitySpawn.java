@@ -13,11 +13,14 @@ public class Packet20NamedEntitySpawn extends Packet
 		initialize(Packet20NamedEntitySpawn.class);
 	}
 	
+	Packet20NamedEntitySpawn() {}
+	
 	@WrapperConstructor(EntityHuman.class)
 	private static Constructor<?> mConstructor;
 	
 	public Packet20NamedEntitySpawn(EntityHuman human)
 	{
+		super();
 		instanciate(mConstructor, human);
 	}
 	

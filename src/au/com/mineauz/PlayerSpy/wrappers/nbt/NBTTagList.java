@@ -44,7 +44,7 @@ public class NBTTagList extends NBTBase
 	private static Method mGetMethod;
 	public NBTBase get(int index)
 	{
-		return (NBTBase) instanciateWrapper(callMethod(mGetMethod, index));
+		return callMethod(mGetMethod, index);
 	}
 			
 }

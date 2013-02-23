@@ -13,11 +13,14 @@ public class Packet35EntityHeadRotation extends Packet
 		initialize(Packet35EntityHeadRotation.class);
 	}
 	
+	Packet35EntityHeadRotation() {}
+	
 	@WrapperConstructor({Integer.class, Byte.class})
 	private static Constructor<?> mConstructor;
 	
 	public Packet35EntityHeadRotation(int entityId, byte yaw)
 	{
+		super();
 		instanciate(mConstructor, entityId, yaw);
 	}
 }

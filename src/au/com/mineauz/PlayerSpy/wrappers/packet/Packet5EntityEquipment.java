@@ -14,11 +14,14 @@ public class Packet5EntityEquipment extends Packet
 		initialize(Packet5EntityEquipment.class);
 	}
 	
+	Packet5EntityEquipment() {}
+	
 	@WrapperConstructor({Integer.class, Integer.class, ItemStack.class})
 	private static Constructor<?> mConstructor;
 	
 	public Packet5EntityEquipment(int entityId, int slot, ItemStack item)
 	{
+		super();
 		instanciate(mConstructor, entityId, slot, item);
 	}
 }

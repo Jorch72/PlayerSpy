@@ -14,11 +14,14 @@ public class Packet28EntityVelocity extends Packet
 		initialize(Packet28EntityVelocity.class);
 	}
 	
+	Packet28EntityVelocity() {}
+	
 	@WrapperConstructor(Entity.class)
 	private static Constructor<?> mConstructor;
 	
 	public Packet28EntityVelocity(Entity entity)
 	{
+		super();
 		instanciate(mConstructor, entity);
 	}
 }

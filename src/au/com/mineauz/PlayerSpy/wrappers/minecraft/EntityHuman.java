@@ -14,4 +14,10 @@ public class EntityHuman extends EntityLiving
 	
 	@WrapperField(name="name", type=String.class)
 	public FieldWrapper<String> name;
+	
+	@WrapperField(name="sleeping", type=Boolean.class)
+	public FieldWrapper<Boolean> sleeping; 
+	
+	@WrapperField(name="inventory", type=PlayerInventory.class)
+	public FieldWrapper<PlayerInventory> inventory;
 }

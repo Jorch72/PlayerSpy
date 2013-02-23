@@ -16,9 +16,9 @@ public class Item extends AutoWrapper
 		initialize(Item.class);
 	}
 	
-	protected Item() {}
+	Item() {}
 	
-	@WrapperField(name="id", type=Integer.class)
+	@WrapperField(name="id", type=int.class)
 	public FieldWrapper<Integer> id;
 	
 	@WrapperField(name="byId", type=Item[].class)
@@ -43,7 +43,7 @@ public class Item extends AutoWrapper
 		return callMethod(mGetName);
 	}
 	
-	@WrapperMethod(name="l", returnType=Boolean.class, parameterTypes={})
+	@WrapperMethod(name="l", returnType=boolean.class, parameterTypes={})
 	private static Method mHasSubtypes;
 	
 	public boolean hasSubtypes()

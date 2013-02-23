@@ -8,9 +8,9 @@ import java.io.UTFDataFormatException;
 import org.bukkit.entity.*;
 
 import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
-import au.com.mineauz.PlayerSpy.Utilities.EntityShadowPlayer;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftWorld;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.EntityShadowPlayer;
 import au.com.mineauz.PlayerSpy.wrappers.minecraft.EntityTypes;
 
 public class StoredEntity 

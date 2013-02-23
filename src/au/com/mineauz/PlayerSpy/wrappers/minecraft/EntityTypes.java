@@ -19,6 +19,6 @@ public class EntityTypes extends AutoWrapper
 	
 	public static Entity createEntityByID(int id, World world)
 	{
-		return callStaticMethod(mCreateEntityByID, id, world);
+		return (Entity) instanciateWrapper(callStaticMethod(mCreateEntityByID, id, world));
 	}
 }

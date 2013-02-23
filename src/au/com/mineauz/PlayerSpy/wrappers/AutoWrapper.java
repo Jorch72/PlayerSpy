@@ -1,5 +1,6 @@
 package au.com.mineauz.PlayerSpy.wrappers;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -8,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.Utilities.ReflectionHelper;
 
 public abstract class AutoWrapper
@@ -23,10 +25,34 @@ public abstract class AutoWrapper
 	}
 	
 	@SuppressWarnings( "unchecked" )
+	private static void ensureInitialized(Class<?> clazz)
+	{
+		if(AutoWrapper.class.isAssignableFrom(clazz))
+		{
+			Class<?> wrappedClass = getWrappedClass((Class<? extends AutoWrapper>)clazz);
+			if(wrappedClass == null)
+			{
+				initialize((Class<? extends AutoWrapper>)clazz);
+			}
+		}
+	}
+	
+	@SuppressWarnings( "unchecked" )
 	private static Class<?> convert(Class<?> other)
 	{
 		if(AutoWrapper.class.isAssignableFrom(other))
+		{
+			ensureInitialized(other);
 			return getWrappedClass((Class<? extends AutoWrapper>)other);
+		}
+		else if(other.isArray())
+		{
+			if(AutoWrapper.class.isAssignableFrom(other.getComponentType()))
+			{
+				ensureInitialized(other.getComponentType());
+				return Array.newInstance(getWrappedClass((Class<? extends AutoWrapper>)other.getComponentType()), 0).getClass();
+			}
+		}
 		else if(other.equals(Void.class))
 			return Void.TYPE;
 		else if(other.equals(Byte.class))
@@ -41,6 +67,8 @@ public abstract class AutoWrapper
 			return Float.TYPE;
 		else if(other.equals(Double.class))
 			return Double.TYPE;
+		else if(other.equals(Boolean.class))
+			return Boolean.TYPE;
 		
 		return other;
 	}
@@ -99,6 +127,14 @@ public abstract class AutoWrapper
 		}
 		else if(obj.getClass().isArray())
 		{
+			if(obj.getClass().getComponentType().equals(int.class) || 
+				obj.getClass().getComponentType().equals(byte.class) || 
+				obj.getClass().getComponentType().equals(short.class) ||
+				obj.getClass().getComponentType().equals(long.class) ||
+				obj.getClass().getComponentType().equals(float.class) ||
+				obj.getClass().getComponentType().equals(double.class)) 
+				return obj;
+			
 			// Make safe all the items
 			Object[] copy = ((Object[])obj).clone();
 			
@@ -114,12 +150,19 @@ public abstract class AutoWrapper
 	/**
 	 * This is only needed if a class has static methods that you need to use. You should put it in the static constructor
 	 */
-	protected static void initialize(Class<? extends AutoWrapper> thisClass)
+	public static void initialize(Class<? extends AutoWrapper> thisClass)
 	{
 		if(getWrappedClass(thisClass) != null)
 			return;
 		
+		LogUtil.info("Preinitialization " + thisClass.getSimpleName());
 		findClass(thisClass);
+		
+		// Ensure it has a default constructor for use with instanciateWrapper
+		Constructor<?> defaultConstructor = ReflectionHelper.getDeclaredConstructor(thisClass);
+		if(defaultConstructor == null)
+			throw new WrapperValidationException("Wrapper declaration validation failed: " + thisClass.getName() + " requires a default constructor. It may be any visibility level.");
+		
 		
 		// Validate the class
 		Class<?> clazz = getWrappedClass(thisClass);
@@ -190,6 +233,8 @@ public abstract class AutoWrapper
 					}
 				}
 			}
+			
+			LogUtil.info(thisClass.getSimpleName() + " wrapper initialized");
 		}
 		catch(Exception e)
 		{
@@ -197,25 +242,38 @@ public abstract class AutoWrapper
 		}
 	}
 	
+	@SuppressWarnings( "unchecked" )
 	private void initializeFields()
 	{
 		try
 		{
-			Class<?> clazz = getWrappedClass(getClass());
+			Class<?> thisClass = getClass();
 			
-			// Validate and map fields
-			for(Field field : getClass().getDeclaredFields())
+			while(thisClass != null)
 			{
-				WrapperField annotation = field.getAnnotation(WrapperField.class);
+				Class<?> clazz = getWrappedClass((Class<? extends AutoWrapper>)thisClass);
 				
-				if(annotation != null)
+				if(clazz == null)
+					break;
+				
+				// Validate and map fields
+				for(Field field : thisClass.getDeclaredFields())
 				{
-					Field wrappedField = clazz.getDeclaredField(annotation.name());
-					FieldWrapper<?> wrapper = new FieldWrapper<Object>(wrappedField, mInstance);
+					WrapperField annotation = field.getAnnotation(WrapperField.class);
 					
-					field.setAccessible(true);
-					field.set(mInstance, wrapper);
+					if(annotation != null)
+					{
+						Field nativeField = clazz.getDeclaredField(annotation.name());
+						FieldWrapper<?> wrapper = new FieldWrapper<Object>(nativeField, mInstance);
+						
+						field.setAccessible(true);
+						field.set(this, wrapper);
+					}
 				}
+				
+				thisClass = thisClass.getSuperclass();
+				if(Object.class.equals(thisClass))
+					thisClass = null;
 			}
 		}
 		catch(Exception e)
@@ -233,6 +291,9 @@ public abstract class AutoWrapper
 	{
 		try
 		{
+			for(int i = 0; i < args.length; ++i)
+				args[i] = unwrapObjects(args[i]);
+			
 			mInstance = constructor.newInstance(args);
 			
 			initializeFields();
@@ -264,25 +325,30 @@ public abstract class AutoWrapper
 		
 		try
 		{
-			if(mClassReverse.containsKey(obj.getClass()))
+			Class<?> clazz = obj.getClass();
+			while (!mClassReverse.containsKey(clazz))
 			{
-				Class<? extends AutoWrapper> wrapperClass = mClassReverse.get(obj.getClass());
-				
-				Constructor<? extends AutoWrapper> c = wrapperClass.getDeclaredConstructor();
-				c.setAccessible(true);
-				
-				AutoWrapper wrapper = c.newInstance();
-				wrapper.mInstance = obj;
-				
-				return wrapper;
+				clazz = clazz.getSuperclass();
+				if(clazz.equals(Object.class))
+					throw new RuntimeException("No appropriate wrapper is available for type " + obj.getClass().getName());
 			}
+			
+			Class<? extends AutoWrapper> wrapperClass = mClassReverse.get(clazz);
+			
+			Constructor<? extends AutoWrapper> c = wrapperClass.getDeclaredConstructor();
+			c.setAccessible(true);
+			
+			AutoWrapper wrapper = c.newInstance();
+			wrapper.mInstance = obj;
+			
+			wrapper.initializeFields();
+			
+			return wrapper;
 		}
 		catch(Exception e)
 		{
 			throw new RuntimeException(e);
 		}
-		
-		return null;
 	}
 	
 	protected static void validateConstructor(Class<? extends AutoWrapper> thisClass, Class<?>... argTypes)
@@ -292,6 +358,9 @@ public abstract class AutoWrapper
 		
 		try
 		{
+			for(int i = 0; i < argTypes.length; ++i)
+				argTypes[i] = convert(argTypes[i]);
+
 			clazz.getDeclaredConstructor(argTypes);
 		}
 		catch(Exception e)
@@ -307,6 +376,11 @@ public abstract class AutoWrapper
 		
 		try
 		{
+			for(int i = 0; i < argTypes.length; ++i)
+				argTypes[i] = convert(argTypes[i]);
+			
+			returnType = convert(returnType);
+			
 			Method method = clazz.getDeclaredMethod(name, argTypes);
 			if(!method.getReturnType().equals(returnType))
 				throw new WrapperValidationException("Wrapper integrity validation failed: Method " + name + " expected in " + clazz.getName() + " has a signature difference.");
@@ -330,6 +404,8 @@ public abstract class AutoWrapper
 		
 		try
 		{
+			fieldType = convert(fieldType);
+			
 			Field field = clazz.getDeclaredField(name);
 			if(!field.getType().equals(fieldType))
 				throw new WrapperValidationException("Wrapper integrity validation failed: Field " + name + " expected in " + clazz.getName() + " has a signature difference.");
@@ -431,11 +507,17 @@ public abstract class AutoWrapper
 		}
 		catch(Exception e)
 		{
-			throw new RuntimeException("Error wrapping '" + desiredClassName + "'. No matching classes were found.");
+			throw new RuntimeException(e);
+			//throw new RuntimeException("Error wrapping '" + desiredClassName + "'. No matching classes were found.");
 		}
 		finally
 		{
 			mClasses.put(thisClass, foundClass);
 		}
+	}
+	
+	public Object getNativeInstance()
+	{
+		return mInstance;
 	}
 }

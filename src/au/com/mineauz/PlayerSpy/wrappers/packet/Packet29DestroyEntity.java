@@ -20,10 +20,10 @@ public class Packet29DestroyEntity extends Packet
 		instanciate();
 	}
 	
-	@WrapperConstructor(Integer.class)
+	@WrapperConstructor(int[].class)
 	private static Constructor<?> mConstructor;
 	
-	public Packet29DestroyEntity(int id)
+	public Packet29DestroyEntity(int... id)
 	{
 		instanciate(mConstructor, id);
 	}

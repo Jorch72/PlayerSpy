@@ -4,8 +4,10 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
 import au.com.mineauz.PlayerSpy.wrappers.AutoWrapper;
+import au.com.mineauz.PlayerSpy.wrappers.FieldWrapper;
 import au.com.mineauz.PlayerSpy.wrappers.WrapperClass;
 import au.com.mineauz.PlayerSpy.wrappers.WrapperConstructor;
+import au.com.mineauz.PlayerSpy.wrappers.WrapperField;
 import au.com.mineauz.PlayerSpy.wrappers.WrapperMethod;
 
 @WrapperClass("net.minecraft.server.*.ItemStack")
@@ -15,14 +17,18 @@ public class ItemStack extends AutoWrapper
 	{
 		initialize(ItemStack.class);
 	}
+
+	@WrapperField(name="id", type=Integer.class)
+	public FieldWrapper<Integer> id;
 	
-	protected ItemStack() {}
+	ItemStack() {}
 	
 	@WrapperConstructor({Item.class, Integer.class, Integer.class})
 	private static Constructor<?> mConstructor;
 	
 	public ItemStack(Item item, int amount, int data)
 	{
+		super();
 		instanciate(mConstructor, item, amount, data);
 	}
 	

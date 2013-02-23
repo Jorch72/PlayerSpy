@@ -4,6 +4,7 @@ import net.minecraft.server.v1_4_R1.ChunkCoordinates;
 import net.minecraft.server.v1_4_R1.EntityHuman;
 import net.minecraft.server.v1_4_R1.World;
 
+// TODO: Make this class dynamic
 public class EntityShadowPlayer extends EntityHuman
 {
 	public EntityShadowPlayer(World world, String name) 

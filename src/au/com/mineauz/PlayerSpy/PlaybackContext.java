@@ -1,34 +1,31 @@
 package au.com.mineauz.PlayerSpy;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.Callable;
 
-import net.minecraft.server.v1_4_R1.EntityItem;
-import net.minecraft.server.v1_4_R1.EntityLiving;
-import net.minecraft.server.v1_4_R1.MathHelper;
-import net.minecraft.server.v1_4_R1.PlayerInventory;
-import net.minecraft.server.v1_4_R1.World;
-
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_4_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_4_R1.inventory.CraftInventoryPlayer;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
 import au.com.mineauz.PlayerSpy.PlaybackControl.PlaybackState;
 import au.com.mineauz.PlayerSpy.Records.*;
-import au.com.mineauz.PlayerSpy.Utilities.EntityShadowPlayer;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.storage.InventorySlot;
 import au.com.mineauz.PlayerSpy.storage.StoredBlock;
+import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftInventoryPlayer;
+import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftWorld;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.EntityItem;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.EntityLiving;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.EntityShadowPlayer;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.PlayerInventory;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.World;
 
 public class PlaybackContext
 {
@@ -102,22 +99,21 @@ public class PlaybackContext
 						for(int i = 0; i < invRecord.getItems().length; i++)
 						{
 							if(invRecord.getItems()[i] != null)
-								ent.getValue().inventory.items[i] = Utility.convertToNative(invRecord.getItems()[i]);
+								ent.getValue().inventory.get().setItem(i, Utility.convertToNative(invRecord.getItems()[i]));
 						}
 						for(int i = 0; i < invRecord.getArmour().length; i++)
 						{
 							if(invRecord.getArmour()[i] != null)
-								ent.getValue().inventory.armor[i] = Utility.convertToNative(invRecord.getArmour()[i]);
+								ent.getValue().inventory.get().setArmor(i, Utility.convertToNative(invRecord.getArmour()[i]));
 						}
-						ent.getValue().inventory.itemInHandIndex = invRecord.getHeldSlot();
+						ent.getValue().inventory.get().itemInHandIndex.set(invRecord.getHeldSlot());
 					}
 					else
 					{
-						Arrays.fill(ent.getValue().inventory.items, null);
-						Arrays.fill(ent.getValue().inventory.armor, null);
+						ent.getValue().inventory.get().clear();
 					}
 					
-					ent.getValue().inventory.update();
+					ent.getValue().inventory.get().update();
 					break;
 					
 				}
@@ -400,7 +396,7 @@ public class PlaybackContext
 		if(mIndexShadowPlayerMap.containsKey(index))
 		{
 			EntityShadowPlayer player = mIndexShadowPlayerMap.get(index);
-			return new Location(player.world.getWorld(), player.locX, player.locY, player.locZ, player.yaw, player.pitch);
+			return new Location(player.world.get().getWorld(), player.locationX.get(), player.locationY.get(), player.locationZ.get(), player.yaw.get(), player.pitch.get());
 		}
 		
 		Debug.info("getTargetLocation() index %d was invalid", index);
@@ -418,7 +414,7 @@ public class PlaybackContext
 		{
 			EntityShadowPlayer player = mIndexShadowPlayerMap.get(index);
 			
-			return new CraftInventoryPlayer(player.inventory);
+			return (Inventory)(new CraftInventoryPlayer(player.inventory.get()).getNativeInstance());
 		}
 		
 		return null;
@@ -529,7 +525,7 @@ public class PlaybackContext
 			break;
 		}
 		case ChatCommand:
-			mDisplay.notifyViewers(forPlayer.name + ": " + ((ChatCommandRecord)record).getMessage());
+			mDisplay.notifyViewers(forPlayer.name.get() + ": " + ((ChatCommandRecord)record).getMessage());
 			break;
 		case Damage:
 		{
@@ -557,16 +553,16 @@ public class PlaybackContext
 			for(int i = 0; i < invRecord.getItems().length; i++)
 			{
 				if(invRecord.getItems()[i] != null)
-					forPlayer.inventory.items[i] = Utility.convertToNative(invRecord.getItems()[i]);
+					forPlayer.inventory.get().setItem(i, Utility.convertToNative(invRecord.getItems()[i]));
 			}
 			for(int i = 0; i < invRecord.getArmour().length; i++)
 			{
 				if(invRecord.getArmour()[i] != null)
-					forPlayer.inventory.armor[i] = Utility.convertToNative(invRecord.getArmour()[i]);
+					forPlayer.inventory.get().setArmor(i,Utility.convertToNative(invRecord.getArmour()[i]));
 			}
 			
-			forPlayer.inventory.itemInHandIndex = invRecord.getHeldSlot();
-			forPlayer.inventory.update();
+			forPlayer.inventory.get().itemInHandIndex.set(invRecord.getHeldSlot());
+			forPlayer.inventory.get().update();
 			break;
 		}
 		case GameMode:
@@ -575,19 +571,19 @@ public class PlaybackContext
 			switch(gm)
 			{
 			case CREATIVE:
-				mDisplay.notifyViewers(forPlayer.name + "'s gamemode was changed to Creative");
+				mDisplay.notifyViewers(forPlayer.name.get() + "'s gamemode was changed to Creative");
 				break;
 			case SURVIVAL:
-				mDisplay.notifyViewers(forPlayer.name + "'s gamemode was changed to Survival");
+				mDisplay.notifyViewers(forPlayer.name.get() + "'s gamemode was changed to Survival");
 				break;
 			case ADVENTURE:
-				mDisplay.notifyViewers(forPlayer.name + "'s gamemode was changed to Adventure");
+				mDisplay.notifyViewers(forPlayer.name.get() + "'s gamemode was changed to Adventure");
 				break;
 			}
 			break;
 		}
 		case HeldItemChange:
-			forPlayer.inventory.itemInHandIndex = ((HeldItemChangeRecord)record).getSlot();
+			forPlayer.inventory.get().itemInHandIndex.set(((HeldItemChangeRecord)record).getSlot());
 			mDisplay.doHeldItemUpdate(forPlayer);
 			break;
 		case Interact:
@@ -605,19 +601,19 @@ public class PlaybackContext
 			Utility.setEntityPosition(forPlayer, ((LoginRecord)record).getLocation());
 			mDisplay.addShadowPlayer(forPlayer);
 			
-			mDisplay.notifyViewers(ChatColor.YELLOW + forPlayer.name + " joined the game");
+			mDisplay.notifyViewers(ChatColor.YELLOW + forPlayer.name.get() + " joined the game");
 			break;
 		case Logoff:
 			switch(((LogoffRecord)record).getLogoffType())
 			{
 			case Quit:
-				mDisplay.notifyViewers(ChatColor.YELLOW + forPlayer.name + " left the game");
+				mDisplay.notifyViewers(ChatColor.YELLOW + forPlayer.name.get() + " left the game");
 				break;
 			case Kick:
-				mDisplay.notifyViewers(ChatColor.RED + forPlayer.name + " was kicked for: " + ((LogoffRecord)record).getReason());
+				mDisplay.notifyViewers(ChatColor.RED + forPlayer.name.get() + " was kicked for: " + ((LogoffRecord)record).getReason());
 				break;
 			case Ban:
-				mDisplay.notifyViewers(ChatColor.RED + forPlayer.name + " was banned for: " + ((LogoffRecord)record).getReason());
+				mDisplay.notifyViewers(ChatColor.RED + forPlayer.name.get() + " was banned for: " + ((LogoffRecord)record).getReason());
 				break;
 			}
 			mDisplay.removeShadowPlayer(forPlayer);
@@ -643,16 +639,16 @@ public class PlaybackContext
 		case UpdateInventory:
 			for(InventorySlot slot : ((UpdateInventoryRecord)record).Slots)
 			{
-				if(slot.Slot >= forPlayer.inventory.items.length)
-					forPlayer.inventory.armor[slot.Slot - forPlayer.inventory.items.length] = Utility.convertToNative(slot.Item);
+				if(slot.Slot >= forPlayer.inventory.get().size())
+					forPlayer.inventory.get().setArmor(slot.Slot - forPlayer.inventory.get().size(), Utility.convertToNative(slot.Item));
 				else
-					forPlayer.inventory.items[slot.Slot] = Utility.convertToNative(slot.Item);
+					forPlayer.inventory.get().setItem(slot.Slot, Utility.convertToNative(slot.Item));
 			}
-			forPlayer.inventory.update();
+			forPlayer.inventory.get().update();
 			break;
 		case WorldChange:
 		{
-			if(((WorldChangeRecord)record).getWorld() != forPlayer.world.getWorld())
+			if(((WorldChangeRecord)record).getWorld() != forPlayer.world.get().getWorld())
 			{
 				mDisplay.doChangeWorld(forPlayer, ((WorldChangeRecord)record).getWorld());
 			}
@@ -660,18 +656,18 @@ public class PlaybackContext
 		}
 		case DropItem:
 		{
-			EntityItem droppedItem = Utility.makeEntityItem(Utility.getLocation(forPlayer).add(0,forPlayer.height - 0.3D,0), ((DropItemRecord)record).getItem());
+			EntityItem droppedItem = Utility.makeEntityItem(Utility.getLocation(forPlayer).add(0,forPlayer.height.get() - 0.3D,0), ((DropItemRecord)record).getItem());
 			// Angle it so that it fires in the direction aimed
 			float f = 0.3F;
-			droppedItem.motX = (-MathHelper.sin(forPlayer.yaw / 180.0F * 3.141593F) * MathHelper.cos(forPlayer.pitch / 180.0F * 3.141593F) * f);
-			droppedItem.motZ = (MathHelper.cos(forPlayer.yaw / 180.0F * 3.141593F) * MathHelper.cos(forPlayer.pitch / 180.0F * 3.141593F) * f);
-			droppedItem.motY = (-MathHelper.sin(forPlayer.pitch / 180.0F * 3.141593F) * f + 0.1F);
+			droppedItem.motionX.set(-Math.sin(forPlayer.yaw.get() / 180.0F * 3.141593F) * Math.cos(forPlayer.pitch.get() / 180.0F * 3.141593F) * f);
+			droppedItem.motionZ.set(Math.cos(forPlayer.yaw.get() / 180.0F * 3.141593F) * Math.cos(forPlayer.pitch.get() / 180.0F * 3.141593F) * f);
+			droppedItem.motionY.set(-Math.sin(forPlayer.pitch.get() / 180.0F * 3.141593F) * f + 0.1F);
 			f = 0.02F;
 			float f1 = mRandom.nextFloat() * 3.141593F * 2.0F;
 			f *= mRandom.nextFloat();
-			droppedItem.motX += Math.cos(f1) * f;
-			droppedItem.motY += (mRandom.nextFloat() - mRandom.nextFloat()) * 0.1F;
-			droppedItem.motZ += Math.sin(f1) * f;
+			droppedItem.motionX.set(droppedItem.motionX.get() + Math.cos(f1) * f);
+			droppedItem.motionY.set(droppedItem.motionY.get() + (mRandom.nextFloat() - mRandom.nextFloat()) * 0.1F);
+			droppedItem.motionZ.set(droppedItem.motionZ.get() + Math.sin(f1) * f);
 			
 			mDisplay.addShadowItem(droppedItem);
 			mIndexShadowItemMap.put(id, droppedItem);
@@ -682,7 +678,7 @@ public class PlaybackContext
 		case RClickAction:
 			break;
 		case Sleep:
-			forPlayer.sleeping = ((SleepRecord)record).isSleeping();
+			forPlayer.sleeping.set(((SleepRecord)record).isSleeping());
 			break;
 		case VehicleMount:
 			break;
@@ -832,11 +828,11 @@ public class PlaybackContext
 	 */
 	private EntityShadowPlayer createShadowPlayer(String name, Location location)
 	{
-		World world = ((CraftWorld)location.getWorld()).getHandle();
+		World world = CraftWorld.castFrom(location.getWorld()).getHandle();
 		
 		EntityShadowPlayer player = new EntityShadowPlayer(world, name);
 		player.setLocation(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
-		player.inventory = new PlayerInventory(player);
+		player.inventory.set(new PlayerInventory(player));
 		
 		return player;
 	}

@@ -18,4 +18,13 @@ public class WrapperValidationException extends RuntimeException
 	{
 		super(cause);
 	}
+	
+	@Override
+	public String toString()
+	{
+		if(getMessage() != null)
+			return "WrapperValidationException: " + getMessage();
+		else
+			return "WrapperValidationException";
+	}
 }

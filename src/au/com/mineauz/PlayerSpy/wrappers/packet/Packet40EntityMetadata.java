@@ -14,11 +14,14 @@ public class Packet40EntityMetadata extends Packet
 		initialize(Packet40EntityMetadata.class);
 	}
 	
+	Packet40EntityMetadata() {}
+	
 	@WrapperConstructor({Integer.class, DataWatcher.class, Boolean.class})
 	private static Constructor<?> mConstructor;
 	
 	public Packet40EntityMetadata(int entityId, DataWatcher dw, boolean value)
 	{
+		super();
 		instanciate(mConstructor, entityId, dw, value);
 	}
 			

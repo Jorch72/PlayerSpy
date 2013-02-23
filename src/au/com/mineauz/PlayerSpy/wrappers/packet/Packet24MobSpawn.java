@@ -14,11 +14,14 @@ public class Packet24MobSpawn extends Packet
 		initialize(Packet24MobSpawn.class);
 	}
 	
+	Packet24MobSpawn() {}
+	
 	@WrapperConstructor(EntityLiving.class)
 	private static Constructor<?> mConstructor;
 	
 	public Packet24MobSpawn(EntityLiving entity)
 	{
+		super();
 		instanciate(mConstructor, entity);
 	}
 }

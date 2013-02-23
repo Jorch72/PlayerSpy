@@ -13,11 +13,14 @@ public class Packet62NamedSoundEffect extends Packet
 		initialize(Packet62NamedSoundEffect.class);
 	}
 	
+	Packet62NamedSoundEffect() {}
+	
 	@WrapperConstructor({String.class, Double.class, Double.class, Double.class, Float.class, Float.class})
 	private static Constructor<?> mConstructor;
 	
-	public Packet62NamedSoundEffect(String name, double x, double y, double z, double volume, double pitch)
+	public Packet62NamedSoundEffect(String name, double x, double y, double z, float volume, float pitch)
 	{
+		super();
 		instanciate(mConstructor, name, x, y, z, volume, pitch);
 	}
 	

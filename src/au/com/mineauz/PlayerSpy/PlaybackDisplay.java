@@ -12,10 +12,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 
-import au.com.mineauz.PlayerSpy.Utilities.EntityShadowPlayer;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.EntityShadowPlayer;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.storage.StoredBlock;
-import au.com.mineauz.PlayerSpy.wrappers.*;
 import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftPlayer;
 import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftSound;
 import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftWorld;
@@ -59,7 +58,7 @@ public class PlaybackDisplay implements Listener
 			mViewers.add(player);
 			String message = "[" + ChatColor.GREEN + "Playback" + ChatColor.WHITE + "] ";
 			if(mShadowPlayers.size() > 0)
-				message += "You have been added to the playback of " + mShadowPlayers.get(0).name;
+				message += "You have been added to the playback of " + mShadowPlayers.get(0).name.get();
 			else
 				message += "You have been added to a playback";
 			
@@ -105,7 +104,7 @@ public class PlaybackDisplay implements Listener
 			mViewers.remove(player);
 			String message = "[" + ChatColor.GREEN + "Playback" + ChatColor.WHITE + "] ";
 			if(mShadowPlayers.size() > 0)
-				message += "You have been removed from the playback of " + mShadowPlayers.get(0).name;
+				message += "You have been removed from the playback of " + mShadowPlayers.get(0).name.get();
 			else
 				message += "You have been removed from a playback";
 			
@@ -124,7 +123,7 @@ public class PlaybackDisplay implements Listener
 		{
 			String message = "[" + ChatColor.GREEN + "Playback" + ChatColor.WHITE + "] ";
 			if(mShadowPlayers.size() > 0)
-				message += "You have been removed from the playback of " + mShadowPlayers.get(0).name;
+				message += "You have been removed from the playback of " + mShadowPlayers.get(0).name.get();
 			else
 				message += "You have been removed from a playback";
 			
@@ -364,28 +363,29 @@ public class PlaybackDisplay implements Listener
 		if(ent.velocityChanged.get())
 			doVelocityUpdate(ent);
 		
-		if(ent.getDataWatcher().a())
+		if(ent.getDataWatcher().hasChanged())
 			doMetaDataUpdate(ent);
 		
 		if(ent instanceof EntityHuman)
 		{
-			if(((EntityHuman)ent).inventory.e)
+			if(((EntityHuman)ent).inventory.get().hasChanged.get())
 			{
 				doUpdateEquipment((EntityHuman)ent);
-				((EntityHuman)ent).inventory.e = false;
+				((EntityHuman)ent).inventory.get().hasChanged.set(false);
 			}
 		}
 	}
+	
 	public void doHeldItemUpdate(EntityHuman ent)
 	{
-		if(ent.inventory.items[ent.inventory.itemInHandIndex] == null || ent.inventory.items[ent.inventory.itemInHandIndex].id == 0)
+		if(ent.inventory.get().getItem(ent.inventory.get().itemInHandIndex.get()) == null || ent.inventory.get().getItem(ent.inventory.get().itemInHandIndex.get()).id.get() == 0)
 		{
 			Packet5EntityEquipment packet = new Packet5EntityEquipment(ent.id.get(), 0, null);
 			sendPacket(packet, ent.world.get().getWorld());
 		}
 		else
 		{
-			Packet5EntityEquipment packet = new Packet5EntityEquipment(ent.id.get(), 0, ent.inventory.items[ent.inventory.itemInHandIndex]);
+			Packet5EntityEquipment packet = new Packet5EntityEquipment(ent.id.get(), 0, ent.inventory.get().getItem(ent.inventory.get().itemInHandIndex.get()));
 			sendPacket(packet, ent.world.get().getWorld());
 		}
 		
@@ -399,9 +399,9 @@ public class PlaybackDisplay implements Listener
 	{
 		for(int i = 0; i < 4; i++)
 		{
-			if(ent.inventory.armor[i] != null && ent.inventory.armor[i].id != 0)
+			if(ent.inventory.get().getArmor(i) != null && ent.inventory.get().getArmor(i).id.get() != 0)
 			{
-				Packet5EntityEquipment packet = new Packet5EntityEquipment(ent.id.get(), i+1, ent.inventory.armor[i]);
+				Packet5EntityEquipment packet = new Packet5EntityEquipment(ent.id.get(), i+1, ent.inventory.get().getArmor(i));
 				sendPacket(packet, ent.world.get().getWorld());
 			}
 			else
@@ -411,8 +411,8 @@ public class PlaybackDisplay implements Listener
 			}
 		}
 		
-		Packet5EntityEquipment packet = new Packet5EntityEquipment(ent.id.get(), 0, (ent.inventory.items[ent.inventory.itemInHandIndex] == null || ent.inventory.items[ent.inventory.itemInHandIndex].id == 0 ? null : ent.inventory.items[ent.inventory.itemInHandIndex]));
-		sendPacket(packet, ent.world..get()getWorld());
+		Packet5EntityEquipment packet = new Packet5EntityEquipment(ent.id.get(), 0, (ent.inventory.get().getItem(ent.inventory.get().itemInHandIndex.get()) == null || ent.inventory.get().getItem(ent.inventory.get().itemInHandIndex.get()).id.get() == 0 ? null : ent.inventory.get().getItem(ent.inventory.get().itemInHandIndex.get())));
+		sendPacket(packet, ent.world.get().getWorld());
 	}
 	private void doMetaDataUpdate(Entity ent)
 	{

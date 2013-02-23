@@ -5,7 +5,7 @@ import java.lang.reflect.Method;
 import au.com.mineauz.PlayerSpy.wrappers.AutoWrapper;
 import au.com.mineauz.PlayerSpy.wrappers.WrapperClass;
 import au.com.mineauz.PlayerSpy.wrappers.WrapperMethod;
-import au.com.mineauz.PlayerSpy.wrappers.minecraft.World;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.WorldServer;
 
 
 @WrapperClass("org.bukkit.craftbukkit.*.CraftWorld")
@@ -16,7 +16,7 @@ public class CraftWorld extends AutoWrapper
 		initialize(CraftWorld.class);
 	}
 	
-	private CraftWorld() {}
+	CraftWorld() {}
 	
 	public static CraftWorld castFrom(org.bukkit.World world)
 	{
@@ -26,11 +26,11 @@ public class CraftWorld extends AutoWrapper
 		return wrapper;
 	}
 	
-	@WrapperMethod(name="getHandle",returnType=World.class,parameterTypes={})
+	@WrapperMethod(name="getHandle",returnType=WorldServer.class,parameterTypes={})
 	private static Method mGetHandle;
 	
-	public World getHandle()
+	public WorldServer getHandle()
 	{
-		return (World) instanciateWrapper(callMethod(mGetHandle,(Object[])null));
+		return callMethod(mGetHandle,(Object[])null);
 	}
 }

@@ -14,11 +14,14 @@ public class Packet18ArmAnimation extends Packet
 		initialize(Packet18ArmAnimation.class);
 	}
 	
+	Packet18ArmAnimation() {}
+	
 	@WrapperConstructor({Entity.class, Integer.class})
 	private static Constructor<?> mConstructor;
 	
 	public Packet18ArmAnimation(Entity entity, int animation)
 	{
+		super();
 		instanciate(mConstructor, entity, animation);
 	}
 }

@@ -18,8 +18,11 @@ public class Packet53BlockChange extends Packet
 		validateField(Packet53BlockChange.class, "data", Integer.TYPE);
 	}
 	
+	Packet53BlockChange() {}
+	
 	public Packet53BlockChange(StoredBlock block)
 	{
+		super();
 		instanciate();
 		
 		setFieldInstance("a", block.getLocation().getBlockX());

@@ -16,9 +16,7 @@ public abstract class NBTBase extends AutoWrapper
 		initialize(NBTBase.class);
 	}
 	
-	protected NBTBase()
-	{
-	}
+	NBTBase() {}
 	
 	@WrapperMethod(name="getName", returnType=String.class, parameterTypes={})
 	private static Method mGetName;
@@ -31,7 +29,7 @@ public abstract class NBTBase extends AutoWrapper
 	private static Method mSetName;
 	public NBTBase setName(String name)
 	{
-		return (NBTBase)instanciateWrapper(callMethod(mSetName, name));
+		return callMethod(mSetName, name);
 	}
 	
 	@WrapperMethod(name="a", returnType=Void.class, parameterTypes={NBTBase.class, DataOutput.class})
@@ -47,7 +45,7 @@ public abstract class NBTBase extends AutoWrapper
 	
 	public static NBTBase readNamedTag(DataInput input)
 	{
-		return (NBTBase)instanciateWrapper(callStaticMethod(mReadNamedTag, input));
+		return callStaticMethod(mReadNamedTag, input);
 	}
 	
 }

@@ -28,6 +28,6 @@ public class CraftPlayer extends AutoWrapper
 	
 	public EntityPlayer getHandle()
 	{
-		return (EntityPlayer) instanciateWrapper(callMethod(mGetHandle, (Object[])null));
+		return callMethod(mGetHandle, (Object[])null);
 	}
 }
