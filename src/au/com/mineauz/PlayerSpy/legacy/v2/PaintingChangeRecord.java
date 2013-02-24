@@ -106,4 +106,10 @@ public class PaintingChangeRecord extends Record implements IRollbackable, ILoca
 	{
 		return mPainting.getLocation();
 	}
+	
+	@Override
+	public void setRollbackState( boolean state )
+	{
+		mIsRolledBack = state;
+	}
 }

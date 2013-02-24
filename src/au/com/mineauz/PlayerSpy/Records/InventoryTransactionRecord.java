@@ -168,6 +168,11 @@ public class InventoryTransactionRecord extends Record implements IRollbackable,
 		return false;
 	}
 	@Override
+	public void setRollbackState( boolean state )
+	{
+		mIsRolledBack = state;
+	}
+	@Override
 	public Location getLocation()
 	{
 		if(mInvInfo.getBlock() != null)

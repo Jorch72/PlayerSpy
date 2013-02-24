@@ -1,6 +1,5 @@
 package au.com.mineauz.PlayerSpy.LogTasks;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;

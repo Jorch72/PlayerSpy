@@ -167,4 +167,9 @@ public class BlockChangeRecord extends Record implements IRollbackable, ILocatio
 	{
 		return false;
 	}
+	@Override
+	public void setRollbackState( boolean state )
+	{
+		mIsRolledBack = state;
+	}
 }

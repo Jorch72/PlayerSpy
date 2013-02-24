@@ -11,6 +11,7 @@ import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.LogTasks.MarkRecordRollbackStateTask;
 import au.com.mineauz.PlayerSpy.Records.IRollbackable;
 import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.search.NoRolledbackConstraint;
 import au.com.mineauz.PlayerSpy.search.SearchFilter;
 import au.com.mineauz.PlayerSpy.search.SearchTask;
 
@@ -42,6 +43,7 @@ public class RollbackManager
 		
 		RollbackSession session = new RollbackSession();
 		
+		filter.andConstraints.add(new NoRolledbackConstraint());
 		session.filter = filter;
 		session.notifyPlayer = notifyPlayer;
 		session.preview = preview;

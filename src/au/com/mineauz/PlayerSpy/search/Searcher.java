@@ -14,6 +14,7 @@ import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.Cause;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
+import au.com.mineauz.PlayerSpy.Records.IRollbackable;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Utilities.Pager;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
@@ -134,8 +135,34 @@ public class Searcher
 			
 			Cause cause = results.causes.get(result.getArg2());
 
+			boolean strike = false;
+			if(result.getArg1() instanceof IRollbackable)
+			{
+				if(((IRollbackable)result.getArg1()).wasRolledBack())
+					strike = true;
+			}
 			
 			String output = String.format(ChatColor.GREEN + " %7s " + ChatColor.RESET, Utility.formatTime(date, "hh:mma")) + String.format(msg, ChatColor.RED + cause.friendlyName() + ChatColor.RESET);
+			
+			if(strike)
+			{
+				boolean col = false;
+				for(int c = 0; c < output.length(); ++c)
+				{
+					if(output.charAt(c) == ChatColor.COLOR_CHAR)
+					{
+						col = true;
+						++c;
+					}
+					else if(col)
+					{
+						output = output.substring(0, c) + ChatColor.STRIKETHROUGH + output.substring(c);
+						c += 2;
+						col = false;
+					}
+				}
+			}
+			
 			pager.addItem(output);
 			
 			for(Modifier mod : results.usedFilter.modifiers)

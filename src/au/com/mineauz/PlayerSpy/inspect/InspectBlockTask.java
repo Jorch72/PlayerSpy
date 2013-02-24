@@ -22,6 +22,7 @@ import au.com.mineauz.PlayerSpy.LogTasks.Task;
 import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
 import au.com.mineauz.PlayerSpy.Records.ILocationAware;
 import au.com.mineauz.PlayerSpy.Records.IPlayerLocationAware;
+import au.com.mineauz.PlayerSpy.Records.IRollbackable;
 import au.com.mineauz.PlayerSpy.Records.InteractRecord;
 import au.com.mineauz.PlayerSpy.Records.InventoryTransactionRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
@@ -263,7 +264,35 @@ public class InspectBlockTask implements Task<Void>
 					lastDate = dateOnly;
 				}
 				
-				output.add(String.format(ChatColor.GREEN + "  %7s " + ChatColor.RESET, Utility.formatTime(date, "hh:mma")) + String.format(msg, ChatColor.RED + mostRecent.get(i).getArg1().friendlyName() + ChatColor.RESET));
+				boolean strike = false;
+				if(mostRecent.get(i).getArg2() instanceof IRollbackable)
+				{
+					if(((IRollbackable)mostRecent.get(i).getArg2()).wasRolledBack())
+					{
+						strike = true;
+					}
+				}
+				
+				String outputStr = String.format(ChatColor.GREEN + "  %7s " + ChatColor.RESET, Utility.formatTime(date, "hh:mma")) + String.format(msg, ChatColor.RED + mostRecent.get(i).getArg1().friendlyName() + ChatColor.RESET);
+				if(strike)
+				{
+					boolean col = false;
+					for(int c = 0; c < outputStr.length(); ++c)
+					{
+						if(outputStr.charAt(c) == ChatColor.COLOR_CHAR)
+						{
+							col = true;
+							++c;
+						}
+						else if(col)
+						{
+							outputStr = outputStr.substring(0, c) + ChatColor.STRIKETHROUGH + outputStr.substring(c);
+							c += 2;
+							col = false;
+						}
+					}
+				}
+				output.add(outputStr);
 				
 			}
 		}

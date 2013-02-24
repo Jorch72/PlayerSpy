@@ -167,4 +167,10 @@ public class InventoryTransactionRecord extends Record implements IRollbackable,
 			return mInvInfo.getEntity().getLocation();
 		return null;
 	}
+	
+	@Override
+	public void setRollbackState( boolean state )
+	{
+		mIsRolledBack = state;
+	}
 }

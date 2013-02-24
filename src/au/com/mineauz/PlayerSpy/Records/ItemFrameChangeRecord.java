@@ -115,6 +115,13 @@ public class ItemFrameChangeRecord extends Record implements IRollbackable, ILoc
 		// TODO Auto-generated method stub
 		return false;
 	}
+	
+	@Override
+	public void setRollbackState( boolean state )
+	{
+		mIsRolledBack = state;
+	}
+	
 	@Override
 	public Location getLocation()
 	{

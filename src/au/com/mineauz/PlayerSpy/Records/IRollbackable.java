@@ -16,4 +16,9 @@ public interface IRollbackable
 	
 	public boolean rollback(boolean preview, Player previewTarget);
 	public boolean restore();
+	
+	/**
+	 * Used by the loader to apply its initial state
+	 */
+	public void setRollbackState(boolean state);
 }

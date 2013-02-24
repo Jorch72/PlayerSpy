@@ -296,9 +296,11 @@ public class LogFile
 			if(header.VersionMajor == 3 && header.VersionMinor >= 1)
 			{
 				readRollbackIndex(file, header);
-				rebuildRollbackMap();
 			}
+			else
+				mRollbackEntries = new ArrayList<RollbackEntry>();
 			
+			rebuildRollbackMap();
 			rebuildIndexMap();
 			
 			mPlayerName = header.PlayerName;
@@ -901,6 +903,18 @@ public class LogFile
 				records.add(record);
 			}
 			
+			// Load the rollback state info in
+			short[] indices = getRolledBackRecords(session);
+			for(int i = 0; i < indices.length; ++i)
+			{
+				Record record = records.get(indices[i]);
+				if(record instanceof IRollbackable)
+				{
+					IRollbackable r = (IRollbackable)record;
+					r.setRollbackState(true);
+				}
+			}
+			
 		}
 		catch(IOException e)
 		{
@@ -930,6 +944,7 @@ public class LogFile
 		Profiler.beginTimingSection("appendRecordsInternal");
 		mLock.writeLock().lock();
 		
+		ArrayList<Short> rolledBackEntries = new ArrayList<Short>();
 		
 		try
 		{
@@ -962,6 +977,7 @@ public class LogFile
 			
 			if(!session.Compressed)
 			{
+				short index = 0;
 				for(Record record : records)
 				{
 					int size = record.getSize(isAbsolute);
@@ -980,6 +996,13 @@ public class LogFile
 					{
 						mDeepMode = ((SessionInfoRecord)record).isDeep();
 					}
+					
+					if(record instanceof IRollbackable)
+					{
+						if(((IRollbackable)record).wasRolledBack())
+							rolledBackEntries.add((Short)(short)(index + session.RecordCount));
+					}
+					++index;
 				}
 			}
 			else
@@ -1034,6 +1057,9 @@ public class LogFile
 				
 				CrossReferenceIndex.instance.updateSession(this, session, records.getAllChunks());
 				Debug.info("Completed append to Session %d", session.Id);
+				
+				if(!rolledBackEntries.isEmpty())
+					setRollbackStateInternal(session, rolledBackEntries, true);
 			}
 			
 			if(splitSession != null && !session.Compressed)
@@ -2491,7 +2517,7 @@ public class LogFile
 	
 	private void addBlankRollbackEntry(IndexEntry session) throws IOException
 	{
-		Debug.loggedAssert(mHeader.VersionMajor < 3, "Version 3 or higher is required to use the rollback index");
+		Debug.loggedAssert(mHeader.VersionMajor >= 3, "Version 3 or higher is required to use the rollback index");
 		
 		RollbackEntry entry = new RollbackEntry();
 		entry.sessionId = session.Id;
@@ -2558,6 +2584,17 @@ public class LogFile
 		entry.write(mFile);
 		
 		Debug.finest("Rollback entry @%d updated at %X -> %X", index, mHeader.RollbackIndexLocation + index * RollbackEntry.cSize, mHeader.RollbackIndexLocation + index * RollbackEntry.cSize + RollbackEntry.cSize - 1);
+	}
+	
+	private short[] getRolledBackRecords(IndexEntry session) throws IOException
+	{
+		if(!mRollbackMap.containsKey(session.Id))
+			return new short[0];
+		
+		RollbackListEntry list = getRollbackDetail(mRollbackEntries.get(mRollbackMap.get(session.Id)));
+		if(list != null)
+			return list.items;
+		return new short[0];
 	}
 	
 	private RollbackListEntry getRollbackDetail(RollbackEntry entry) throws IOException
@@ -2652,7 +2689,7 @@ public class LogFile
 		}
 	}
 	
-	public void setRollbackState(IndexEntry session, List<Short> indices, boolean state) throws IOException
+	private void setRollbackStateInternal(IndexEntry session, List<Short> indices, boolean state) throws IOException
 	{
 		Debug.loggedAssert(session != null);
 		
@@ -2713,6 +2750,27 @@ public class LogFile
 		{
 			mLock.writeLock().unlock();
 			Profiler.endTimingSection();
+		}
+	}
+	public void setRollbackState(IndexEntry session, List<Short> indices, boolean state) throws IOException
+	{
+		mLock.writeLock().lock();
+		
+		try
+		{
+			mFile.beginTransaction();
+			
+			setRollbackStateInternal(session, indices, state);
+			mFile.commit();
+		}
+		catch(Exception e)
+		{
+			mFile.rollback();
+			throw e;
+		}
+		finally
+		{
+			mLock.writeLock().unlock();
 		}
 	}
 	
