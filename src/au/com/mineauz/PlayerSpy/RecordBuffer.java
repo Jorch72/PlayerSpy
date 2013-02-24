@@ -3,6 +3,8 @@ package au.com.mineauz.PlayerSpy;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import au.com.mineauz.PlayerSpy.tracdata.LogFile;
+
 public class RecordBuffer 
 {
 	private enum RequestType

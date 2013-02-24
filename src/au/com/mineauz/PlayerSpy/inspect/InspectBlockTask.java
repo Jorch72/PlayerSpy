@@ -32,11 +32,11 @@ import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
-import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 import au.com.mineauz.PlayerSpy.monitoring.ShallowMonitor;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex.SessionInFile;
 import au.com.mineauz.PlayerSpy.storage.StoredBlock;
 import au.com.mineauz.PlayerSpy.storage.StoredEntity;
+import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
 public class InspectBlockTask implements Task<Void>
 {

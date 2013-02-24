@@ -5,9 +5,9 @@ import java.util.Calendar;
 
 import org.bukkit.World;
 
-import au.com.mineauz.PlayerSpy.IndexEntry;
-import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
+import au.com.mineauz.PlayerSpy.tracdata.IndexEntry;
+import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 
 public abstract class Record 
 {

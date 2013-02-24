@@ -12,10 +12,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 
-import au.com.mineauz.PlayerSpy.IndexEntry;
-import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
+import au.com.mineauz.PlayerSpy.tracdata.IndexEntry;
+import au.com.mineauz.PlayerSpy.tracdata.LogFile;
+import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
 /**
  * The cross reference index provides information on the location of specific data.

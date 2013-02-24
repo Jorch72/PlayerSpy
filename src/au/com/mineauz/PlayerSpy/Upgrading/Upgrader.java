@@ -6,9 +6,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-import au.com.mineauz.PlayerSpy.FileHeader;
-import au.com.mineauz.PlayerSpy.IndexEntry;
-import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.Records.Record;
@@ -23,7 +20,10 @@ import au.com.mineauz.PlayerSpy.legacy.v2.ItemPickupRecord;
 import au.com.mineauz.PlayerSpy.legacy.v2.PaintingChangeRecord;
 import au.com.mineauz.PlayerSpy.legacy.v2.RightClickActionRecord;
 import au.com.mineauz.PlayerSpy.legacy.v2.UpdateInventoryRecord;
-import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
+import au.com.mineauz.PlayerSpy.tracdata.FileHeader;
+import au.com.mineauz.PlayerSpy.tracdata.IndexEntry;
+import au.com.mineauz.PlayerSpy.tracdata.LogFile;
+import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
 @SuppressWarnings( "deprecation" )
 public class Upgrader 

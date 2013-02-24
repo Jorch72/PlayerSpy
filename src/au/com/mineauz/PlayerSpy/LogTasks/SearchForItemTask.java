@@ -2,13 +2,13 @@ package au.com.mineauz.PlayerSpy.LogTasks;
 
 import org.bukkit.Material;
 
-import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.Records.InventoryRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
 import au.com.mineauz.PlayerSpy.storage.InventorySlot;
+import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 
 public class SearchForItemTask implements Task<Long>
 {

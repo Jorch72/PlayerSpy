@@ -3,12 +3,12 @@ package au.com.mineauz.PlayerSpy.LogTasks;
 
 import org.bukkit.entity.EntityType;
 
-import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.Records.AttackRecord;
 import au.com.mineauz.PlayerSpy.Records.DamageRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
+import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 
 public class SearchForDamageTask implements Task<Long>
 {

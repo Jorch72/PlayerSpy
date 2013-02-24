@@ -9,7 +9,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 
 import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
-import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
+import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
 public class SpyCommand implements ICommand 
 {

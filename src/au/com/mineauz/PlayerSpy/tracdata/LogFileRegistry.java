@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy.monitoring;
+package au.com.mineauz.PlayerSpy.tracdata;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,8 +9,8 @@ import org.bukkit.World;
 
 import com.google.common.io.Files;
 
-import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.LogUtil;
+import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 
 public class LogFileRegistry 
 {

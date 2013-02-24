@@ -13,10 +13,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import au.com.mineauz.PlayerSpy.FileHeader;
-import au.com.mineauz.PlayerSpy.HoleEntry;
-import au.com.mineauz.PlayerSpy.IndexEntry;
-import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
@@ -25,7 +21,11 @@ import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.debugging.Profiler;
-import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
+import au.com.mineauz.PlayerSpy.tracdata.FileHeader;
+import au.com.mineauz.PlayerSpy.tracdata.HoleEntry;
+import au.com.mineauz.PlayerSpy.tracdata.IndexEntry;
+import au.com.mineauz.PlayerSpy.tracdata.LogFile;
+import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
 public class DebugCommand implements ICommand
 {

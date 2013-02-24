@@ -20,12 +20,12 @@ import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
-import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 import au.com.mineauz.PlayerSpy.monitoring.ShallowMonitor;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex.SessionInFile;
 import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 import au.com.mineauz.PlayerSpy.search.interfaces.FormatterModifier;
 import au.com.mineauz.PlayerSpy.search.interfaces.Modifier;
+import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
 public class SearchTask implements Task<SearchResults>
 {

@@ -1,8 +1,8 @@
 package au.com.mineauz.PlayerSpy.LogTasks;
 
-import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
+import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 
 public class AppendRecordsTask implements Task<Boolean> 
 {

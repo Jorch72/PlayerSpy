@@ -5,11 +5,11 @@ import java.io.IOException;
 
 import com.google.common.io.Files;
 
-import au.com.mineauz.PlayerSpy.FileHeader;
-import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
+import au.com.mineauz.PlayerSpy.tracdata.FileHeader;
+import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 
 public class LogLoadTask implements Task<Boolean>
 {

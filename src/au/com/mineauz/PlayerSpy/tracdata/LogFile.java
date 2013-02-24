@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy;
+package au.com.mineauz.PlayerSpy.tracdata;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,6 +17,11 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 
+import au.com.mineauz.PlayerSpy.LogUtil;
+import au.com.mineauz.PlayerSpy.RecordList;
+import au.com.mineauz.PlayerSpy.RollbackEntry;
+import au.com.mineauz.PlayerSpy.RollbackListEntry;
+import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.LogTasks.*;
 import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
@@ -25,7 +30,6 @@ import au.com.mineauz.PlayerSpy.Utilities.Util;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.debugging.Profiler;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
-import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 
 public class LogFile 
 {

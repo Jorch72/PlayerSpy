@@ -17,9 +17,10 @@ import au.com.mineauz.PlayerSpy.commands.*;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
-import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
 import au.com.mineauz.PlayerSpy.rollback.RollbackManager;
 import au.com.mineauz.PlayerSpy.search.Searcher;
+import au.com.mineauz.PlayerSpy.tracdata.LogFile;
+import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 import au.com.mineauz.PlayerSpy.wrappers.PreLoadValidator;
 
 public class SpyPlugin extends JavaPlugin

@@ -1,8 +1,8 @@
 package au.com.mineauz.PlayerSpy.LogTasks;
 
-import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
+import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 
 public class SearchForEventTask implements Task<Long>
 {

@@ -19,6 +19,7 @@ import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.storage.InventorySlot;
 import au.com.mineauz.PlayerSpy.storage.StoredBlock;
+import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftInventoryPlayer;
 import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftWorld;
 import au.com.mineauz.PlayerSpy.wrappers.minecraft.EntityItem;

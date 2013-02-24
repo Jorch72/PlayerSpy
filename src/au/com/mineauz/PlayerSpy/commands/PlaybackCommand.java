@@ -16,7 +16,7 @@ import au.com.mineauz.PlayerSpy.PlaybackContext;
 import au.com.mineauz.PlayerSpy.PlaybackModeController;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Conversation.LogFilePrompt;
-import au.com.mineauz.PlayerSpy.monitoring.LogFileRegistry;
+import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
 public class PlaybackCommand implements ICommand
 {

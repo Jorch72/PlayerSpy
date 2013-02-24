@@ -30,6 +30,8 @@ import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Records.LogoffRecord.LogoffType;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
+import au.com.mineauz.PlayerSpy.tracdata.LogFile;
+import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
 public class GlobalMonitor implements Listener
 {

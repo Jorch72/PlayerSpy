@@ -23,6 +23,7 @@ import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex.SessionInFile;
+import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
 /**
  * Used to find the causers of specific things. 
