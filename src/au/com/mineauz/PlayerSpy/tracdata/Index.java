@@ -3,7 +3,9 @@ package au.com.mineauz.PlayerSpy.tracdata;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 
 import com.google.common.collect.UnmodifiableIterator;
 
@@ -111,7 +113,7 @@ public abstract class Index<T extends IndexEntry> implements Iterable<T>
 	/**
 	 * Adds an entry to the index
 	 */
-	public void add(T entry) throws IOException
+	public int add(T entry) throws IOException
 	{
 		int insertIndex = getInsertIndex(entry);
 		
@@ -159,6 +161,8 @@ public abstract class Index<T extends IndexEntry> implements Iterable<T>
 		// Save the header
 		mFile.seek(0);
 		mHeader.write(mFile);
+		
+		return insertIndex;
 	}
 
 	/**
@@ -258,5 +262,15 @@ public abstract class Index<T extends IndexEntry> implements Iterable<T>
 				return it.next();
 			}
 		};
+	}
+	
+	public List<T> getEntries()
+	{
+		return Collections.unmodifiableList(mElements);
+	}
+	
+	public int indexOf(T entry)
+	{
+		return mElements.indexOf(entry);
 	}
 }

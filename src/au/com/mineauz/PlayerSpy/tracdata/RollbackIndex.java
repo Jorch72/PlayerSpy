@@ -81,11 +81,25 @@ public class RollbackIndex extends Index<RollbackEntry>
 	}
 	
 	@Override
-	public void add( RollbackEntry entry ) throws IOException
+	public int add( RollbackEntry entry ) throws IOException
 	{
-		super.add(entry);
+		if(mHeader.VersionMajor < 3)
+			throw new IllegalStateException("You cannot use the rollback index on a pre Version 3 tracdata file.");
+		
+		// Rollback indices are only present in Version 3.1 logs or higher
+		
+		if(mHeader.VersionMajor == 3 && mHeader.VersionMinor < 1)
+		{
+			mHeader.VersionMinor = 1;
+			mFile.seek(0);
+			mHeader.write(mFile);
+		}
+		
+		int index = super.add(entry);
 		
 		rebuildRollbackMap();
+		
+		return index;
 	}
 	
 	@Override
@@ -99,6 +113,13 @@ public class RollbackIndex extends Index<RollbackEntry>
 	@Override
 	public void read() throws IOException
 	{
+		if(mHeader.VersionMajor < 3)
+			throw new IllegalStateException("You cannot use the rollback index on a pre Version 3 tracdata file.");
+		
+		if(mHeader.VersionMajor == 3 && mHeader.VersionMinor < 1)
+			// It is not present in version 3.0
+			return;
+		
 		super.read();
 		
 		rebuildRollbackMap();

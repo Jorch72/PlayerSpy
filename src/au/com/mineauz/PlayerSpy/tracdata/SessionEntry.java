@@ -59,4 +59,15 @@ public class SessionEntry extends IndexEntry
 			return true;
 		return false;
 	}
+	
+	@Override
+	public long getLocation()
+	{
+		return Location;
+	}
+	
+	public long getSize()
+	{
+		return TotalSize;
+	}
 }

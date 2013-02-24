@@ -4,8 +4,12 @@ import java.io.IOException;
 
 public class SpaceLocator
 {
-	private final HoleIndex mIndex;
-	public SpaceLocator(HoleIndex index)
+	private HoleIndex mIndex;
+	public SpaceLocator()
+	{
+	}
+	
+	public void setHoleIndex(HoleIndex index)
 	{
 		mIndex = index;
 	}

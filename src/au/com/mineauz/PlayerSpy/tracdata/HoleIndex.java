@@ -128,7 +128,7 @@ public class HoleIndex extends Index<HoleEntry>
 	// The holes index uses padding so it needs to do these methods custom
 	
 	@Override
-	public void add( HoleEntry entry ) throws IOException
+	public int add( HoleEntry entry ) throws IOException
 	{
 		// Check if we need to merge it
 		for(int i = 0; i < mElements.size(); i++)
@@ -145,7 +145,7 @@ public class HoleIndex extends Index<HoleEntry>
 				
 				Debug.finest("Merging new hole into @%d changing range from (%X->%X) into (%X->%X)", i, existing.Location, existing.Location + existing.Size-1,newHole.Location, newHole.Location + newHole.Size-1);
 				
-				return;
+				return -1;
 			}
 		}
 		
@@ -236,6 +236,8 @@ public class HoleIndex extends Index<HoleEntry>
 		
 		mFile.seek(0);
 		mHeader.write(mFile);
+		
+		return insertIndex;
 	}
 	
 	@Override
@@ -253,5 +255,16 @@ public class HoleIndex extends Index<HoleEntry>
 		
 		mFile.seek(0);
 		mHeader.write(mFile);
+	}
+	
+	public HoleEntry getHoleAfter(long location)
+	{
+		for(HoleEntry entry : mElements)
+		{
+			if(entry.Location >= location)
+				return entry;
+		}
+		
+		return null;
 	}
 }

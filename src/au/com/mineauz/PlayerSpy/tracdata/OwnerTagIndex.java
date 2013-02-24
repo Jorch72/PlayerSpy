@@ -80,16 +80,24 @@ public class OwnerTagIndex extends Index<OwnerMapEntry>
 	}
 	
 	@Override
-	public void add( OwnerMapEntry entry ) throws IOException
+	public int add( OwnerMapEntry entry ) throws IOException
 	{
-		super.add(entry);
+		if(mHeader.VersionMajor < 2)
+			throw new IllegalStateException("You cannot use the ownertag index on a pre Version 2 tracdata file.");
+		
+		int index = super.add(entry);
 		
 		rebuildTagMap();
+		
+		return index;
 	}
 	
 	@Override
 	public void read() throws IOException
 	{
+		if(mHeader.VersionMajor < 2)
+			throw new IllegalStateException("You cannot use the ownertag index on a pre Version 2 tracdata file.");
+		
 		super.read();
 		
 		rebuildTagMap();

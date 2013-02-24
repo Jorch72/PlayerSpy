@@ -24,4 +24,15 @@ public class RollbackEntry extends IndexEntry
 		detailLocation = input.readInt();
 		detailSize = input.readInt();
 	}
+	
+	@Override
+	public long getLocation()
+	{
+		return detailLocation;
+	}
+	
+	public long getSize()
+	{
+		return detailSize;
+	}
 }

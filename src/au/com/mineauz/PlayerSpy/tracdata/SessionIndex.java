@@ -10,6 +10,7 @@ public class SessionIndex extends Index<SessionEntry>
 {
 	private static int NextId = (int)(System.currentTimeMillis() / 1000);
 	private HashMap<Integer, Integer> mSessionMap = new HashMap<Integer, Integer>();
+	private HashMap<String, Integer> mActiveSessions = new HashMap<String, Integer>();
 	
 	public SessionIndex( LogFile log, FileHeader header, RandomAccessFile file, SpaceLocator locator )
 	{
@@ -90,17 +91,40 @@ public class SessionIndex extends Index<SessionEntry>
 		super.read();
 		
 		rebuildSessionMap();
+		
+		mActiveSessions.clear();
+		
+		// Find the active sessions
+		for(int i = 0; i < mElements.size(); ++i)
+		{
+			SessionEntry session = get(i);
+			if(session.Compressed)
+				continue;
+			
+			String ownerTag = mLog.getOwnerTag(session);
+			if(mActiveSessions.containsKey(ownerTag))
+			{
+				SessionEntry other = getSessionFromId(mActiveSessions.get(ownerTag));
+				
+				if(session.EndTimestamp > other.EndTimestamp)
+					mActiveSessions.put(ownerTag, session.Id);
+			}
+			else
+				mActiveSessions.put(ownerTag, session.Id);
+		}
 	}
 	
 	@Override
-	public void add( SessionEntry entry ) throws IOException
+	public int add( SessionEntry entry ) throws IOException
 	{
 		entry.version = mHeader.VersionMajor;
 		entry.Id = NextId++;
 		
-		super.add(entry);
+		int index = super.add(entry);
 		
 		rebuildSessionMap();
+		
+		return index;
 	}
 	
 	@Override
@@ -136,5 +160,21 @@ public class SessionIndex extends Index<SessionEntry>
 			return get(mSessionMap.get(id));
 		
 		return null;
+	}
+	
+	public SessionEntry getActiveSessionFor(String ownerTag)
+	{
+		if(mActiveSessions.containsKey(ownerTag))
+			return getSessionFromId(mActiveSessions.get(ownerTag));
+		
+		return null;
+	}
+	
+	public void setActiveSession(String ownerTag, SessionEntry session)
+	{
+		if(session == null)
+			mActiveSessions.remove(ownerTag);
+		else
+			mActiveSessions.put(ownerTag, session.Id);
 	}
 }

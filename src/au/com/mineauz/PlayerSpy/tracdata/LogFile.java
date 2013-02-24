@@ -1,7 +1,6 @@
 package au.com.mineauz.PlayerSpy.tracdata;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -81,8 +80,8 @@ public class LogFile
 		
 		
 		long result = 0;
-		if(mIndex.size() > 0)
-			result = mIndex.get(0).StartTimestamp;
+		if(mSessionIndex.getCount() > 0)
+			result = mSessionIndex.get(0).StartTimestamp;
 		mLock.readLock().unlock();
 		
 		return result;
@@ -93,8 +92,8 @@ public class LogFile
 		mLock.readLock().lock();
 		
 		long result = 0;
-		if(mIndex.size() > 0)
-			result = mIndex.get(mIndex.size()-1).EndTimestamp;
+		if(mSessionIndex.getCount() > 0)
+			result = mSessionIndex.get(mSessionIndex.getCount()-1).EndTimestamp;
 		
 		mLock.readLock().unlock();
 		
@@ -178,58 +177,25 @@ public class LogFile
 		LogFile log = new LogFile();
 		log.mFilePath = new File(filename);
 		log.mPlayerName = playerName;
-		log.mIndex = new ArrayList<SessionEntry>();
-		log.mHoleIndex = new ArrayList<HoleEntry>();
-		log.mOwnerTagList = new ArrayList<OwnerMapEntry>();
-		log.mActiveSessions = new HashMap<String, Integer>();
-		log.mRollbackEntries = new ArrayList<RollbackEntry>();
-		log.mRollbackMap = new HashMap<Integer, Integer>();
+		
+		log.mSpaceLocator = new SpaceLocator();
+		log.mHoleIndex = new HoleIndex(log, header, file, log.mSpaceLocator);
+		log.mSpaceLocator.setHoleIndex(log.mHoleIndex);
+		
+		log.mSessionIndex = new SessionIndex(log, header, file, log.mSpaceLocator);
+		log.mOwnerTagIndex = new OwnerTagIndex(log, header, file, log.mSpaceLocator);
+		log.mRollbackIndex = new RollbackIndex(log, header, file, log.mSpaceLocator);
+		
+		
 		log.mIsLoaded = true;
 		log.mFile = file;
 		log.mHeader = header;
 		log.mReferenceCount = 1;
 		
-
-		
-		log.rebuildTagMap();
-		log.rebuildIndexMap();
 		
 		Debug.fine("Created a log file for '" + playerName + "'.");
 		
 		CrossReferenceIndex.instance.addLogFile(log);
-		return log;
-	}
-	/**
-	 * Creates a blank log file for world global entries ready to accept sessions.
-	 * It will be open when returned so remember to call close() when you're done
-	 * @param the name of the world to use including the global prefix
-	 * @param filename The filename to create the log at
-	 * @return An instance with an open log or null if unable to create it
-	 * @deprecated Use create() instead
-	 */
-	@Deprecated
-	public static LogFile createGlobal(String worldName, String filename)
-	{
-		LogFile log = create(worldName, filename);
-		
-		log.mHeader.RequiresOwnerTags = true;
-
-		try
-		{
-			log.mFile.beginTransaction();
-			
-			log.mFile.seek(0);
-			log.mHeader.write(log.mFile);
-			
-			log.mFile.commit();
-		}
-		catch(IOException e)
-		{
-			log.mFile.rollback();
-			e.printStackTrace();
-			return null;
-		}
-		
 		return log;
 	}
 	
@@ -282,55 +248,38 @@ public class LogFile
 			
 			mHeader = header;
 			
-			// Read the index
-			readIndex(file,header);
+			// Initialize the indexes
+			mSpaceLocator = new SpaceLocator();
+			mHoleIndex = new HoleIndex(this, mHeader, file, mSpaceLocator);
+			mSpaceLocator.setHoleIndex(mHoleIndex);
 			
-			// Read the holes index
-			readHoles(file,header);
+			mSessionIndex = new SessionIndex(this, mHeader, file, mSpaceLocator);
+			mOwnerTagIndex = new OwnerTagIndex(this, mHeader, file, mSpaceLocator);
+			mRollbackIndex = new RollbackIndex(this, mHeader, file, mSpaceLocator);
+			
+			// Read the indices
+			mHoleIndex.read();
+			mSessionIndex.read();
 			
 			if(header.VersionMajor >= 2)
-			{
-				readOwnerMap(file, header);
-				rebuildTagMap();
-			}
+				mOwnerTagIndex.read();
 			
-			if(header.VersionMajor == 3 && header.VersionMinor >= 1)
-			{
-				readRollbackIndex(file, header);
-			}
-			else
-				mRollbackEntries = new ArrayList<RollbackEntry>();
-			
-			rebuildRollbackMap();
-			rebuildIndexMap();
+			if(header.VersionMajor >= 3 && header.VersionMinor >= 1)
+				mRollbackIndex.read();
+
 			
 			mPlayerName = header.PlayerName;
 			
 			mFile = file;
 			
-			mActiveSessions = new HashMap<String, Integer>();
-			if(mIndex.size() > 0)
-			{
-				for(int i = mIndex.size() - 1; i >= 0; --i)
-				{
-					if(mIndex.get(i).Compressed)
-						continue;
-					
-					if(!mActiveSessions.containsKey(getOwnerTag(i)))
-					{
-						mActiveSessions.put(getOwnerTag(i), mIndex.get(i).Id);
-					}
-				}
-			}
-			
 			Debug.info("Load Succeeded:");
 			Debug.info(" Player: " + mPlayerName);
 			Debug.fine(" Sessions found: " + mHeader.SessionCount);
 			Debug.fine(" Holes found: " + mHeader.HolesIndexCount);
-			if(mIndex.size() > 0)
+			if(mSessionIndex.getCount() > 0)
 			{
-				Debug.fine(" Earliest Date: " + Util.dateToString(mIndex.get(0).StartTimestamp));
-				Debug.fine(" Latest Date: " + Util.dateToString(mIndex.get(mIndex.size()-1).EndTimestamp));
+				Debug.fine(" Earliest Date: " + Util.dateToString(mSessionIndex.get(0).StartTimestamp));
+				Debug.fine(" Latest Date: " + Util.dateToString(mSessionIndex.get(mSessionIndex.getCount()-1).EndTimestamp));
 			}
 			
 			mIsLoaded = true;
@@ -486,21 +435,11 @@ public class LogFile
 	 */
 	public List<SessionEntry> getSessions()
 	{
-		return mIndex;
+		return mSessionIndex.getEntries();
 	}
 	public SessionEntry getSessionById(int id)
 	{
-		SessionEntry result = null;
-		mLock.readLock().lock();
-		
-		if(mIndexMap.containsKey(id))
-		{
-			int index = mIndexMap.get(id);
-			result = mIndex.get(index);
-		}
-		mLock.readLock().unlock();
-		
-		return result;
+		return mSessionIndex.getSessionFromId(id);
 	}
 	public String getOwnerTag(SessionEntry session)
 	{
@@ -509,19 +448,19 @@ public class LogFile
 		
 		mLock.readLock().lock();
 		
-		Integer index = mOwnerTagMap.get(session.OwnerTagId);
+		OwnerMapEntry entry = mOwnerTagIndex.getOwnerTagById(session.OwnerTagId);
 		
 		String result = null;
-		if(index != null)
-			result = mOwnerTagList.get(index).Owner;
-		
+		if(entry != null)
+			result = entry.Owner;
+				
 		mLock.readLock().unlock();
 		
 		return result;
 	}
 	public String getOwnerTag(int sessionIndex)
 	{
-		return getOwnerTag(mIndex.get(sessionIndex));
+		return getOwnerTag(mSessionIndex.get(sessionIndex));
 	}
 	
 	/**
@@ -644,7 +583,7 @@ public class LogFile
 		long result = 0;
 		mLock.readLock().lock();
 		
-		for(SessionEntry entry : mIndex)
+		for(SessionEntry entry : mSessionIndex)
 		{
 			if(entry.StartTimestamp > date && getOwnerTag(entry) == null)
 			{
@@ -662,9 +601,9 @@ public class LogFile
 		mLock.readLock().lock();
 		
 		
-		for(int i = mIndex.size()-1; i >=0 ; --i)
+		for(int i = mSessionIndex.getCount()-1; i >=0 ; --i)
 		{
-			SessionEntry entry = mIndex.get(i);
+			SessionEntry entry = mSessionIndex.get(i);
 			if(entry.EndTimestamp > date && getOwnerTag(entry) == null)
 			{
 				result = entry.EndTimestamp;
@@ -700,7 +639,7 @@ public class LogFile
 		
 				
 		// Find the relevant sessions
-		for(SessionEntry entry : mIndex)
+		for(SessionEntry entry : mSessionIndex)
 		{
 			if((startDate >= entry.StartTimestamp && startDate <= entry.EndTimestamp) ||
 				(endDate >= entry.StartTimestamp && endDate <= entry.EndTimestamp) ||
@@ -769,7 +708,7 @@ public class LogFile
 					
 		
 		// Find the relevant sessions
-		for(SessionEntry entry : mIndex)
+		for(SessionEntry entry : mSessionIndex)
 		{
 			if((startDate >= entry.StartTimestamp && startDate <= entry.EndTimestamp) ||
 			   (endDate >= entry.StartTimestamp && endDate <= entry.EndTimestamp) ||
@@ -877,7 +816,7 @@ public class LogFile
 					lastWorld = ((WorldChangeRecord)record).getWorld();
 				else if((lastWorld == null && record.getType() != RecordType.FullInventory && record.getType() != RecordType.EndOfSession) && !isAbsolute)
 				{
-					Debug.warning("Corruption in " + mPlayerName + ".tracdata session " +mIndex.indexOf(session) + " found. Attempting to fix");
+					Debug.warning("Corruption in " + mPlayerName + ".tracdata session " + session.Id + " found. Attempting to fix");
 					lastWorld = Bukkit.getWorlds().get(0);
 					Record worldRecord = new WorldChangeRecord(lastWorld);
 					worldRecord.setTimestamp(record.getTimestamp());
@@ -892,13 +831,13 @@ public class LogFile
 				
 				if(lastWorld == null && i > 3 && !isAbsolute)
 				{
-					Debug.warning("Issue detected with " + mPlayerName + ".trackdata in session " + mIndex.indexOf(session) + ". No world has been set. Defaulting to main world");
+					Debug.warning("Issue detected with " + mPlayerName + ".trackdata in session " + session.Id + ". No world has been set. Defaulting to main world");
 					lastWorld = Bukkit.getWorlds().get(0);
 					records.add(new WorldChangeRecord(lastWorld));
 				}
 				if(!hadInv && i > 3 && !isAbsolute)
 				{
-					Debug.warning("Issue detected with " + mPlayerName + ".trackdata in session " + mIndex.indexOf(session) + ". No inventory state has been set. ");
+					Debug.warning("Issue detected with " + mPlayerName + ".trackdata in session " + session.Id + ". No inventory state has been set. ");
 					hadInv = true;
 				}
 				records.add(record);
@@ -951,21 +890,15 @@ public class LogFile
 		{
 			// Calculate the amount of space there is availble to extend into
 			long availableSpace = 0;
-			int hole = -1;
-			// First find the adjacent hole
-			for(int i = 0; i < mHoleIndex.size(); i++)
+			HoleEntry hole = mHoleIndex.getHoleAfter(session.Location + session.TotalSize);
+			if(hole != null)
 			{
-				HoleEntry holeEntry = mHoleIndex.get(i);
-				if(holeEntry.Location == session.Location + session.TotalSize)
-				{
-					if(holeEntry.AttachedTo == null || holeEntry.AttachedTo == session)
-					{
-						availableSpace = holeEntry.Size;
-						hole = i;
-					}
-					break;
-				}
+				if(hole.AttachedTo != null && hole.AttachedTo != session)
+					hole = null;
+				else
+					availableSpace = hole.Size;
 			}
+			
 			// Check if this is at the end of the file
 			if(session.Location + session.TotalSize == mFile.length())
 				availableSpace = Long.MAX_VALUE;
@@ -1047,14 +980,13 @@ public class LogFile
 				mFile.write(bstream.toByteArray());
 	
 				// Consume the space
-				if(hole != -1)
-					fillHole(hole,session.Location + session.TotalSize,bstream.size());
+				mSpaceLocator.consumeSpace(session.Location + session.TotalSize,bstream.size(), session);
 				
 				// Update the session info
 				session.TotalSize += bstream.size();
 				session.EndTimestamp = records.getEndTimestamp();
 				session.RecordCount += records.size();
-				updateSession(mIndex.indexOf(session), session);
+				mSessionIndex.set(mSessionIndex.indexOf(session), session);
 				
 				CrossReferenceIndex.instance.updateSession(this, session, records.getAllChunks());
 				Debug.info("Completed append to Session %d", session.Id);
@@ -1082,24 +1014,20 @@ public class LogFile
 				{
 					Debug.fine("Compressed to %d from %d. Reduction of %.1f%%", ostream.size(), session.TotalSize, (session.TotalSize-ostream.size()) / (double)session.TotalSize * 100F);
 					
-					HoleEntry freedSpace = new HoleEntry();
-					freedSpace.Location = session.Location + ostream.size();
-					freedSpace.Size = session.TotalSize - ostream.size();
-					freedSpace.AttachedTo = null;
-					
 					mFile.seek(session.Location);
 					mFile.write(ostream.toByteArray());
+					
+					mSpaceLocator.releaseSpace(session.Location + ostream.size(), session.TotalSize - ostream.size());
 					
 					session.TotalSize = ostream.size();
 					session.Compressed = true;
 					
-					updateSession(mIndex.indexOf(session), session);
-					addHole(freedSpace);
+					mSessionIndex.set(mSessionIndex.indexOf(session), session);
+
+					if(hole != null)
+						hole.AttachedTo = null;
 					
-					if(hole != -1)
-						mHoleIndex.get(hole).AttachedTo = null;
-					
-					pullData(freedSpace.Location);
+					pullData(session.Location + ostream.size());
 				}
 				else
 					Debug.fine("Compression cancelled as the result was larger than the original");
@@ -1131,11 +1059,6 @@ public class LogFile
 	{
 		Debug.loggedAssert(mIsLoaded);
 		Debug.loggedAssert(mHeader.VersionMajor >= 2, "Owner tags are only suppored in version 2 and above");
-		if(mOwnerTagList == null)
-		{
-			Debug.severe("OwnerMap is null. Log: " + getName() + " Version: " + mHeader.VersionMajor + "." + mHeader.VersionMinor);
-			return false;
-		}
 
 		boolean result;
 		
@@ -1150,7 +1073,8 @@ public class LogFile
 				
 				Debug.info("Appending " + records.size() + " records to " + mPlayerName + ">" + owner);
 				
-				if(!mActiveSessions.containsKey(owner) || getSessionById(mActiveSessions.get(owner)) == null)
+				SessionEntry activeSession = mSessionIndex.getActiveSessionFor(owner);
+				if(activeSession == null)
 				{
 					Debug.info("No active session for %s>%s. Creating one", mPlayerName, owner);
 					
@@ -1158,13 +1082,13 @@ public class LogFile
 					if(index != -1)
 					{
 						
-						mActiveSessions.put(owner, mIndex.get(index).Id);
+						mSessionIndex.setActiveSession(owner, mSessionIndex.get(index));
 	
-						SessionEntry session = mIndex.get(index);
+						SessionEntry session = mSessionIndex.get(index);
 						session.OwnerTagId = -1;
 						
 						// See if there is a tag we can reuse
-						for(OwnerMapEntry tag : mOwnerTagList)
+						for(OwnerMapEntry tag : mOwnerTagIndex)
 						{
 							if(tag.Owner.equalsIgnoreCase(owner))
 							{
@@ -1182,10 +1106,10 @@ public class LogFile
 							ent.Owner = owner;
 							ent.Id = session.OwnerTagId;
 							
-							mOwnerTagMap.put(session.OwnerTagId, addOwnerMap(ent));
+							mOwnerTagIndex.add(ent);
 						}
 	
-						updateSession(index,session);
+						mSessionIndex.set(index, session);
 						
 						result = true;
 					}
@@ -1195,8 +1119,6 @@ public class LogFile
 				else
 				{
 					
-					SessionEntry activeSession = getSessionById(mActiveSessions.get(owner));
-					
 					RecordList splitSession = appendRecords(records, activeSession);
 		
 					if(splitSession != null && splitSession.size() > 0)
@@ -1204,13 +1126,13 @@ public class LogFile
 						int index = initialiseSession(splitSession, true);
 						if(index != -1)
 						{
-							mActiveSessions.put(owner, mIndex.get(index).Id);
+							mSessionIndex.setActiveSession(owner, mSessionIndex.get(index));
 		
-							SessionEntry session = mIndex.get(index);
+							SessionEntry session = mSessionIndex.get(index);
 							session.OwnerTagId = -1;
 							
 							// See if there is a tag we can reuse
-							for(OwnerMapEntry tag : mOwnerTagList)
+							for(OwnerMapEntry tag : mOwnerTagIndex)
 							{
 								if(tag.Owner.equalsIgnoreCase(owner))
 								{
@@ -1228,10 +1150,10 @@ public class LogFile
 								ent.Owner = owner;
 								ent.Id = session.OwnerTagId;
 								
-								mOwnerTagMap.put(session.OwnerTagId, addOwnerMap(ent));
+								mOwnerTagIndex.add(ent);
 							}
 		
-							updateSession(index,session);
+							mSessionIndex.set(index, session);
 							
 							result = true;
 						}
@@ -1289,13 +1211,15 @@ public class LogFile
 			{
 				mFile.beginTransaction();
 				
-				if(!mActiveSessions.containsKey(null) || getSessionById(mActiveSessions.get(null)) == null)
+				SessionEntry activeSession = mSessionIndex.getActiveSessionFor(null);
+				
+				if(activeSession == null)
 				{
 					Debug.finer("Tried to append records. No active session was found.");
 					int index = initialiseSession(records, false);
 					if(index != -1)
 					{
-						mActiveSessions.put(null, mIndex.get(index).Id);
+						mSessionIndex.setActiveSession(null, mSessionIndex.get(index));
 						result = true;
 					}
 					else
@@ -1303,7 +1227,6 @@ public class LogFile
 				}
 				else
 				{
-					SessionEntry activeSession = getSessionById(mActiveSessions.get(null));
 					// This will be populated if there are too many records to put into this session
 					RecordList splitSession = appendRecords(records, activeSession);
 
@@ -1324,7 +1247,7 @@ public class LogFile
 						int index = initialiseSession(splitSession, false);
 						if(index != -1)
 						{
-							mActiveSessions.put(null, mIndex.get(index).Id);
+							mSessionIndex.setActiveSession(null, mSessionIndex.get(index));
 							result = true;
 						}
 						else
@@ -1460,25 +1383,12 @@ public class LogFile
 			session.StartTimestamp = records.get(0).getTimestamp();
 			session.EndTimestamp = records.get(records.size()-1).getTimestamp();
 			
-			// Find a place to put the session
-			for(int i = 0; i < mHoleIndex.size(); i++)
-			{
-				HoleEntry hole = mHoleIndex.get(i);
-				
-				if(hole.Size >= Math.max(session.TotalSize,DesiredMaximumSessionSize))
-				{
-					session.Location = hole.Location;
-					fillHole(i,session.Location,session.TotalSize);
-					break;
-				}
-			}
+			session.Location = mSpaceLocator.findFreeSpace(Math.max(session.TotalSize,DesiredMaximumSessionSize));
 		
 			// Write the session
-			if(session.Location == 0)
+			if(session.Location == mHoleIndex.getEndOfFile())
 			{
 				// Append to the file
-				session.Location = mFile.length();
-				
 				Debug.finest(" Writing session %d to %X -> %X", session.Id, session.Location, session.Location + bstream.size() - 1);
 				
 				mFile.seek(session.Location);
@@ -1496,7 +1406,7 @@ public class LogFile
 					//for(long i = 0; i < hole.Size; i++)
 					mFile.writeByte(0);
 					
-					addHole(hole);
+					mHoleIndex.add(hole);
 				}
 			}
 			else
@@ -1507,9 +1417,10 @@ public class LogFile
 				mFile.write(bstream.toByteArray());
 			}
 			
+			mSpaceLocator.consumeSpace(session.Location, session.TotalSize);
 			
 			// Write the index entry
-			int id = addSession(session);
+			int id = mSessionIndex.add(session);
 			
 			if(!CrossReferenceIndex.instance.addSession(this, session, records.getAllChunks()))
 				Debug.warning("Failed to add session to xreference");
@@ -1558,7 +1469,7 @@ public class LogFile
 				ArrayList<SessionEntry> relevantEntries = new ArrayList<SessionEntry>();
 				
 				// Find the relevant sessions
-				for(SessionEntry entry : mIndex)
+				for(SessionEntry entry : mSessionIndex)
 				{
 					if((fromDate >= entry.StartTimestamp && fromDate <= entry.EndTimestamp) ||
 					   (toDate >= entry.StartTimestamp && toDate <= entry.EndTimestamp) ||
@@ -1576,21 +1487,21 @@ public class LogFile
 					if(entry.StartTimestamp >= fromDate && entry.EndTimestamp < toDate)
 					{
 						// Whole session must be purged
-						int index = mIndex.indexOf(entry);
+						int index = mSessionIndex.indexOf(entry);
 						if(index == -1)
 							continue;
 						
-						removeSession(index);
+						mSessionIndex.remove(index);
 						
-						if(mActiveSessions.get(otag) != null && mActiveSessions.get(otag) == entry.Id)
-							mActiveSessions.remove(otag);
+						if(mSessionIndex.getActiveSessionFor(otag) != null && mSessionIndex.getActiveSessionFor(otag).Id == entry.Id)
+							mSessionIndex.setActiveSession(otag, null);
 	
 						// Pull the proceeding data forward
 						pullData(entry.Location);
 						
 						// Purge the owner tag if no session uses it
 						int count = 0;
-						for(SessionEntry session : mIndex)
+						for(SessionEntry session : mSessionIndex)
 						{
 							if(session.Id == entry.Id)
 								continue;
@@ -1599,7 +1510,7 @@ public class LogFile
 						}
 						
 						if(count == 0)
-							removeOwnerMap(mOwnerTagMap.get(entry.OwnerTagId));
+							mOwnerTagIndex.remove(mOwnerTagIndex.getOwnerTagById(entry.OwnerTagId));
 						
 						// So that anything else using this object through a reference, wont do any damage
 						entry.RecordCount = 0;
@@ -1610,7 +1521,7 @@ public class LogFile
 					}
 					else
 					{
-						int sessionIndex = mIndex.indexOf(entry);
+						int sessionIndex = mSessionIndex.indexOf(entry);
 						if(sessionIndex == -1)
 							continue;
 						
@@ -1629,10 +1540,10 @@ public class LogFile
 						// Write back the new updated data
 						if(sessionData.size() == 0)
 						{
-							removeSession(sessionIndex);
+							mSessionIndex.remove(sessionIndex);
 							
-							if(mActiveSessions.get(otag) != null && mActiveSessions.get(otag) == entry.Id)
-								mActiveSessions.remove(otag);
+							if(mSessionIndex.getActiveSessionFor(otag) != null && mSessionIndex.getActiveSessionFor(otag).Id == entry.Id)
+								mSessionIndex.setActiveSession(otag, null);
 							
 							// Pull the proceeding data forward
 							pullData(entry.Location);
@@ -1670,9 +1581,7 @@ public class LogFile
 							}
 							
 							
-							// Prepare the hole
-							HoleEntry hole = new HoleEntry();
-							hole.Size = entry.TotalSize;
+							long oldSize = entry.TotalSize;
 							
 							// Write to file
 							mFile.seek(entry.Location);
@@ -1685,14 +1594,10 @@ public class LogFile
 							entry.RecordCount = (short) sessionData.size();
 							entry.TotalSize = totalSize;
 							
-							updateSession(sessionIndex,entry);
+							mSessionIndex.set(sessionIndex,entry);
 							CrossReferenceIndex.instance.updateSession(this, entry, new ArrayList<SafeChunk>());
 							
-							// Finialize the hole
-							hole.Size = hole.Size - entry.TotalSize;
-							hole.Location = entry.Location + entry.TotalSize;
-							
-							addHole(hole);
+							mSpaceLocator.releaseSpace(entry.Location + entry.TotalSize, oldSize - entry.TotalSize);
 							
 							// Pull the proceeding data forward
 							pullData(entry.Location + entry.TotalSize);
@@ -1733,11 +1638,10 @@ public class LogFile
 		// Grab what ever is next after this
 		long nextLocation;
 		long nextSize = 0;
-		int hole = getHoleAfter(location);
+		HoleEntry holeData = mHoleIndex.getHoleAfter(location);
 		// TODO: Remove the recursion here
-		if(hole != -1)
+		if(holeData != null)
 		{
-			HoleEntry holeData = mHoleIndex.get(hole);
 			if(holeData.AttachedTo != null)
 			{
 				Debug.finest("Skipping over reserved space from %X -> %X attached to %d", holeData.Location, holeData.Location + holeData.Size - 1, holeData.AttachedTo.Id);
@@ -1751,7 +1655,7 @@ public class LogFile
 			
 			Debug.finest("Pulling data from %X to %X", nextLocation, holeData.Location);
 			
-			for(SessionEntry nextSession : mIndex)
+			for(SessionEntry nextSession : mSessionIndex)
 			{
 				if(nextSession.Location == nextLocation)
 				{
@@ -1787,7 +1691,7 @@ public class LogFile
 				else
 				{
 					index = 0;
-					for(RollbackEntry nextEntry : mRollbackEntries)
+					for(RollbackEntry nextEntry : mRollbackIndex)
 					{
 						if(nextEntry.detailLocation == nextLocation)
 						{
@@ -1836,10 +1740,10 @@ public class LogFile
 				{
 				case 0: // session
 				{
-					SessionEntry nextSession = mIndex.get(index);
+					SessionEntry nextSession = mSessionIndex.get(index);
 					Debug.finest("Shifted session %d from %X -> (%X-%X)", nextSession.Id, nextSession.Location, holeData.Location, holeData.Location + nextSize - 1);
 					nextSession.Location = holeData.Location;
-					updateSession(index, nextSession);
+					mSessionIndex.set(index, nextSession);
 					break;
 				}
 				case 1: // Index
@@ -1868,19 +1772,19 @@ public class LogFile
 					break;
 				case 5: // Rollback Detail
 				{
-					RollbackEntry nextEntry = mRollbackEntries.get(index);
+					RollbackEntry nextEntry = mRollbackIndex.get(index);
 					Debug.finest("Shifted rollback detail for %d from %X -> (%X-%X)", nextEntry.sessionId, nextEntry.detailLocation, holeData.Location, holeData.Location + nextSize - 1);
 					nextEntry.detailLocation = holeData.Location;
-					updateRollbackEntry(nextEntry);
+					mRollbackIndex.set(index, nextEntry);
 					break;
 				}
 				}
 				
 				// Move the hole
-				removeHole(hole);
+				mHoleIndex.remove(holeData);
 				
 				// Add in the new hole
-				addHole(old);
+				mHoleIndex.add(old);
 				
 				// Attempt to compact further stuff
 				pullData(old.Location);
@@ -1888,7 +1792,7 @@ public class LogFile
 			else
 			{
 				// Nothing to pull because there is no more data after us
-				removeHole(hole);
+				mHoleIndex.remove(holeData);
 				// Trim the file
 				mFile.setLength(holeData.Location);
 			}
@@ -1896,703 +1800,12 @@ public class LogFile
 		Profiler.endTimingSection();
 	}
 	
-	private int getHoleAfter(long location)
-	{
-		int i = 0;
-		// Find an available hole before it
-		for(HoleEntry hole : mHoleIndex)
-		{
-			if(hole.Location >= location)
-			{
-				return i; 
-			}
-			i++;
-		}
-		
-		return -1;
-	}
-	/// Checks if there is enough room reserved for that size starting at that location
-	private int isRoomFor(long size, long atLocation)
-	{
-		mLock.readLock().lock();
-		
-		long fileLen;
-		int holeToUse = -1;
-		
-		try 
-		{
-			fileLen = mFile.length();
-		}
-		catch(IOException e) 
-		{
-			Debug.logException(e);
-			mLock.readLock().unlock();
-			
-			return -1;
-		}
-		
-		int i = 0;
-		for(HoleEntry hole : mHoleIndex)
-		{
-			if(hole.Location <= atLocation && hole.Location + hole.Size >= atLocation)
-			{
-				// Check if there is enough room
-				if((hole.Location + hole.Size) - (size + atLocation) >= 0)
-					holeToUse = i;
-				break; // There cant be 2 holes next to each other so if it doesnt fit here, it cant fit at all
-			}
-			i++;
-		}
-		
-		if(holeToUse == -1 && atLocation >= fileLen) // At the end of the file
-			holeToUse = mHoleIndex.size();
-		
-		mLock.readLock().unlock();
-		
-		
-		return holeToUse;
-	}
-
-	private boolean canMergeHoles(HoleEntry a, HoleEntry b)
-	{
-		if((a.Location >= b.Location && a.Location <= b.Location + b.Size) ||
-		   (a.Location + a.Size >= b.Location && a.Location + a.Size <= b.Location + b.Size))
-			return true;
-		
-		return false;
-	}
-	private HoleEntry mergeHoles(HoleEntry a, HoleEntry b)
-	{
-		if(!canMergeHoles(a,b))
-			return null;
-		
-		HoleEntry merged = new HoleEntry();
-		if(a.Location < b.Location)
-		{
-			merged.Location = a.Location;
-			merged.Size = Math.max((b.Location - a.Location) + b.Size, a.Size);
-		}
-		else
-		{
-			merged.Location = b.Location;
-			merged.Size = Math.max(b.Size, (a.Location - b.Location) + a.Size);
-		}
-		
-		if(a.AttachedTo != null)
-			merged.AttachedTo = a.AttachedTo;
-		if(b.AttachedTo != null)
-			merged.AttachedTo = b.AttachedTo;
-		
-		return merged;
-	}
-	private void addHole(HoleEntry entry) throws IOException
-	{
-		if(entry.Size == 0)
-			return;
-		
-		Profiler.beginTimingSection("addHole");
-		mLock.writeLock().lock();
-		
-		
-		try
-		{
-			// Check if we need to merge it
-			for(int i = 0; i < mHoleIndex.size(); i++)
-			{
-				HoleEntry existing = mHoleIndex.get(i);
-				if(canMergeHoles(entry,existing))
-				{
-					HoleEntry newHole = mergeHoles(entry,existing);
-					mHoleIndex.set(i, newHole);
-					
-					// Write the changes
-					mFile.seek(mHeader.HolesIndexLocation + i * HoleEntry.cSize);
-					newHole.write(mFile);
-					
-					Debug.finest("Merging new hole into @%d changing range from (%X->%X) into (%X->%X)", i, existing.Location, existing.Location + existing.Size-1,newHole.Location, newHole.Location + newHole.Size-1);
-					
-					return;
-				}
-			}
-			
-			int index = 0;
-			for(index = 0; index < mHoleIndex.size(); index++)
-			{
-				if(mHoleIndex.get(index).Location > entry.Location)
-					break;
-			}
-			mHoleIndex.add(index,entry);
-			
-			// It must be added
-			if(mHeader.HolesIndexPadding >= HoleEntry.cSize)
-			{
-				// there is padding availble to use 
-				mFile.seek(mHeader.HolesIndexLocation + index * HoleEntry.cSize);
-				// Shift the entries
-				for(int i = index; i < mHoleIndex.size(); i++)
-					mHoleIndex.get(i).write(mFile);
-				
-				mHeader.HolesIndexCount = mHoleIndex.size();
-				mHeader.HolesIndexSize = mHoleIndex.size() * HoleEntry.cSize;
-				mHeader.HolesIndexPadding -= HoleEntry.cSize;
-				
-				Debug.finest("Writing %d hole entries to %X -> %X Using padding. Remaining: %d bytes", mHoleIndex.size() - index, mHeader.HolesIndexLocation + index * HoleEntry.cSize, mHeader.HolesIndexLocation + mHeader.HolesIndexSize-1, mHeader.HolesIndexPadding);
-			}
-			else
-			{
-				// See if there is a hole we can extend into
-				int hole = isRoomFor(HoleEntry.cSize,mHeader.HolesIndexLocation + mHeader.HolesIndexSize);
-				
-				if(hole == -1 || (hole != mHoleIndex.size() && mHoleIndex.get(hole).AttachedTo != null)) 
-				{
-					// There isnt a hole appended to the index
-					// Relocate the holes index
-					HoleEntry oldIndexHole = new HoleEntry();
-					long oldLocation = mHeader.HolesIndexLocation;
-					oldIndexHole.Location = mHeader.HolesIndexLocation;
-					oldIndexHole.Size = mHeader.HolesIndexSize + mHeader.HolesIndexPadding;
-					// Try to merge it
-					boolean merged = false;
-					for(int i = 0; i < mHoleIndex.size(); i++)
-					{
-						if(canMergeHoles(oldIndexHole,mHoleIndex.get(i)))
-						{
-							mHoleIndex.set(i, mergeHoles(oldIndexHole,mHoleIndex.get(i)));
-							
-							if(merged)
-								mHoleIndex.remove(oldIndexHole);
-							
-							oldIndexHole = mHoleIndex.get(i);
-							merged = true;
-						}
-					}
-					
-					// Add it now if it wasnt merged
-					if(!merged)
-					{
-						int index2 = 0;
-						for(index2 = 0; index2 < mHoleIndex.size(); index2++)
-						{
-							if(mHoleIndex.get(index2).Location > oldIndexHole.Location)
-								break;
-						}
-						mHoleIndex.add(index2,oldIndexHole);
-					}
-					
-					mHeader.HolesIndexLocation = mFile.length();
-					
-					// The total size of the hole index now including 1 extra entry as padding
-					long newSize = (mHoleIndex.size() + 1) * HoleEntry.cSize;
-					
-					// Check all the holes to see if there is any space
-					int targetHole = -1;
-					for(int i = 0; i < mHoleIndex.size(); i++)
-					{
-						if(mHoleIndex.get(i).Size >= newSize)
-						{
-							targetHole = i;
-							mHeader.HolesIndexLocation = mHoleIndex.get(targetHole).Location;
-							break;
-						}
-					}
-					
-					// Prepare the header info
-					mHeader.HolesIndexPadding = HoleEntry.cSize;
-					mHeader.HolesIndexCount = mHoleIndex.size();
-					mHeader.HolesIndexSize = mHoleIndex.size() * HoleEntry.cSize;
-					
-					// Write the items
-					mFile.seek(mHeader.HolesIndexLocation);
-					for(int i = 0; i < mHoleIndex.size(); i++)
-						mHoleIndex.get(i).write(mFile);
-					
-					// Padding
-					mFile.write(new byte[HoleEntry.cSize]);
-
-					Debug.finest("Moving hole index from %X to (%X -> %X) setting %d bytes padding", oldLocation, mHeader.HolesIndexLocation, mHeader.HolesIndexLocation + mHeader.HolesIndexSize - 1, mHeader.HolesIndexPadding);
-					
-					if(targetHole != -1) // Found a hole big enough
-						// Consume the hole
-						fillHole(targetHole,mHeader.HolesIndexLocation,newSize);
-				}
-				else
-				{
-					// There was a hole to use
-					mFile.seek(mHeader.HolesIndexLocation + index * HoleEntry.cSize);
-					for(int i = index; i < mHoleIndex.size(); i++)
-						mHoleIndex.get(i).write(mFile);
-
-					
-					mHeader.HolesIndexCount = mHoleIndex.size();
-					mHeader.HolesIndexSize = mHoleIndex.size() * HoleEntry.cSize;
-					
-					Debug.finest("Writing %d hole entries to %X -> %X", mHoleIndex.size() - index, mHeader.HolesIndexLocation + index * HoleEntry.cSize, mHeader.HolesIndexLocation + mHeader.HolesIndexSize-1);
-					
-					if(hole != mHoleIndex.size())
-						fillHole(hole,mFile.getFilePointer() - HoleEntry.cSize,HoleEntry.cSize);
-				}
-			}
-			
-			// Write the file header
-			mFile.seek(0);
-			mHeader.write(mFile);
-		}
-		finally
-		{
-			mLock.writeLock().unlock();
-			Profiler.endTimingSection();
-		}
-	}
-	private void fillHole(int index, long start, long size) throws IOException
-	{
-		Debug.loggedAssert( index >= 0 && index < mHoleIndex.size());
-		
-		mLock.writeLock().lock();
-		
-		
-		try
-		{
-			HoleEntry hole = mHoleIndex.get(index);
-			
-			if(start == hole.Location)
-			{
-				if(size == hole.Size)
-				{
-					// It completely covers the hole
-					removeHole(index);
-				}
-				else
-				{
-					// It covers the start of the hole
-					hole.Size = (hole.Location + hole.Size) - (start + size);
-					hole.Location += size;
-					updateHole(index,hole);
-				}
-			}
-			else
-			{
-				if(start + size == hole.Location + hole.Size)
-				{
-					// It covers the end of the hole
-					hole.Size = (start - hole.Location);
-					hole.Location = start;
-					
-					updateHole(index,hole);
-				}
-				else
-				{
-					// It covers the middle of the hole
-					HoleEntry newHole = new HoleEntry();
-					newHole.Location = start + size;
-					newHole.Size = (hole.Location + hole.Size) - (start + size);
-					
-					hole.Size = (start - hole.Location);
-					
-					updateHole(index,hole);
-					addHole(newHole);
-				}
-			}
-		}
-		finally
-		{
-			mLock.writeLock().unlock();
-			
-		}
-	}
-	private void updateHole(int index, HoleEntry entry) throws IOException
-	{
-		Debug.loggedAssert( index >= 0 && index < mHoleIndex.size());
-		Profiler.beginTimingSection("updateHole");
-		mLock.writeLock().lock();
-		
-		
-		try
-		{
-			mFile.seek(mHeader.HolesIndexLocation + index * HoleEntry.cSize);
-			mHoleIndex.set(index,entry);
-			entry.write(mFile);
-			Debug.finest("Updated hole at %X -> %X", mHeader.HolesIndexLocation + index * HoleEntry.cSize, mHeader.HolesIndexLocation + index * HoleEntry.cSize + HoleEntry.cSize - 1);
-		}
-		finally
-		{
-			mLock.writeLock().unlock();
-			Profiler.endTimingSection();
-		}
-	}
-	private void removeHole(int index) throws IOException
-	{
-		Debug.loggedAssert( index >= 0 && index < mHoleIndex.size());
-		Profiler.beginTimingSection("removeHole");
-		mLock.writeLock().lock();
-		
-		
-		try
-		{
-			if(index != mHoleIndex.size()-1)
-			{
-				// shift entries
-				mFile.seek(mHeader.HolesIndexLocation + index * HoleEntry.cSize);
-				for(int i = index+1; i < mHoleIndex.size(); i++)
-					mHoleIndex.get(i).write(mFile);
-			}
-			
-			// Clear the last entry
-			mFile.seek(mHeader.HolesIndexLocation + (mHoleIndex.size()-1) * HoleEntry.cSize);
-			mFile.write(new byte[HoleEntry.cSize]);
-			
-			mHoleIndex.remove(index);
-			// Increase the padding
-			mHeader.HolesIndexPadding += HoleEntry.cSize;
-			mHeader.HolesIndexCount = mHoleIndex.size();
-			mHeader.HolesIndexSize = mHoleIndex.size() * HoleEntry.cSize;
-			
-			Debug.finer("Hole removed");
-			// Write the file header
-			mFile.seek(0);
-			mHeader.write(mFile);
-		}
-		finally
-		{
-			mLock.writeLock().unlock();
-			Profiler.endTimingSection();
-		}
-	}
-	
-	private int addSession(SessionEntry entry) throws IOException
-	{
-		int sessionIndex;
-		
-		Profiler.beginTimingSection("addSession");
-		mLock.writeLock().lock();
-		
-		try
-		{
-			entry.Id = NextId++;
-			
-			// Do an ordered insert by the timestamp of the session
-			int insertIndex = 0;
-			for(insertIndex = 0; insertIndex < mIndex.size(); insertIndex++)
-			{
-				if(mIndex.get(insertIndex).StartTimestamp > entry.StartTimestamp)
-					break;
-			}
-
-			mIndex.add(insertIndex,entry);
-			
-			// Check if there is room in the file for this
-			int hole = isRoomFor(SessionEntry.cSize[mHeader.VersionMajor],mHeader.IndexLocation + mHeader.IndexSize);
-			
-				
-			if(hole == -1 || (hole != mHoleIndex.size() && mHoleIndex.get(hole).AttachedTo != null))
-			{
-				// Prepare to relocate the index
-				HoleEntry oldIndexHole = new HoleEntry();
-				oldIndexHole.Location = mHeader.IndexLocation;
-				oldIndexHole.Size = mHeader.IndexSize;
-				
-				// Calculate the new header values
-				mHeader.IndexLocation = mFile.length();
-				mHeader.SessionCount = mIndex.size();
-				mHeader.IndexSize = mIndex.size() * SessionEntry.cSize[mHeader.VersionMajor];
-				
-				// Append the index to the back of the file
-				mFile.seek(mFile.length());
-				for(int i = 0; i < mIndex.size(); i++)
-					mIndex.get(i).write(mFile);
-				
-				Debug.finest("Index relocated from %X -> (%X->%X)", oldIndexHole.Location, mHeader.IndexLocation, mHeader.IndexLocation + mHeader.IndexSize-1);
-				// Add the hole info
-				addHole(oldIndexHole);
-			}
-			else
-			{
-				// Calculate the new header values
-				mHeader.SessionCount = mIndex.size();
-				mHeader.IndexSize = mIndex.size() * SessionEntry.cSize[mHeader.VersionMajor];
-				
-				// Shift the index entries
-				mFile.seek(mHeader.IndexLocation + insertIndex * SessionEntry.cSize[mHeader.VersionMajor]);
-				for(int i = insertIndex; i < mIndex.size(); i++)
-					mIndex.get(i).write(mFile);
-				
-				Debug.finest("Writing %d index entries from %X -> %X", mIndex.size() - insertIndex, mHeader.IndexLocation + insertIndex * SessionEntry.cSize[mHeader.VersionMajor], mHeader.IndexLocation + mHeader.IndexSize - 1);
-				// Consume the hole
-				if(hole != mHoleIndex.size())
-					fillHole(hole,mHeader.IndexLocation + (mIndex.size()-1) * SessionEntry.cSize[mHeader.VersionMajor],SessionEntry.cSize[mHeader.VersionMajor]);
-			}
-			
-			// Write the file header
-			mFile.seek(0);
-			mHeader.write(mFile);
-
-			if(insertIndex == mIndex.size()-1)
-				mIndexMap.put(entry.Id, insertIndex);
-			else
-				rebuildIndexMap();
-			
-			sessionIndex = insertIndex;
-		}
-		finally
-		{
-			mLock.writeLock().unlock();
-			Profiler.endTimingSection();
-		}
-		
-		return sessionIndex;
-	}
-	private void removeSession(int index) throws IOException
-	{
-		Debug.loggedAssert( index >= 0 && index < mIndex.size());
-		
-		Profiler.beginTimingSection("removeSession");
-		mLock.writeLock().lock();
-		
-		
-		try
-		{
-			SessionEntry removedSession = mIndex.get(index);
-			CrossReferenceIndex.instance.removeSession(this, mIndex.get(index));
-			
-			// Shift the existing entries
-			mFile.seek(mHeader.IndexLocation + index * SessionEntry.cSize[mHeader.VersionMajor]);
-			for(int i = index + 1; i < mIndex.size(); i++)
-				mIndex.get(i).write(mFile);
-			
-			// Prepare the hole
-			HoleEntry hole = new HoleEntry();
-			hole.Location = mFile.getFilePointer();
-			hole.Size = SessionEntry.cSize[mHeader.VersionMajor];
-			
-			// Clear the last one
-			mFile.write(new byte[SessionEntry.cSize[mHeader.VersionMajor]]);
-			mIndex.remove(index);
-			
-			// Update the header
-			mHeader.IndexSize = mIndex.size() * SessionEntry.cSize[mHeader.VersionMajor];
-			mHeader.SessionCount = mIndex.size();
-			
-			Debug.finer("Session %d removed from %d", removedSession.Id, index);
-			// Write the file header
-			mFile.seek(0);
-			mHeader.write(mFile);
-			
-			addHole(hole);
-
-			rebuildIndexMap();
-		}
-		finally
-		{
-			mLock.writeLock().unlock();
-			Profiler.endTimingSection();
-		}
-	}
-	private void updateSession(int index, SessionEntry session) throws IOException
-	{
-		Debug.loggedAssert( index >= 0 && index < mIndex.size(), "Tried to update session " + index + "/" + mIndex.size());
-		Profiler.beginTimingSection("updateSession");
-		mLock.writeLock().lock();
-		
-		
-		try
-		{
-			mFile.seek(mHeader.IndexLocation + index * SessionEntry.cSize[mHeader.VersionMajor]);
-			mIndex.set(index,session);
-			session.write(mFile);
-			
-			Debug.finest("Session %d(@%d) updated at %X -> %X", session.Id, index, mHeader.IndexLocation + index * SessionEntry.cSize[mHeader.VersionMajor], mHeader.IndexLocation + index * SessionEntry.cSize[mHeader.VersionMajor] + SessionEntry.cSize[mHeader.VersionMajor] - 1);
-		}
-		finally
-		{
-			mLock.writeLock().unlock();
-			Profiler.endTimingSection();
-		}
-	}
-	
-	private int addOwnerMap(OwnerMapEntry map) throws IOException
-	{
-		int resultIndex;
-		
-		Profiler.beginTimingSection("addOwnerMap");
-		mLock.writeLock().lock();
-		
-		try
-		{
-			mOwnerTagList.add(map);
-			
-			// Check if there is room in the file for this
-			int hole = isRoomFor(OwnerMapEntry.cSize,mHeader.OwnerMapLocation + mHeader.OwnerMapSize);
-			
-			if(hole == -1 || (hole != mHoleIndex.size() && mHoleIndex.get(hole).AttachedTo != null))
-			{
-				// Prepare to relocate the ownermap
-				HoleEntry oldIndexHole = new HoleEntry();
-				oldIndexHole.Location = mHeader.OwnerMapLocation;
-				oldIndexHole.Size = mHeader.OwnerMapSize;
-				
-				// Calculate the new header values
-				mHeader.OwnerMapLocation = mFile.length();
-				mHeader.OwnerMapCount = mOwnerTagList.size();
-				mHeader.OwnerMapSize = mOwnerTagList.size() * OwnerMapEntry.cSize;
-				
-				// Append the index to the back of the file
-				mFile.seek(mFile.length());
-				for(int i = 0; i < mOwnerTagList.size(); i++)
-					mOwnerTagList.get(i).write(mFile);
-
-				Debug.fine("Owner tag Index relocated from %X -> (%X->%X)", oldIndexHole.Location, mHeader.OwnerMapLocation, mHeader.OwnerMapLocation + mHeader.OwnerMapSize-1);
-				
-				// Add the hole info
-				addHole(oldIndexHole);
-			}
-			else
-			{
-				// Calculate the new header values
-				mHeader.OwnerMapCount = mOwnerTagList.size();
-				mHeader.OwnerMapSize = mOwnerTagList.size() * OwnerMapEntry.cSize;
-				
-				// Write it
-				mFile.seek(mHeader.OwnerMapLocation + (mOwnerTagList.size()-1) * OwnerMapEntry.cSize);
-				map.write(mFile);
-				
-				Debug.finer("Owner tag written at %X -> %X", mHeader.OwnerMapLocation + (mOwnerTagList.size()-1) * OwnerMapEntry.cSize, mHeader.OwnerMapLocation + mHeader.OwnerMapSize - 1);
-				// Consume the hole
-				if(hole != mHoleIndex.size())
-					fillHole(hole,mHeader.OwnerMapLocation + (mOwnerTagList.size()-1) * OwnerMapEntry.cSize,OwnerMapEntry.cSize);
-			}
-			
-			// Write the file header
-			mFile.seek(0);
-			mHeader.write(mFile);
-			
-			resultIndex = mOwnerTagList.size()-1;
-		}
-		finally
-		{
-			mLock.writeLock().unlock();
-			Profiler.endTimingSection();
-		}
-		return resultIndex;
-	}
-	
-	private void removeOwnerMap(int index) throws IOException
-	{
-		Debug.loggedAssert( index >= 0 && index < mOwnerTagList.size());
-		
-		Profiler.beginTimingSection("removeOwnerMap");
-		mLock.writeLock().lock();
-		
-		
-		try
-		{
-			// Shift the existing entries
-			mFile.seek(mHeader.OwnerMapLocation + index * OwnerMapEntry.cSize);
-			for(int i = index + 1; i < mOwnerTagList.size(); i++)
-				mOwnerTagList.get(i).write(mFile);
-			
-			// Prepare the hole
-			HoleEntry hole = new HoleEntry();
-			hole.Location = mFile.getFilePointer();
-			hole.Size = OwnerMapEntry.cSize;
-			
-			// Clear the last one
-			mFile.write(new byte[OwnerMapEntry.cSize]);
-			mOwnerTagList.remove(index);
-			
-			// Update the header
-			mHeader.OwnerMapSize = mOwnerTagList.size() * OwnerMapEntry.cSize;
-			mHeader.OwnerMapCount = mOwnerTagList.size();
-			
-			Debug.finer("Owner Map removed");
-			// Write the file header
-			mFile.seek(0);
-			mHeader.write(mFile);
-			
-			addHole(hole);
-		}
-		finally
-		{
-			mLock.writeLock().unlock();
-			Profiler.endTimingSection();
-		}
-	}
-	
-	private void addBlankRollbackEntry(SessionEntry session) throws IOException
-	{
-		Debug.loggedAssert(mHeader.VersionMajor >= 3, "Version 3 or higher is required to use the rollback index");
-		
-		RollbackEntry entry = new RollbackEntry();
-		entry.sessionId = session.Id;
-		entry.detailLocation = 0;
-		entry.detailSize = 0;
-		
-		mRollbackEntries.add(entry);
-		
-		// Check if there is room in the file for this
-		int hole = isRoomFor(RollbackEntry.cSize,mHeader.RollbackIndexLocation + mHeader.RollbackIndexSize);
-		
-		if(hole == -1 || (hole != mHoleIndex.size() && mHoleIndex.get(hole).AttachedTo != null))
-		{
-			// Prepare to relocate the index
-			HoleEntry oldIndexHole = new HoleEntry();
-			oldIndexHole.Location = mHeader.RollbackIndexLocation;
-			oldIndexHole.Size = mHeader.RollbackIndexSize;
-			
-			// Calculate the new header values
-			mHeader.RollbackIndexLocation = mFile.length();
-			mHeader.RollbackIndexCount = mRollbackEntries.size();
-			mHeader.RollbackIndexSize = mRollbackEntries.size() * RollbackEntry.cSize;
-			
-			// Append the index to the back of the file
-			mFile.seek(mFile.length());
-			for(int i = 0; i < mRollbackEntries.size(); i++)
-				mRollbackEntries.get(i).write(mFile);
-			
-			Debug.finest("Rollback Index relocated from %X -> (%X->%X)", oldIndexHole.Location, mHeader.RollbackIndexLocation, mHeader.RollbackIndexLocation + mHeader.RollbackIndexSize-1);
-			// Add the hole info
-			addHole(oldIndexHole);
-		}
-		else
-		{
-			// Calculate the new header values
-			mHeader.RollbackIndexCount = mRollbackEntries.size();
-			mHeader.RollbackIndexSize = mRollbackEntries.size() * RollbackEntry.cSize;
-			
-			// Shift the index entries
-			mFile.seek(mHeader.RollbackIndexLocation + mHeader.RollbackIndexSize);
-			entry.write(mFile);
-			
-			Debug.finest("Writing 1 rollback index entries from %X -> %X", mHeader.RollbackIndexLocation + (mRollbackEntries.size() - 1) * RollbackEntry.cSize, mHeader.RollbackIndexLocation + mHeader.RollbackIndexSize - 1);
-			// Consume the hole
-			if(hole != mHoleIndex.size())
-				fillHole(hole,mHeader.RollbackIndexLocation + (mRollbackEntries.size()-1) * RollbackEntry.cSize,RollbackEntry.cSize);
-		}
-		
-		// Write the file header
-		mFile.seek(0);
-		
-		if(mHeader.VersionMinor == 0)
-			mHeader.VersionMinor = 1;
-		
-		mHeader.write(mFile);
-
-		mRollbackMap.put(session.Id, mRollbackEntries.size()-1);
-	}
-	private void updateRollbackEntry(RollbackEntry entry) throws IOException
-	{
-		int index = mRollbackEntries.indexOf(entry);
-		
-		mFile.seek(mHeader.RollbackIndexLocation + index * RollbackEntry.cSize);
-		entry.write(mFile);
-		
-		Debug.finest("Rollback entry @%d updated at %X -> %X", index, mHeader.RollbackIndexLocation + index * RollbackEntry.cSize, mHeader.RollbackIndexLocation + index * RollbackEntry.cSize + RollbackEntry.cSize - 1);
-	}
-	
 	private short[] getRolledBackRecords(SessionEntry session) throws IOException
 	{
-		if(!mRollbackMap.containsKey(session.Id))
+		if(mRollbackIndex.getRollbackEntryById(session.Id) == null)
 			return new short[0];
 		
-		RollbackListEntry list = getRollbackDetail(mRollbackEntries.get(mRollbackMap.get(session.Id)));
+		RollbackListEntry list = getRollbackDetail(mRollbackIndex.getRollbackEntryById(session.Id));
 		if(list != null)
 			return list.items;
 		return new short[0];
@@ -2646,8 +1859,7 @@ public class LogFile
 			if(startIndex == newList.size())
 				return;
 			
-			// If there is any left find somewhere to put it
-			int hole = isRoomFor((newList.size()-startIndex)*2, entry.detailLocation + detail.getSize());
+			long oldSize = detail.getSize();
 			
 			// Copy the whole thing across
 			short[] tempList = new short[newList.size()];
@@ -2655,46 +1867,39 @@ public class LogFile
 				tempList[i] = newList.get(i);
 			detail.items = tempList;
 			
-			if(hole == -1 || (hole != mHoleIndex.size() && mHoleIndex.get(hole).AttachedTo != null))
+			if(mSpaceLocator.isFreeSpace(entry.detailLocation + oldSize, detail.getSize() - oldSize))
 			{
-				// Place at end
-				HoleEntry oldHole = new HoleEntry();
-				oldHole.Location = entry.detailLocation;
-				oldHole.Size = entry.detailSize;
+				mFile.seek(entry.detailLocation);
+				detail.write(mFile);
+				
+				entry.detailSize = detail.getSize();
+				mRollbackIndex.set(mRollbackIndex.indexOf(entry), entry);
+				
+				// Consume the hole
+				mSpaceLocator.consumeSpace(entry.detailLocation + oldSize, detail.getSize() - oldSize);
+				Debug.finest("Rollback detail expanded by %d. Location is now: %X -> %X", diff * 2, entry.detailLocation, entry.detailLocation + entry.detailSize - 1);
+			}
+			else
+			{
+				long oldLocation = entry.detailLocation;
+				oldSize = entry.detailSize;
 				
 				if(detail.padding < 8)
 					detail.padding = 8;
 				
-				entry.detailLocation = mFile.length();
 				entry.detailSize = detail.getSize();
+				entry.detailLocation = mSpaceLocator.findFreeSpace(entry.detailSize);
 				
 				mFile.seek(entry.detailLocation);
 				detail.write(mFile);
 				
 				// Update rollback entry
-				updateRollbackEntry(entry);
+				mRollbackIndex.set(mRollbackIndex.indexOf(entry), entry);
 				
-				addHole(oldHole);
+				mSpaceLocator.consumeSpace(entry.detailLocation, entry.detailSize);
+				mSpaceLocator.releaseSpace(oldLocation, oldSize);
 				
-				Debug.finest("Rollback detail reloated to %X -> %X from %X -> %X", entry.detailLocation, entry.detailLocation + entry.detailSize - 1, oldHole.Location, oldHole.Location + oldHole.Size - 1);
-			}
-			else
-			{
-				// Consume hole
-				mFile.seek(entry.detailLocation);
-				detail.write(mFile);
-				
-				entry.detailSize = detail.getSize();
-				updateRollbackEntry(entry);
-				
-				// Consume the hole
-				if(hole != mHoleIndex.size())
-				{
-					Debug.finest("Rollback detail expanded into hole by %d. Location is now: %X -> %X", diff * 2, entry.detailLocation, entry.detailLocation + entry.detailSize - 1);
-					fillHole(hole,entry.detailLocation + entry.detailSize - 2,2);
-				}
-				else
-					Debug.finest("Rollback detail expanded by %d at eof. Location is now: %X -> %X", diff * 2, entry.detailLocation, entry.detailLocation + entry.detailSize - 1);
+				Debug.finest("Rollback detail reloated to %X -> %X from %X -> %X", entry.detailLocation, entry.detailLocation + entry.detailSize - 1, oldLocation, oldLocation + oldSize - 1);
 			}
 		}
 	}
@@ -2709,10 +1914,14 @@ public class LogFile
 		Debug.info("Setting rollback state for %d records in session %d", indices.size(), session.Id);
 		try
 		{
-			if(!mRollbackMap.containsKey(session.Id))
-				addBlankRollbackEntry(session);
+			RollbackEntry entry = mRollbackIndex.getRollbackEntryById(session.Id);
 			
-			RollbackEntry entry = mRollbackEntries.get(mRollbackMap.get(session.Id));
+			if(entry == null)
+			{
+				entry = new RollbackEntry();
+				entry.sessionId = session.Id;
+				mRollbackIndex.add(entry);
+			}
 
 			// Get the existing detail
 			RollbackListEntry list = getRollbackDetail(entry);
@@ -2785,81 +1994,7 @@ public class LogFile
 			mLock.writeLock().unlock();
 		}
 	}
-	
-	private void rebuildTagMap()
-	{
-		mLock.readLock().lock();
-		
-		
-		mOwnerTagMap = new HashMap<Integer, Integer>();
-		int index = 0;
-		for(OwnerMapEntry tag : mOwnerTagList)
-		{
-			mOwnerTagMap.put(tag.Id, index);
-			index++;
-		}
-		
-		mLock.readLock().unlock();
-		
-	}
-	private void rebuildIndexMap()
-	{
-		mLock.readLock().lock();
-		
-		
-		mIndexMap = new HashMap<Integer, Integer>();
-		int index = 0;
-		for(SessionEntry session : mIndex)
-		{
-			mIndexMap.put(session.Id, index);
-			index++;
-		}
-		
-		mLock.readLock().unlock();
-		
-	}
-	
-	private void rebuildRollbackMap()
-	{
-		mLock.readLock().lock();
-		
-		
-		mRollbackMap = new HashMap<Integer, Integer>();
-		int index = 0;
-		for(RollbackEntry entry : mRollbackEntries)
-		{
-			mRollbackMap.put(entry.sessionId, index);
-			index++;
-		}
-		
-		mLock.readLock().unlock();
-	}
-	private void readRollbackIndex(RandomAccessFile file, FileHeader header) throws IOException
-	{
-		Profiler.beginTimingSection("readRollbackIndex");
-		mLock.writeLock().lock();
-		
-		try
-		{
-			mRollbackEntries = new ArrayList<RollbackEntry>();
-		
-			file.seek(header.RollbackIndexLocation);
-			
-			for(int i = 0; i < header.RollbackIndexCount; i++)
-			{
-				RollbackEntry entry = new RollbackEntry();
-				entry.read(file);
-				mRollbackEntries.add(entry);
-			}
-			
-		}
-		finally
-		{
-			mLock.writeLock().unlock();
-			Profiler.endTimingSection();
-		}
-	}
-	
+
 	/**
 	 *  Gets the name of the player whose activities are recorded here
 	 */
@@ -2875,99 +2010,9 @@ public class LogFile
 		return mFilePath;
 	}
 
-	private void readIndex(RandomAccessFile file, FileHeader header) throws IOException
-	{
-		Profiler.beginTimingSection("readIndex");
-		mLock.writeLock().lock();
-		
-		
-		try
-		{
-			mIndex = new ArrayList<SessionEntry>();
-			
-			// Read the index
-			file.seek(header.IndexLocation);
-		
-			for(int i = 0; i < header.SessionCount; i++)
-			{
-				SessionEntry ent = new SessionEntry();
-				ent.read(file);
-				mIndex.add(ent);
-			}
-		}
-		finally
-		{
-			mLock.writeLock().unlock();
-			Profiler.endTimingSection();
-		}
-	}
-	private void readHoles(RandomAccessFile file, FileHeader header) throws IOException
-	{
-		Profiler.beginTimingSection("readHoles");
-		mLock.writeLock().lock();
-		
-
-		try
-		{
-			mHoleIndex = new ArrayList<HoleEntry>();
-			
-			// Read the index
-			file.seek(header.HolesIndexLocation);
-			
-			for(int i = 0; i < header.HolesIndexCount; i++)
-			{
-				HoleEntry ent = new HoleEntry();
-				ent.read(file);
-				
-				// Try to attach to a session
-				for(SessionEntry session : mIndex)
-				{
-					if(!session.Compressed && ent.Location == session.Location + session.TotalSize)
-					{
-						ent.AttachedTo = session;
-						break;
-					}
-				}
-				
-				mHoleIndex.add(ent);
-			}
-
-		}
-		finally
-		{
-			mLock.writeLock().unlock();
-			Profiler.endTimingSection();
-		}
-	}
-	private void readOwnerMap(RandomAccessFile file, FileHeader header) throws IOException
-	{
-		Profiler.beginTimingSection("readOwnerMap");
-		mLock.writeLock().lock();
-		
-		
-		try
-		{
-			mOwnerTagList = new ArrayList<OwnerMapEntry>();
-		
-			file.seek(header.OwnerMapLocation);
-			
-			for(int i = 0; i < header.OwnerMapCount; i++)
-			{
-				OwnerMapEntry entry = new OwnerMapEntry();
-				entry.read(file);
-				mOwnerTagList.add(entry);
-			}
-			
-		}
-		finally
-		{
-			mLock.writeLock().unlock();
-			Profiler.endTimingSection();
-		}
-	}
 	private int mReferenceCount = 0;
 	
-	private ReentrantReadWriteLock mLock;
+	ReentrantReadWriteLock mLock;
 	private ReentrantLock mReferenceLock;
 	
 	private boolean mIsLoaded = false;
@@ -2975,20 +2020,16 @@ public class LogFile
 	private boolean mIsClosing = false;
 	private int mTimeoutId = -1;
 	private String mPlayerName;
-	private ArrayList<SessionEntry> mIndex;
-	private HashMap<Integer, Integer> mIndexMap;
+
+	SessionIndex mSessionIndex;
+	HoleIndex mHoleIndex;
+	OwnerTagIndex mOwnerTagIndex;
+	RollbackIndex mRollbackIndex;
 	
-	private ArrayList<HoleEntry> mHoleIndex;
-	
-	private ArrayList<OwnerMapEntry> mOwnerTagList;
-	private HashMap<Integer, Integer> mOwnerTagMap;
-	
-	private ArrayList<RollbackEntry> mRollbackEntries;
-	private HashMap<Integer, Integer> mRollbackMap;
+	private SpaceLocator mSpaceLocator;
 	
 	private ACIDRandomAccessFile mFile;
 	
-	private HashMap<String, Integer> mActiveSessions;
 	private FileHeader mHeader;
 	private File mFilePath;
 	
@@ -3020,15 +2061,7 @@ public class LogFile
 			}
 			
 			mIsLoaded = false;
-			mIndex.clear();
-			mIndex = null;
-			mHoleIndex.clear();
-			mHoleIndex = null;
-			if(mOwnerTagList != null)
-			{
-				mOwnerTagList.clear();
-				mOwnerTagList = null;
-			}
+			
 			Debug.finest("CloseTask is completed");
 			
 			return null;
