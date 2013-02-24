@@ -137,6 +137,10 @@ public class LogFile
 		header.OwnerMapSize = 0;
 		header.OwnerMapLocation = header.getSize() + HoleEntry.cSize;
 		
+		header.RollbackIndexCount = 0;
+		header.RollbackIndexSize = 0;
+		header.RollbackIndexLocation = header.getSize() + HoleEntry.cSize;
+		
 		if (playerName.startsWith(LogFileRegistry.cGlobalFilePrefix))
 			header.RequiresOwnerTags = true;
 		else
@@ -177,6 +181,8 @@ public class LogFile
 		log.mHoleIndex = new ArrayList<HoleEntry>();
 		log.mOwnerTagList = new ArrayList<OwnerMapEntry>();
 		log.mActiveSessions = new HashMap<String, Integer>();
+		log.mRollbackEntries = new ArrayList<RollbackEntry>();
+		log.mRollbackMap = new HashMap<Integer, Integer>();
 		log.mIsLoaded = true;
 		log.mFile = file;
 		log.mHeader = header;
@@ -285,6 +291,12 @@ public class LogFile
 			{
 				readOwnerMap(file, header);
 				rebuildTagMap();
+			}
+			
+			if(header.VersionMajor == 3 && header.VersionMinor >= 1)
+			{
+				readRollbackIndex(file, header);
+				rebuildRollbackMap();
 			}
 			
 			rebuildIndexMap();
@@ -1557,7 +1569,6 @@ public class LogFile
 						}
 						
 						if(count == 0)
-							// FIXME: Something is removing owner tags prematurely. I sometimes find nullptr excepts here
 							removeOwnerMap(mOwnerTagMap.get(entry.OwnerTagId));
 						
 						// So that anything else using this object through a reference, wont do any damage
@@ -1738,6 +1749,25 @@ public class LogFile
 					nextSize = mHeader.OwnerMapSize;
 					type = 3;
 				}
+				else if(mHeader.RollbackIndexLocation == nextLocation)
+				{
+					nextSize = mHeader.RollbackIndexSize;
+					type = 4;
+				}
+				else
+				{
+					index = 0;
+					for(RollbackEntry nextEntry : mRollbackEntries)
+					{
+						if(nextEntry.detailLocation == nextLocation)
+						{
+							nextSize = nextEntry.detailSize;
+							type = 5;
+							break;
+						}
+						index++;
+					}
+				}
 			}
 			
 			
@@ -1800,6 +1830,20 @@ public class LogFile
 					mFile.seek(0);
 					mHeader.write(mFile);
 					break;
+				case 4: // Rollback Index
+					Debug.finest("Shifted rollback index from %X -> (%X-%X)", mHeader.RollbackIndexLocation, holeData.Location, holeData.Location + nextSize - 1);
+					mHeader.RollbackIndexLocation = holeData.Location;
+					mFile.seek(0);
+					mHeader.write(mFile);
+					break;
+				case 5: // Rollback Detail
+				{
+					RollbackEntry nextEntry = mRollbackEntries.get(index);
+					Debug.finest("Shifted rollback detail for %d from %X -> (%X-%X)", nextEntry.sessionId, nextEntry.detailLocation, holeData.Location, holeData.Location + nextSize - 1);
+					nextEntry.detailLocation = holeData.Location;
+					updateRollbackEntry(nextEntry);
+					break;
+				}
 				}
 				
 				// Move the hole
@@ -1820,310 +1864,6 @@ public class LogFile
 			}
 		}
 		Profiler.endTimingSection();
-	}
-	/**
-	 * Optimises file useage, compressing and relocating sessions to minimise the file size
-	 */
-	public boolean compactLog()
-	{
-		Debug.loggedAssert( mIsLoaded);
-		
-		boolean result = false;
-		Profiler.beginTimingSection("compactLog");
-		mLock.writeLock().lock();
-		
-		try
-		{
-			mFile.beginTransaction();
-			
-			// Calculate the total amount of space unused in the file - space reserved for active sessions
-			long totalAvailableFreespace = 0;
-			long oldFileSize = mFile.length();
-			
-			for(HoleEntry hole : mHoleIndex)
-			{
-				if(hole.AttachedTo != null)
-				{
-					boolean isActive = false;
-					for(Integer activeSession : mActiveSessions.values())
-					{
-						if(activeSession == null)
-							continue;
-						if(hole.AttachedTo.Id == activeSession)
-						{
-							isActive = true;
-							break;
-						}
-					}
-					if(!isActive)
-						totalAvailableFreespace += hole.Size;
-				}
-				else
-					totalAvailableFreespace += hole.Size;
-			}
-			
-			Debug.info("Compacting " + getName());
-			Debug.info("Free space: " + totalAvailableFreespace + " " + (totalAvailableFreespace / (double)oldFileSize) + "%");
-			
-			// Shift all index entries so they consume all the free space before them
-			int i = 0;
-			long lastLocation = 0;
-			for(IndexEntry entry : mIndex)
-			{
-				HoleEntry available = null;
-				
-				// Find an available hole before it
-				for(HoleEntry hole : mHoleIndex)
-				{
-					if(hole.Location + hole.Size == entry.Location)
-					{
-						if(hole.AttachedTo != null)
-						{
-							boolean isActive = false;
-							for(Integer activeSession : mActiveSessions.values())
-							{
-								if(activeSession == null)
-									continue;
-								
-								if(hole.AttachedTo.Id == activeSession)
-								{
-									isActive = true;
-									break;
-								}
-							}
-							if(!isActive)
-								available = hole;
-						}
-						else
-							available = hole;
-						
-						break;
-					}
-				}
-				
-				if(available != null)
-				{
-					// Shift the data
-					long shiftAmount = entry.Location - available.Location;
-					byte[] buffer = new byte[1024];
-					int rcount = 0;
-					for(long readStart = entry.Location; readStart < entry.Location + entry.TotalSize; readStart += buffer.length)
-					{
-						mFile.seek(readStart);
-						if(readStart + buffer.length >= entry.Location + entry.TotalSize)
-						{
-							rcount = (int)(entry.TotalSize - (readStart - entry.Location));
-							mFile.readFully(buffer,0, rcount);
-						}
-						else
-						{
-							mFile.readFully(buffer);
-							rcount = buffer.length;
-						}
-						
-						mFile.seek(readStart - shiftAmount);
-						mFile.write(buffer,0,rcount);
-					}
-					
-					// Move the hole
-					removeHole(mHoleIndex.indexOf(available));
-					
-					entry.Location = available.Location;
-					updateSession(i, entry);
-					
-					HoleEntry old = new HoleEntry();
-					old.Location = available.Location + entry.TotalSize;
-					old.Size = available.Size;
-					addHole(old);
-				}
-				
-				lastLocation = Math.max(entry.Location + entry.TotalSize, lastLocation);
-				i++;
-			}
-			
-			// Now we should relocate the indexes
-			HoleEntry available = null;
-			
-			// Find an available hole before it
-			for(HoleEntry hole : mHoleIndex)
-			{
-				if(hole.Location + hole.Size == mHeader.IndexLocation)
-				{
-					if(hole.AttachedTo == null)
-						available = hole;
-					
-					break;
-				}
-			}
-			
-			if(available != null)
-			{
-				// Shift the data
-				long shiftAmount = mHeader.IndexLocation - available.Location;
-				byte[] buffer = new byte[1024];
-				int rcount = 0;
-				for(long readStart = mHeader.IndexLocation; readStart < mHeader.IndexLocation + mHeader.IndexSize; readStart += buffer.length)
-				{
-					mFile.seek(readStart);
-					if(readStart + buffer.length >= mHeader.IndexLocation + mHeader.IndexSize)
-					{
-						rcount = (int)(mHeader.IndexSize - (readStart - mHeader.IndexLocation));
-						mFile.readFully(buffer,0, rcount);
-					}
-					else
-					{
-						mFile.readFully(buffer);
-						rcount = buffer.length;
-					}
-					
-					mFile.seek(readStart - shiftAmount);
-					mFile.write(buffer,0,rcount);
-				}
-				
-				// Move the hole
-				removeHole(mHoleIndex.indexOf(available));
-				
-				mHeader.IndexLocation = available.Location;
-				mFile.seek(0);
-				mHeader.write(mFile);
-				
-				HoleEntry old = new HoleEntry();
-				old.Location = available.Location + mHeader.IndexSize;
-				old.Size = available.Size;
-				addHole(old);
-			}
-			
-			lastLocation = Math.max(mHeader.IndexLocation + mHeader.IndexSize, lastLocation);
-			
-			// Now hole index
-			available = null;
-			
-			// Find an available hole before it
-			for(HoleEntry hole : mHoleIndex)
-			{
-				if(hole.Location + hole.Size == mHeader.HolesIndexLocation)
-				{
-					if(hole.AttachedTo == null)
-						available = hole;
-					
-					break;
-				}
-			}
-			
-			if(available != null)
-			{
-				// Shift the data
-				long shiftAmount = mHeader.HolesIndexLocation - available.Location;
-				byte[] buffer = new byte[1024];
-				int rcount = 0;
-				for(long readStart = mHeader.HolesIndexLocation; readStart < mHeader.HolesIndexLocation + mHeader.HolesIndexSize; readStart += buffer.length)
-				{
-					mFile.seek(readStart);
-					if(readStart + buffer.length >= mHeader.HolesIndexLocation + mHeader.HolesIndexSize)
-					{
-						rcount = (int)(mHeader.HolesIndexSize - (readStart - mHeader.HolesIndexLocation));
-						mFile.readFully(buffer,0, rcount);
-					}
-					else
-					{
-						mFile.readFully(buffer);
-						rcount = buffer.length;
-					}
-					
-					mFile.seek(readStart - shiftAmount);
-					mFile.write(buffer,0,rcount);
-				}
-				
-				mHeader.HolesIndexLocation = available.Location;
-				mFile.seek(0);
-				mHeader.write(mFile);
-				
-				// Move the hole
-				removeHole(mHoleIndex.indexOf(available));
-				
-				HoleEntry old = new HoleEntry();
-				old.Location = available.Location + mHeader.HolesIndexSize;
-				old.Size = available.Size;
-				addHole(old);
-			}
-			
-			lastLocation = Math.max(mHeader.HolesIndexLocation + mHeader.HolesIndexSize, lastLocation);
-			
-			// Finally the owner map
-			available = null;
-			
-			// Find an available hole before it
-			for(HoleEntry hole : mHoleIndex)
-			{
-				if(hole.Location + hole.Size == mHeader.OwnerMapLocation)
-				{
-					if(hole.AttachedTo == null)
-						available = hole;
-					
-					break;
-				}
-			}
-			
-			if(available != null)
-			{
-				// Shift the data
-				long shiftAmount = mHeader.OwnerMapLocation - available.Location;
-				byte[] buffer = new byte[1024];
-				int rcount = 0;
-				for(long readStart = mHeader.OwnerMapLocation; readStart < mHeader.OwnerMapLocation + mHeader.OwnerMapSize; readStart += buffer.length)
-				{
-					mFile.seek(readStart);
-					if(readStart + buffer.length >= mHeader.OwnerMapLocation + mHeader.OwnerMapSize)
-					{
-						rcount = (int)(mHeader.OwnerMapSize - (readStart - mHeader.OwnerMapLocation));
-						mFile.readFully(buffer,0, rcount);
-					}
-					else
-					{
-						mFile.readFully(buffer);
-						rcount = buffer.length;
-					}
-					
-					mFile.seek(readStart - shiftAmount);
-					mFile.write(buffer,0,rcount);
-				}
-				
-				mHeader.OwnerMapLocation = available.Location;
-				mFile.seek(0);
-				mHeader.write(mFile);
-				
-				// Move the hole
-				removeHole(mHoleIndex.indexOf(available));
-				
-				HoleEntry old = new HoleEntry();
-				old.Location = available.Location + mHeader.OwnerMapSize;
-				old.Size = available.Size;
-				addHole(old);
-			}
-			
-			lastLocation = Math.max(mHeader.OwnerMapLocation + mHeader.OwnerMapSize, lastLocation);
-			
-			// Reclaim the space at the end of the file
-			mFile.setLength(lastLocation);
-			
-			Debug.info("Compacting complete. New file size: " + mFile.length() + ". " + (mFile.length() / (double)oldFileSize) + "%");
-			result = true;
-			
-			mFile.commit();
-		}
-		catch(IOException e)
-		{
-			Debug.logException(e);
-			result = false;
-			mFile.rollback();
-		}
-		finally
-		{
-			mLock.writeLock().unlock();
-			Profiler.endTimingSection();
-		}
-		
-		return result;
 	}
 	
 	private int getHoleAfter(long location)
@@ -2746,6 +2486,233 @@ public class LogFile
 		}
 	}
 	
+	private void addBlankRollbackEntry(IndexEntry session) throws IOException
+	{
+		Debug.loggedAssert(mHeader.VersionMajor < 3, "Version 3 or higher is required to use the rollback index");
+		
+		RollbackEntry entry = new RollbackEntry();
+		entry.sessionId = session.Id;
+		entry.detailLocation = 0;
+		entry.detailSize = 0;
+		
+		mRollbackEntries.add(entry);
+		
+		// Check if there is room in the file for this
+		int hole = isRoomFor(RollbackEntry.cSize,mHeader.RollbackIndexLocation + mHeader.RollbackIndexSize);
+		
+		if(hole == -1 || (hole != mHoleIndex.size() && mHoleIndex.get(hole).AttachedTo != null))
+		{
+			// Prepare to relocate the index
+			HoleEntry oldIndexHole = new HoleEntry();
+			oldIndexHole.Location = mHeader.RollbackIndexLocation;
+			oldIndexHole.Size = mHeader.RollbackIndexSize;
+			
+			// Calculate the new header values
+			mHeader.RollbackIndexLocation = mFile.length();
+			mHeader.RollbackIndexCount = mRollbackEntries.size();
+			mHeader.RollbackIndexSize = mRollbackEntries.size() * RollbackEntry.cSize;
+			
+			// Append the index to the back of the file
+			mFile.seek(mFile.length());
+			for(int i = 0; i < mRollbackEntries.size(); i++)
+				mRollbackEntries.get(i).write(mFile);
+			
+			Debug.finest("Rollback Index relocated from %X -> (%X->%X)", oldIndexHole.Location, mHeader.RollbackIndexLocation, mHeader.RollbackIndexLocation + mHeader.RollbackIndexSize-1);
+			// Add the hole info
+			addHole(oldIndexHole);
+		}
+		else
+		{
+			// Calculate the new header values
+			mHeader.RollbackIndexCount = mRollbackEntries.size();
+			mHeader.RollbackIndexSize = mRollbackEntries.size() * RollbackEntry.cSize;
+			
+			// Shift the index entries
+			mFile.seek(mHeader.RollbackIndexLocation + mHeader.RollbackIndexSize);
+			entry.write(mFile);
+			
+			Debug.finest("Writing 1 rollback index entries from %X -> %X", mHeader.RollbackIndexLocation + (mRollbackEntries.size() - 1) * RollbackEntry.cSize, mHeader.RollbackIndexLocation + mHeader.RollbackIndexSize - 1);
+			// Consume the hole
+			if(hole != mHoleIndex.size())
+				fillHole(hole,mHeader.RollbackIndexLocation + (mRollbackEntries.size()-1) * RollbackEntry.cSize,RollbackEntry.cSize);
+		}
+		
+		// Write the file header
+		mFile.seek(0);
+		
+		if(mHeader.VersionMinor == 0)
+			mHeader.VersionMinor = 1;
+		
+		mHeader.write(mFile);
+
+		mRollbackMap.put(session.Id, mRollbackEntries.size()-1);
+	}
+	private void updateRollbackEntry(RollbackEntry entry) throws IOException
+	{
+		int index = mRollbackEntries.indexOf(entry);
+		
+		mFile.seek(mHeader.RollbackIndexLocation + index * RollbackEntry.cSize);
+		entry.write(mFile);
+		
+		Debug.finest("Rollback entry @%d updated at %X -> %X", index, mHeader.RollbackIndexLocation + index * RollbackEntry.cSize, mHeader.RollbackIndexLocation + index * RollbackEntry.cSize + RollbackEntry.cSize - 1);
+	}
+	
+	private RollbackListEntry getRollbackDetail(RollbackEntry entry) throws IOException
+	{
+		if(entry.detailSize == 0)
+			return null;
+		
+		mFile.seek(entry.detailLocation);
+		
+		RollbackListEntry list = new RollbackListEntry();
+		list.read(mFile);
+		
+		return list;
+	}
+	
+	private void updateDetail(RollbackEntry entry, RollbackListEntry detail, List<Short> newList) throws IOException
+	{
+		int diff = newList.size() - detail.items.length;
+		if(diff < 0)
+		{
+			
+		}
+		else if(diff > 0)
+		{
+			int startIndex = 0;
+			boolean isNew = entry.detailSize == 0;
+			
+			// Consume padding if there is any
+			if(detail.padding >= 2 && !isNew)
+			{
+				int count = detail.padding / 2;
+				count = Math.min(count, diff);
+				
+				detail.padding -= count * 2;
+				short[] tempList = new short[detail.items.length + count];
+				for(int i = 0; i < tempList.length; ++i)
+					tempList[i] = newList.get(i);
+				startIndex = tempList.length;
+				
+				detail.items = tempList;
+				
+				mFile.seek(entry.detailLocation);
+				detail.write(mFile);
+			}
+			
+			if(startIndex == newList.size())
+				return;
+			
+			// If there is any left find somewhere to put it
+			int hole = isRoomFor((newList.size()-startIndex)*2, entry.detailLocation + detail.getSize());
+			
+			// Copy the whole thing across
+			short[] tempList = new short[newList.size()];
+			for(int i = 0; i < tempList.length; ++i)
+				tempList[i] = newList.get(i);
+			detail.items = tempList;
+			
+			if(hole == -1 || (hole != mHoleIndex.size() && mHoleIndex.get(hole).AttachedTo != null))
+			{
+				// Place at end
+				HoleEntry oldHole = new HoleEntry();
+				oldHole.Location = entry.detailLocation;
+				oldHole.Size = entry.detailSize;
+				
+				if(detail.padding < 8)
+					detail.padding = 8;
+				
+				entry.detailLocation = mFile.length();
+				entry.detailSize = detail.getSize();
+				
+				mFile.seek(entry.detailLocation);
+				detail.write(mFile);
+				
+				// Update rollback entry
+				updateRollbackEntry(entry);
+				
+				addHole(oldHole);
+			}
+			else
+			{
+				// Consume hole
+				mFile.seek(entry.detailLocation);
+				detail.write(mFile);
+				
+				entry.detailSize = detail.getSize();
+				updateRollbackEntry(entry);
+				
+				// Consume the hole
+				if(hole != mHoleIndex.size())
+					fillHole(hole,entry.detailLocation + entry.detailSize - 2,2);
+			}
+		}
+	}
+	
+	public void setRollbackState(IndexEntry session, int[] indices, boolean state) throws IOException
+	{
+		Debug.loggedAssert(session != null);
+		
+		Profiler.beginTimingSection("setRollbackState");
+		mLock.writeLock().lock();
+		
+		try
+		{
+			if(!mRollbackMap.containsKey(session.Id))
+				addBlankRollbackEntry(session);
+			
+			RollbackEntry entry = mRollbackEntries.get(mRollbackMap.get(session.Id));
+
+			// Get the existing detail
+			RollbackListEntry list = getRollbackDetail(entry);
+			
+			if(list == null)
+				list = new RollbackListEntry();
+
+			// Modify the detail
+			boolean[] add = new boolean[indices.length];
+			boolean[] remove = new boolean[indices.length];
+			
+			for(int ind = 0; ind < indices.length; ++ind)
+			{
+				add[ind] = true;
+				remove[ind] = false;
+				for(int i = 0; i < list.items.length; ++i)
+				{
+					if(list.items[i] == (short)indices[ind])
+					{
+						add[ind] = false;
+						if(!state)
+						{
+							// Remove this item
+							remove[ind] = true;
+						}
+						break;
+					}
+				}
+			}
+			
+			ArrayList<Short> newList = new ArrayList<Short>(list.items.length);
+			for(int i = 0; i < list.items.length; ++i)
+				newList.add(list.items[i]);
+			
+			for(int i = 0; i < indices.length; ++i)
+			{
+				if(remove[i])
+					newList.remove((Short)(short)indices[i]);
+				if(add[i])
+					newList.add((Short)(short)indices[i]);
+			}
+			
+			updateDetail(entry, list, newList);
+		}
+		finally
+		{
+			mLock.writeLock().unlock();
+			Profiler.endTimingSection();
+		}
+	}
+	
 	private void rebuildTagMap()
 	{
 		mLock.readLock().lock();
@@ -2777,6 +2744,47 @@ public class LogFile
 		
 		mLock.readLock().unlock();
 		
+	}
+	
+	private void rebuildRollbackMap()
+	{
+		mLock.readLock().lock();
+		
+		
+		mRollbackMap = new HashMap<Integer, Integer>();
+		int index = 0;
+		for(RollbackEntry entry : mRollbackEntries)
+		{
+			mRollbackMap.put(entry.sessionId, index);
+			index++;
+		}
+		
+		mLock.readLock().unlock();
+	}
+	private void readRollbackIndex(RandomAccessFile file, FileHeader header) throws IOException
+	{
+		Profiler.beginTimingSection("readRollbackIndex");
+		mLock.writeLock().lock();
+		
+		try
+		{
+			mRollbackEntries = new ArrayList<RollbackEntry>();
+		
+			file.seek(header.RollbackIndexLocation);
+			
+			for(int i = 0; i < header.RollbackIndexCount; i++)
+			{
+				RollbackEntry entry = new RollbackEntry();
+				entry.read(file);
+				mRollbackEntries.add(entry);
+			}
+			
+		}
+		finally
+		{
+			mLock.writeLock().unlock();
+			Profiler.endTimingSection();
+		}
 	}
 	
 	/**
@@ -2901,6 +2909,9 @@ public class LogFile
 	
 	private ArrayList<OwnerMapEntry> mOwnerTagList;
 	private HashMap<Integer, Integer> mOwnerTagMap;
+	
+	private ArrayList<RollbackEntry> mRollbackEntries;
+	private HashMap<Integer, Integer> mRollbackMap;
 	
 	private ACIDRandomAccessFile mFile;
 	

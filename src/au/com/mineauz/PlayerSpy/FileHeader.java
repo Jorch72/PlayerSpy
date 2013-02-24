@@ -8,7 +8,7 @@ import au.com.mineauz.PlayerSpy.Utilities.Utility;
 public class FileHeader
 {
 	public byte VersionMajor = 3;
-	public byte VersionMinor = 0;
+	public byte VersionMinor = 1;
 	public String PlayerName;
 	public long IndexLocation;
 	public long IndexSize;
@@ -21,7 +21,10 @@ public class FileHeader
 	public long OwnerMapLocation;
 	public long OwnerMapSize;
 	public int OwnerMapCount;
-	public byte[] Reserved = new byte[14];
+	public long RollbackIndexLocation;
+	public long RollbackIndexSize;
+	public int RollbackIndexCount;
+	public byte[] Reserved = new byte[2];
 	
 	public void write(RandomAccessFile file) throws IOException
 	{
@@ -44,8 +47,19 @@ public class FileHeader
 			file.writeInt((int)OwnerMapLocation);
 			file.writeInt((int)OwnerMapSize);
 			file.writeShort((short)OwnerMapCount);
+		}
+		
+		if(VersionMajor == 3 && VersionMinor >= 1)
+		{
+			file.writeInt((int)RollbackIndexLocation);
+			file.writeInt((int)RollbackIndexSize);
+			file.writeShort((int)RollbackIndexCount);
+			
 			file.write(Reserved);
 		}
+		else if(VersionMajor != 1)
+			file.write(new byte[14]);
+		
 	}
 	
 	public void read(RandomAccessFile file) throws IOException
@@ -75,8 +89,17 @@ public class FileHeader
 			OwnerMapLocation = file.readInt();
 			OwnerMapSize = file.readInt();
 			OwnerMapCount = file.readShort();
+		}
+		
+		if(VersionMajor == 3 && VersionMinor == 1)
+		{
+			RollbackIndexLocation = file.readInt();
+			RollbackIndexSize = file.readInt();
+			RollbackIndexCount = file.readShort();
 			file.readFully(Reserved);
 		}
+		else if(VersionMajor != 1)
+			file.readFully(new byte[14]);
 	}
 	
 	public int getSize()
