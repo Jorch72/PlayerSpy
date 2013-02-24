@@ -203,9 +203,9 @@ public class RollbackManager
 				SpyPlugin.getExecutor().submit(task);
 				
 				if(session.restore)
-					session.notifyPlayer.sendMessage(ChatColor.GOLD + "[PlayerSpy] " + ChatColor.WHITE + "Restore complete");
+					session.notifyPlayer.sendMessage(ChatColor.GOLD + "[PlayerSpy] " + ChatColor.WHITE + "Restore complete" + (session.failed > 0 ? ". " + session.failed + " records could not be restored." : ""));
 				else
-					session.notifyPlayer.sendMessage(ChatColor.GOLD + "[PlayerSpy] " + ChatColor.WHITE + "Rollback complete");
+					session.notifyPlayer.sendMessage(ChatColor.GOLD + "[PlayerSpy] " + ChatColor.WHITE + "Rollback complete" + (session.failed > 0 ? ". " + session.failed + " records could not be rolled back." : ""));
 				
 				mSessions.remove(i);
 				i--;

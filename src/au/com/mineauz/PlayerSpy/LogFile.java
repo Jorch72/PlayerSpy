@@ -2638,6 +2638,8 @@ public class LogFile
 				
 				mFile.seek(entry.detailLocation);
 				detail.write(mFile);
+				
+				Debug.finest("Rollback detail expanded by %d into padding. Location is unchanged: %X -> %X", count * 2, entry.detailLocation, entry.detailLocation + entry.detailSize - 1);
 			}
 			
 			if(startIndex == newList.size())
@@ -2672,6 +2674,8 @@ public class LogFile
 				updateRollbackEntry(entry);
 				
 				addHole(oldHole);
+				
+				Debug.finest("Rollback detail reloated to %X -> %X from %X -> %X", entry.detailLocation, entry.detailLocation + entry.detailSize - 1, oldHole.Location, oldHole.Location + oldHole.Size - 1);
 			}
 			else
 			{
@@ -2684,7 +2688,12 @@ public class LogFile
 				
 				// Consume the hole
 				if(hole != mHoleIndex.size())
+				{
+					Debug.finest("Rollback detail expanded into hole by %d. Location is now: %X -> %X", diff * 2, entry.detailLocation, entry.detailLocation + entry.detailSize - 1);
 					fillHole(hole,entry.detailLocation + entry.detailSize - 2,2);
+				}
+				else
+					Debug.finest("Rollback detail expanded by %d at eof. Location is now: %X -> %X", diff * 2, entry.detailLocation, entry.detailLocation + entry.detailSize - 1);
 			}
 		}
 	}
@@ -2696,6 +2705,7 @@ public class LogFile
 		Profiler.beginTimingSection("setRollbackState");
 		mLock.writeLock().lock();
 		
+		Debug.info("Setting rollback state for %d records in session %d", indices.size(), session.Id);
 		try
 		{
 			if(!mRollbackMap.containsKey(session.Id))
@@ -2748,6 +2758,7 @@ public class LogFile
 		}
 		finally
 		{
+			Debug.info("Completed setting rollback state");
 			mLock.writeLock().unlock();
 			Profiler.endTimingSection();
 		}
