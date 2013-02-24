@@ -1,5 +1,7 @@
 package au.com.mineauz.PlayerSpy.Utilities;
 
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -378,5 +380,56 @@ public class Utility
 		}
 		
 		return length;
+	}
+	
+	public static void shiftBytes(RandomAccessFile file, long from, long to, long size) throws IOException
+	{
+		// Shift the data
+		long shiftAmount = to - from;
+		
+		byte[] buffer = new byte[1024];
+		int rcount = 0;
+		
+		if(shiftAmount < 0)
+		{
+			for(long readStart = from; readStart < from + size; readStart += buffer.length)
+			{
+				file.seek(readStart);
+				if(readStart + buffer.length >= from + size)
+				{
+					rcount = (int)(size - (readStart - from));
+					file.readFully(buffer,0, rcount);
+				}
+				else
+				{
+					file.readFully(buffer);
+					rcount = buffer.length;
+				}
+				
+				file.seek(readStart + shiftAmount);
+				file.write(buffer,0,rcount);
+			}
+		}
+		else
+		{
+			for(long readStart = from + size - 1 - buffer.length; readStart + buffer.length >= from; readStart -= buffer.length)
+			{
+				if(readStart < from)
+				{
+					file.seek(from);
+					rcount = (int)((readStart + buffer.length) - from);
+					file.readFully(buffer,0, rcount);
+				}
+				else
+				{
+					file.seek(readStart);
+					file.readFully(buffer);
+					rcount = buffer.length;
+				}
+				
+				file.seek(readStart + shiftAmount);
+				file.write(buffer,0,rcount);
+			}
+		}
 	}
 }

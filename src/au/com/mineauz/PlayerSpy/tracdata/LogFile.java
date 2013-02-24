@@ -1,7 +1,6 @@
 package au.com.mineauz.PlayerSpy.tracdata;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -19,8 +18,6 @@ import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 
 import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.RecordList;
-import au.com.mineauz.PlayerSpy.RollbackEntry;
-import au.com.mineauz.PlayerSpy.RollbackListEntry;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.LogTasks.*;
 import au.com.mineauz.PlayerSpy.Records.*;
@@ -181,7 +178,7 @@ public class LogFile
 		LogFile log = new LogFile();
 		log.mFilePath = new File(filename);
 		log.mPlayerName = playerName;
-		log.mIndex = new ArrayList<IndexEntry>();
+		log.mIndex = new ArrayList<SessionEntry>();
 		log.mHoleIndex = new ArrayList<HoleEntry>();
 		log.mOwnerTagList = new ArrayList<OwnerMapEntry>();
 		log.mActiveSessions = new HashMap<String, Integer>();
@@ -487,13 +484,13 @@ public class LogFile
 	/**
 	 * Gets all the available chunks of data
 	 */
-	public List<IndexEntry> getSessions()
+	public List<SessionEntry> getSessions()
 	{
 		return mIndex;
 	}
-	public IndexEntry getSessionById(int id)
+	public SessionEntry getSessionById(int id)
 	{
-		IndexEntry result = null;
+		SessionEntry result = null;
 		mLock.readLock().lock();
 		
 		if(mIndexMap.containsKey(id))
@@ -505,7 +502,7 @@ public class LogFile
 		
 		return result;
 	}
-	public String getOwnerTag(IndexEntry session)
+	public String getOwnerTag(SessionEntry session)
 	{
 		if(session.OwnerTagId == -1)
 			return null;
@@ -647,7 +644,7 @@ public class LogFile
 		long result = 0;
 		mLock.readLock().lock();
 		
-		for(IndexEntry entry : mIndex)
+		for(SessionEntry entry : mIndex)
 		{
 			if(entry.StartTimestamp > date && getOwnerTag(entry) == null)
 			{
@@ -667,7 +664,7 @@ public class LogFile
 		
 		for(int i = mIndex.size()-1; i >=0 ; --i)
 		{
-			IndexEntry entry = mIndex.get(i);
+			SessionEntry entry = mIndex.get(i);
 			if(entry.EndTimestamp > date && getOwnerTag(entry) == null)
 			{
 				result = entry.EndTimestamp;
@@ -694,7 +691,7 @@ public class LogFile
 			throw new IllegalStateException("Owner tags are not enabled in this log");
 		
 		Profiler.beginTimingSection("loadChunks");
-		ArrayList<IndexEntry> relevantEntries = new ArrayList<IndexEntry>();
+		ArrayList<SessionEntry> relevantEntries = new ArrayList<SessionEntry>();
 		
 		Debug.fine("Loading records from " + Util.dateToString(startDate) + " to " + Util.dateToString(endDate));
 		
@@ -703,7 +700,7 @@ public class LogFile
 		
 				
 		// Find the relevant sessions
-		for(IndexEntry entry : mIndex)
+		for(SessionEntry entry : mIndex)
 		{
 			if((startDate >= entry.StartTimestamp && startDate <= entry.EndTimestamp) ||
 				(endDate >= entry.StartTimestamp && endDate <= entry.EndTimestamp) ||
@@ -722,7 +719,7 @@ public class LogFile
 		Debug.finer("  " + relevantEntries.size() + " Matching Sessions");
 		// Now load up the records
 		RecordList allRecords = new RecordList();
-		for(IndexEntry session : relevantEntries)
+		for(SessionEntry session : relevantEntries)
 		{
 			allRecords.addAll(loadSession(session));
 		}
@@ -765,14 +762,14 @@ public class LogFile
 		Debug.loggedAssert(mIsLoaded);
 		Profiler.beginTimingSection("loadChunks");
 		Debug.fine("Loading chunks from " + Util.dateToString(startDate) + " to " + Util.dateToString(endDate));
-		ArrayList<IndexEntry> relevantEntries = new ArrayList<IndexEntry>();
+		ArrayList<SessionEntry> relevantEntries = new ArrayList<SessionEntry>();
 		
 		// We will hold the write lock because accessing the file concurrently through the same object with have issues i think.
 		mLock.writeLock().lock();
 					
 		
 		// Find the relevant sessions
-		for(IndexEntry entry : mIndex)
+		for(SessionEntry entry : mIndex)
 		{
 			if((startDate >= entry.StartTimestamp && startDate <= entry.EndTimestamp) ||
 			   (endDate >= entry.StartTimestamp && endDate <= entry.EndTimestamp) ||
@@ -786,7 +783,7 @@ public class LogFile
 		Debug.finer("  " + relevantEntries.size() + " Matching Sessions");
 		// Now load up the records
 		RecordList allRecords = new RecordList();
-		for(IndexEntry session : relevantEntries)
+		for(SessionEntry session : relevantEntries)
 		{
 			allRecords.addAll(loadSession(session));
 		}
@@ -816,7 +813,7 @@ public class LogFile
 //		}
 		return SpyPlugin.getExecutor().submit(new LoadRecordsAsyncTask(this, startDate, endDate, true));
 	}
-	public RecordList loadSession(IndexEntry session)
+	public RecordList loadSession(SessionEntry session)
 	{
 		Debug.loggedAssert(mIsLoaded);
 		
@@ -937,7 +934,7 @@ public class LogFile
 	 * @param session The session to append them to
 	 * @return Null if there are no more records to add, otherwise a list of the remaining ones
 	 */
-	private RecordList appendRecords(RecordList records, IndexEntry session) throws IOException
+	private RecordList appendRecords(RecordList records, SessionEntry session) throws IOException
 	{
 		Debug.info("Begining append of %d records to Session %d", records.size(), session.Id);
 		
@@ -1163,7 +1160,7 @@ public class LogFile
 						
 						mActiveSessions.put(owner, mIndex.get(index).Id);
 	
-						IndexEntry session = mIndex.get(index);
+						SessionEntry session = mIndex.get(index);
 						session.OwnerTagId = -1;
 						
 						// See if there is a tag we can reuse
@@ -1198,7 +1195,7 @@ public class LogFile
 				else
 				{
 					
-					IndexEntry activeSession = getSessionById(mActiveSessions.get(owner));
+					SessionEntry activeSession = getSessionById(mActiveSessions.get(owner));
 					
 					RecordList splitSession = appendRecords(records, activeSession);
 		
@@ -1209,7 +1206,7 @@ public class LogFile
 						{
 							mActiveSessions.put(owner, mIndex.get(index).Id);
 		
-							IndexEntry session = mIndex.get(index);
+							SessionEntry session = mIndex.get(index);
 							session.OwnerTagId = -1;
 							
 							// See if there is a tag we can reuse
@@ -1306,7 +1303,7 @@ public class LogFile
 				}
 				else
 				{
-					IndexEntry activeSession = getSessionById(mActiveSessions.get(null));
+					SessionEntry activeSession = getSessionById(mActiveSessions.get(null));
 					// This will be populated if there are too many records to put into this session
 					RecordList splitSession = appendRecords(records, activeSession);
 
@@ -1415,7 +1412,7 @@ public class LogFile
 				}
 			}
 			
-			IndexEntry session = new IndexEntry();
+			SessionEntry session = new SessionEntry();
 			session.RecordCount = (short) records.size();
 	
 			// Calculate the expected size
@@ -1558,10 +1555,10 @@ public class LogFile
 				mFile.beginTransaction();
 				
 				Debug.info("Purging records from " + Util.dateToString(fromDate) + " to " + Util.dateToString(toDate));
-				ArrayList<IndexEntry> relevantEntries = new ArrayList<IndexEntry>();
+				ArrayList<SessionEntry> relevantEntries = new ArrayList<SessionEntry>();
 				
 				// Find the relevant sessions
-				for(IndexEntry entry : mIndex)
+				for(SessionEntry entry : mIndex)
 				{
 					if((fromDate >= entry.StartTimestamp && fromDate <= entry.EndTimestamp) ||
 					   (toDate >= entry.StartTimestamp && toDate <= entry.EndTimestamp) ||
@@ -1572,7 +1569,7 @@ public class LogFile
 				Debug.finer("  " + relevantEntries.size() + " Matching Sessions");
 				
 				// Purge data
-				for(IndexEntry entry : relevantEntries)
+				for(SessionEntry entry : relevantEntries)
 				{
 					String otag = getOwnerTag(entry);
 					boolean isAbsolute = otag != null;
@@ -1593,7 +1590,7 @@ public class LogFile
 						
 						// Purge the owner tag if no session uses it
 						int count = 0;
-						for(IndexEntry session : mIndex)
+						for(SessionEntry session : mIndex)
 						{
 							if(session.Id == entry.Id)
 								continue;
@@ -1754,7 +1751,7 @@ public class LogFile
 			
 			Debug.finest("Pulling data from %X to %X", nextLocation, holeData.Location);
 			
-			for(IndexEntry nextSession : mIndex)
+			for(SessionEntry nextSession : mIndex)
 			{
 				if(nextSession.Location == nextLocation)
 				{
@@ -1839,7 +1836,7 @@ public class LogFile
 				{
 				case 0: // session
 				{
-					IndexEntry nextSession = mIndex.get(index);
+					SessionEntry nextSession = mIndex.get(index);
 					Debug.finest("Shifted session %d from %X -> (%X-%X)", nextSession.Id, nextSession.Location, holeData.Location, holeData.Location + nextSize - 1);
 					nextSession.Location = holeData.Location;
 					updateSession(index, nextSession);
@@ -2261,7 +2258,7 @@ public class LogFile
 		}
 	}
 	
-	private int addSession(IndexEntry entry) throws IOException
+	private int addSession(SessionEntry entry) throws IOException
 	{
 		int sessionIndex;
 		
@@ -2283,7 +2280,7 @@ public class LogFile
 			mIndex.add(insertIndex,entry);
 			
 			// Check if there is room in the file for this
-			int hole = isRoomFor(IndexEntry.cSize[mHeader.VersionMajor],mHeader.IndexLocation + mHeader.IndexSize);
+			int hole = isRoomFor(SessionEntry.cSize[mHeader.VersionMajor],mHeader.IndexLocation + mHeader.IndexSize);
 			
 				
 			if(hole == -1 || (hole != mHoleIndex.size() && mHoleIndex.get(hole).AttachedTo != null))
@@ -2296,12 +2293,12 @@ public class LogFile
 				// Calculate the new header values
 				mHeader.IndexLocation = mFile.length();
 				mHeader.SessionCount = mIndex.size();
-				mHeader.IndexSize = mIndex.size() * IndexEntry.cSize[mHeader.VersionMajor];
+				mHeader.IndexSize = mIndex.size() * SessionEntry.cSize[mHeader.VersionMajor];
 				
 				// Append the index to the back of the file
 				mFile.seek(mFile.length());
 				for(int i = 0; i < mIndex.size(); i++)
-					mIndex.get(i).write(mHeader.VersionMajor,mFile);
+					mIndex.get(i).write(mFile);
 				
 				Debug.finest("Index relocated from %X -> (%X->%X)", oldIndexHole.Location, mHeader.IndexLocation, mHeader.IndexLocation + mHeader.IndexSize-1);
 				// Add the hole info
@@ -2311,17 +2308,17 @@ public class LogFile
 			{
 				// Calculate the new header values
 				mHeader.SessionCount = mIndex.size();
-				mHeader.IndexSize = mIndex.size() * IndexEntry.cSize[mHeader.VersionMajor];
+				mHeader.IndexSize = mIndex.size() * SessionEntry.cSize[mHeader.VersionMajor];
 				
 				// Shift the index entries
-				mFile.seek(mHeader.IndexLocation + insertIndex * IndexEntry.cSize[mHeader.VersionMajor]);
+				mFile.seek(mHeader.IndexLocation + insertIndex * SessionEntry.cSize[mHeader.VersionMajor]);
 				for(int i = insertIndex; i < mIndex.size(); i++)
-					mIndex.get(i).write(mHeader.VersionMajor, mFile);
+					mIndex.get(i).write(mFile);
 				
-				Debug.finest("Writing %d index entries from %X -> %X", mIndex.size() - insertIndex, mHeader.IndexLocation + insertIndex * IndexEntry.cSize[mHeader.VersionMajor], mHeader.IndexLocation + mHeader.IndexSize - 1);
+				Debug.finest("Writing %d index entries from %X -> %X", mIndex.size() - insertIndex, mHeader.IndexLocation + insertIndex * SessionEntry.cSize[mHeader.VersionMajor], mHeader.IndexLocation + mHeader.IndexSize - 1);
 				// Consume the hole
 				if(hole != mHoleIndex.size())
-					fillHole(hole,mHeader.IndexLocation + (mIndex.size()-1) * IndexEntry.cSize[mHeader.VersionMajor],IndexEntry.cSize[mHeader.VersionMajor]);
+					fillHole(hole,mHeader.IndexLocation + (mIndex.size()-1) * SessionEntry.cSize[mHeader.VersionMajor],SessionEntry.cSize[mHeader.VersionMajor]);
 			}
 			
 			// Write the file header
@@ -2353,25 +2350,25 @@ public class LogFile
 		
 		try
 		{
-			IndexEntry removedSession = mIndex.get(index);
+			SessionEntry removedSession = mIndex.get(index);
 			CrossReferenceIndex.instance.removeSession(this, mIndex.get(index));
 			
 			// Shift the existing entries
-			mFile.seek(mHeader.IndexLocation + index * IndexEntry.cSize[mHeader.VersionMajor]);
+			mFile.seek(mHeader.IndexLocation + index * SessionEntry.cSize[mHeader.VersionMajor]);
 			for(int i = index + 1; i < mIndex.size(); i++)
-				mIndex.get(i).write(mHeader.VersionMajor,mFile);
+				mIndex.get(i).write(mFile);
 			
 			// Prepare the hole
 			HoleEntry hole = new HoleEntry();
 			hole.Location = mFile.getFilePointer();
-			hole.Size = IndexEntry.cSize[mHeader.VersionMajor];
+			hole.Size = SessionEntry.cSize[mHeader.VersionMajor];
 			
 			// Clear the last one
-			mFile.write(new byte[IndexEntry.cSize[mHeader.VersionMajor]]);
+			mFile.write(new byte[SessionEntry.cSize[mHeader.VersionMajor]]);
 			mIndex.remove(index);
 			
 			// Update the header
-			mHeader.IndexSize = mIndex.size() * IndexEntry.cSize[mHeader.VersionMajor];
+			mHeader.IndexSize = mIndex.size() * SessionEntry.cSize[mHeader.VersionMajor];
 			mHeader.SessionCount = mIndex.size();
 			
 			Debug.finer("Session %d removed from %d", removedSession.Id, index);
@@ -2389,7 +2386,7 @@ public class LogFile
 			Profiler.endTimingSection();
 		}
 	}
-	private void updateSession(int index, IndexEntry session) throws IOException
+	private void updateSession(int index, SessionEntry session) throws IOException
 	{
 		Debug.loggedAssert( index >= 0 && index < mIndex.size(), "Tried to update session " + index + "/" + mIndex.size());
 		Profiler.beginTimingSection("updateSession");
@@ -2398,11 +2395,11 @@ public class LogFile
 		
 		try
 		{
-			mFile.seek(mHeader.IndexLocation + index * IndexEntry.cSize[mHeader.VersionMajor]);
+			mFile.seek(mHeader.IndexLocation + index * SessionEntry.cSize[mHeader.VersionMajor]);
 			mIndex.set(index,session);
-			session.write(mHeader.VersionMajor,mFile);
+			session.write(mFile);
 			
-			Debug.finest("Session %d(@%d) updated at %X -> %X", session.Id, index, mHeader.IndexLocation + index * IndexEntry.cSize[mHeader.VersionMajor], mHeader.IndexLocation + index * IndexEntry.cSize[mHeader.VersionMajor] + IndexEntry.cSize[mHeader.VersionMajor] - 1);
+			Debug.finest("Session %d(@%d) updated at %X -> %X", session.Id, index, mHeader.IndexLocation + index * SessionEntry.cSize[mHeader.VersionMajor], mHeader.IndexLocation + index * SessionEntry.cSize[mHeader.VersionMajor] + SessionEntry.cSize[mHeader.VersionMajor] - 1);
 		}
 		finally
 		{
@@ -2519,7 +2516,7 @@ public class LogFile
 		}
 	}
 	
-	private void addBlankRollbackEntry(IndexEntry session) throws IOException
+	private void addBlankRollbackEntry(SessionEntry session) throws IOException
 	{
 		Debug.loggedAssert(mHeader.VersionMajor >= 3, "Version 3 or higher is required to use the rollback index");
 		
@@ -2590,7 +2587,7 @@ public class LogFile
 		Debug.finest("Rollback entry @%d updated at %X -> %X", index, mHeader.RollbackIndexLocation + index * RollbackEntry.cSize, mHeader.RollbackIndexLocation + index * RollbackEntry.cSize + RollbackEntry.cSize - 1);
 	}
 	
-	private short[] getRolledBackRecords(IndexEntry session) throws IOException
+	private short[] getRolledBackRecords(SessionEntry session) throws IOException
 	{
 		if(!mRollbackMap.containsKey(session.Id))
 			return new short[0];
@@ -2702,7 +2699,7 @@ public class LogFile
 		}
 	}
 	
-	private void setRollbackStateInternal(IndexEntry session, List<Short> indices, boolean state) throws IOException
+	private void setRollbackStateInternal(SessionEntry session, List<Short> indices, boolean state) throws IOException
 	{
 		Debug.loggedAssert(session != null);
 		
@@ -2767,7 +2764,7 @@ public class LogFile
 			Profiler.endTimingSection();
 		}
 	}
-	public void setRollbackState(IndexEntry session, List<Short> indices, boolean state) throws IOException
+	public void setRollbackState(SessionEntry session, List<Short> indices, boolean state) throws IOException
 	{
 		mLock.writeLock().lock();
 		
@@ -2812,7 +2809,7 @@ public class LogFile
 		
 		mIndexMap = new HashMap<Integer, Integer>();
 		int index = 0;
-		for(IndexEntry session : mIndex)
+		for(SessionEntry session : mIndex)
 		{
 			mIndexMap.put(session.Id, index);
 			index++;
@@ -2886,15 +2883,15 @@ public class LogFile
 		
 		try
 		{
-			mIndex = new ArrayList<IndexEntry>();
+			mIndex = new ArrayList<SessionEntry>();
 			
 			// Read the index
 			file.seek(header.IndexLocation);
 		
 			for(int i = 0; i < header.SessionCount; i++)
 			{
-				IndexEntry ent = new IndexEntry();
-				ent.read(mHeader.VersionMajor,file);
+				SessionEntry ent = new SessionEntry();
+				ent.read(file);
 				mIndex.add(ent);
 			}
 		}
@@ -2923,7 +2920,7 @@ public class LogFile
 				ent.read(file);
 				
 				// Try to attach to a session
-				for(IndexEntry session : mIndex)
+				for(SessionEntry session : mIndex)
 				{
 					if(!session.Compressed && ent.Location == session.Location + session.TotalSize)
 					{
@@ -2978,7 +2975,7 @@ public class LogFile
 	private boolean mIsClosing = false;
 	private int mTimeoutId = -1;
 	private String mPlayerName;
-	private ArrayList<IndexEntry> mIndex;
+	private ArrayList<SessionEntry> mIndex;
 	private HashMap<Integer, Integer> mIndexMap;
 	
 	private ArrayList<HoleEntry> mHoleIndex;
@@ -3052,37 +3049,5 @@ public class LogFile
 	public int getVersionMinor() 
 	{
 		return mHeader.VersionMinor;
-	}
-}
-
-class OwnerMapEntry
-{
-	public static final int cMaxOwnerLength = 16;
-	public static final int cSize = 4 + cMaxOwnerLength;
-	
-	public int Id;
-	public String Owner;
-	
-	public void write(RandomAccessFile file) throws IOException
-	{
-		file.writeInt(Id);
-		byte[] ownerData = new byte[cMaxOwnerLength];
-		Arrays.fill(ownerData, (byte)0);
-		for(int i = 0; i < Owner.length() && i < cMaxOwnerLength; i++)
-			ownerData[i] = (byte)Owner.charAt(i);
-		
-		file.write(ownerData);
-	}
-	
-	public void read(RandomAccessFile file) throws IOException
-	{
-		Id = file.readInt();
-		char[] ownerData = new char[cMaxOwnerLength];
-		for(int i = 0; i < cMaxOwnerLength; i++)
-			ownerData[i] = (char)file.readByte();
-		
-		Owner = String.valueOf(ownerData);
-		if(Owner.indexOf(0) != -1)
-			Owner = Owner.substring(0, Owner.indexOf(0));
 	}
 }

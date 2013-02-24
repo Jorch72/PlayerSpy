@@ -6,13 +6,13 @@ import java.util.Calendar;
 import org.bukkit.World;
 
 import au.com.mineauz.PlayerSpy.debugging.Debug;
-import au.com.mineauz.PlayerSpy.tracdata.IndexEntry;
+import au.com.mineauz.PlayerSpy.tracdata.SessionEntry;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 
 public abstract class Record 
 {
 	public LogFile sourceFile;
-	public IndexEntry sourceEntry;
+	public SessionEntry sourceEntry;
 	public short sourceIndex;
 	
 	protected Record(RecordType type)

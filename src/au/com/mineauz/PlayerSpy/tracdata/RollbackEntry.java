@@ -1,9 +1,9 @@
-package au.com.mineauz.PlayerSpy;
+package au.com.mineauz.PlayerSpy.tracdata;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-public class RollbackEntry
+public class RollbackEntry extends IndexEntry
 {
 	public static int cSize = 12;
 	

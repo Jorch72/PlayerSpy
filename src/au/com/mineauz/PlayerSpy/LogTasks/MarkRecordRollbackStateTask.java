@@ -7,7 +7,7 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 
 import au.com.mineauz.PlayerSpy.Records.Record;
-import au.com.mineauz.PlayerSpy.tracdata.IndexEntry;
+import au.com.mineauz.PlayerSpy.tracdata.SessionEntry;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
@@ -83,7 +83,7 @@ public class MarkRecordRollbackStateTask implements Task<Void>
 			
 			for(Entry<Integer, ArrayList<Short>> entry : logBreakdown.entrySet())
 			{
-				IndexEntry session = log.getSessionById(entry.getKey());
+				SessionEntry session = log.getSessionById(entry.getKey());
 				log.setRollbackState(session, entry.getValue(), mState);
 			}
 		}

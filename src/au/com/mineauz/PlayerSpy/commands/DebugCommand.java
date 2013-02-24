@@ -23,7 +23,7 @@ import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.debugging.Profiler;
 import au.com.mineauz.PlayerSpy.tracdata.FileHeader;
 import au.com.mineauz.PlayerSpy.tracdata.HoleEntry;
-import au.com.mineauz.PlayerSpy.tracdata.IndexEntry;
+import au.com.mineauz.PlayerSpy.tracdata.SessionEntry;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
@@ -94,7 +94,7 @@ public class DebugCommand implements ICommand
 		
 		int totalCount = 0;
 		sender.sendMessage(ChatColor.GREEN + "Totalling the log. Please wait.");
-		for(IndexEntry session : log.getSessions())
+		for(SessionEntry session : log.getSessions())
 		{
 			RecordList records = log.loadSession(session);
 			String tag = log.getOwnerTag(session);
@@ -218,7 +218,7 @@ public class DebugCommand implements ICommand
 				totalFreeSpace += hole.Size;
 		}
 		
-		for(IndexEntry session : log.getSessions())
+		for(SessionEntry session : log.getSessions())
 		{
 			String tag = log.getOwnerTag(session);
 			

@@ -14,7 +14,7 @@ import org.bukkit.World;
 
 import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
-import au.com.mineauz.PlayerSpy.tracdata.IndexEntry;
+import au.com.mineauz.PlayerSpy.tracdata.SessionEntry;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
@@ -287,7 +287,7 @@ public class CrossReferenceIndex
 	 * @param chunks The chunks in the session
 	 * @return True if the session was added
 	 */
-	public synchronized boolean addSession(LogFile log, IndexEntry entry, List<SafeChunk> chunks)
+	public synchronized boolean addSession(LogFile log, SessionEntry entry, List<SafeChunk> chunks)
 	{
 		try
 		{
@@ -336,7 +336,7 @@ public class CrossReferenceIndex
 	 * @param entry The session
 	 * @return True if the session as successfully removed
 	 */
-	public synchronized boolean removeSession(LogFile log, IndexEntry entry)
+	public synchronized boolean removeSession(LogFile log, SessionEntry entry)
 	{
 		try
 		{
@@ -363,7 +363,7 @@ public class CrossReferenceIndex
 	 * @param entry The session
 	 * @return True if the update was successful
 	 */
-	public synchronized boolean updateSession(LogFile log, IndexEntry entry, List<SafeChunk> chunks)
+	public synchronized boolean updateSession(LogFile log, SessionEntry entry, List<SafeChunk> chunks)
 	{
 		try
 		{
@@ -685,7 +685,7 @@ public class CrossReferenceIndex
 	
 	public static class SessionInFile
 	{
-		public IndexEntry Session;
+		public SessionEntry Session;
 		public LogFile Log;
 	}
 	

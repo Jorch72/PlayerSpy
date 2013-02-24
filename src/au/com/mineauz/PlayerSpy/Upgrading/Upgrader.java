@@ -21,7 +21,7 @@ import au.com.mineauz.PlayerSpy.legacy.v2.PaintingChangeRecord;
 import au.com.mineauz.PlayerSpy.legacy.v2.RightClickActionRecord;
 import au.com.mineauz.PlayerSpy.legacy.v2.UpdateInventoryRecord;
 import au.com.mineauz.PlayerSpy.tracdata.FileHeader;
-import au.com.mineauz.PlayerSpy.tracdata.IndexEntry;
+import au.com.mineauz.PlayerSpy.tracdata.SessionEntry;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
@@ -78,7 +78,7 @@ public class Upgrader
 		
 		int index = -1;
 		// Upgrade each session
-		for(IndexEntry session : log.getSessions())
+		for(SessionEntry session : log.getSessions())
 		{
 			index++;
 			RecordList old = log.loadSession(session);

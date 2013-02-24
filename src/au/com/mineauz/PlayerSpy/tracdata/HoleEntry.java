@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 
 // Represents an empty 
-public class HoleEntry
+public class HoleEntry extends IndexEntry
 {
 	public static final int cSize = 8;
 	
@@ -13,35 +13,17 @@ public class HoleEntry
 	// The size of the hole
 	public long Size;
 	
-	public IndexEntry AttachedTo;
+	public SessionEntry AttachedTo;
 	
-	public boolean write(RandomAccessFile file)
+	public void write(RandomAccessFile file) throws IOException
 	{
-		try
-		{
-			file.writeInt((int)Location);
-			file.writeInt((int)Size);
-			
-			return true;
-		}
-		catch(IOException e)
-		{
-			return false;
-		}
+		file.writeInt((int)Location);
+		file.writeInt((int)Size);
 	}
 	
-	public boolean read(RandomAccessFile file)
+	public void read(RandomAccessFile file) throws IOException
 	{
-		try
-		{
-			Location = (long)file.readInt();
-			Size = (long)file.readInt();
-			
-			return true;
-		}
-		catch(IOException e)
-		{
-			return false;
-		}
+		Location = (long)file.readInt();
+		Size = (long)file.readInt();
 	}
 }
