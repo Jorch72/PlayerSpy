@@ -8,7 +8,9 @@ import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.SpyPlugin;
+import au.com.mineauz.PlayerSpy.LogTasks.MarkRecordRollbackStateTask;
 import au.com.mineauz.PlayerSpy.Records.IRollbackable;
+import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.search.SearchFilter;
 import au.com.mineauz.PlayerSpy.search.SearchTask;
 
@@ -51,6 +53,8 @@ public class RollbackManager
 		session.changed = 0;
 		session.failed = 0;
 		
+		session.modified = new ArrayList<Record>();
+		
 		mSessions.add(session);
 		
 		if(notifyPlayer != null)
@@ -85,6 +89,8 @@ public class RollbackManager
 		
 		session.changed = 0;
 		session.failed = 0;
+		
+		session.modified = new ArrayList<Record>();
 		
 		mSessions.add(session);
 	}
@@ -152,6 +158,11 @@ public class RollbackManager
 								{
 									updates++;
 									session.changed++;
+									
+									if(((Record)record).sourceEntry != null)
+									{
+										session.modified.add((Record)record);
+									}
 								}
 								else
 									session.failed++;
@@ -165,6 +176,11 @@ public class RollbackManager
 								{
 									updates++;
 									session.changed++;
+									
+									if(((Record)record).sourceEntry != null)
+									{
+										session.modified.add((Record)record);
+									}
 								}
 								else
 									session.failed++;
@@ -180,6 +196,10 @@ public class RollbackManager
 					if(updates >= SpyPlugin.getSettings().maxChangesPerTick)
 						return;
 				}
+				
+				MarkRecordRollbackStateTask task = new MarkRecordRollbackStateTask(session.modified, !session.restore);
+				SpyPlugin.getExecutor().submit(task);
+				
 				if(session.restore)
 					session.notifyPlayer.sendMessage(ChatColor.GOLD + "[PlayerSpy] " + ChatColor.WHITE + "Restore complete");
 				else

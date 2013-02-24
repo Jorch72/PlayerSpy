@@ -863,6 +863,9 @@ public class LogFile
 					
 					break;
 				}
+				record.sourceFile = this; 
+				record.sourceEntry = session;
+				record.sourceIndex = (short)i;
 				
 				// update the last world
 				if(record instanceof IPlayerLocationAware && ((IPlayerLocationAware)record).isFullLocation())
@@ -2649,7 +2652,7 @@ public class LogFile
 		}
 	}
 	
-	public void setRollbackState(IndexEntry session, int[] indices, boolean state) throws IOException
+	public void setRollbackState(IndexEntry session, List<Short> indices, boolean state) throws IOException
 	{
 		Debug.loggedAssert(session != null);
 		
@@ -2670,16 +2673,16 @@ public class LogFile
 				list = new RollbackListEntry();
 
 			// Modify the detail
-			boolean[] add = new boolean[indices.length];
-			boolean[] remove = new boolean[indices.length];
+			boolean[] add = new boolean[indices.size()];
+			boolean[] remove = new boolean[indices.size()];
 			
-			for(int ind = 0; ind < indices.length; ++ind)
+			for(int ind = 0; ind < indices.size(); ++ind)
 			{
 				add[ind] = true;
 				remove[ind] = false;
 				for(int i = 0; i < list.items.length; ++i)
 				{
-					if(list.items[i] == (short)indices[ind])
+					if(list.items[i] == (short)indices.get(ind))
 					{
 						add[ind] = false;
 						if(!state)
@@ -2696,12 +2699,12 @@ public class LogFile
 			for(int i = 0; i < list.items.length; ++i)
 				newList.add(list.items[i]);
 			
-			for(int i = 0; i < indices.length; ++i)
+			for(int i = 0; i < indices.size(); ++i)
 			{
 				if(remove[i])
-					newList.remove((Short)(short)indices[i]);
+					newList.remove(indices.get(i));
 				if(add[i])
-					newList.add((Short)(short)indices[i]);
+					newList.add(indices.get(i));
 			}
 			
 			updateDetail(entry, list, newList);

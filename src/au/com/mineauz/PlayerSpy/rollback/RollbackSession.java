@@ -1,9 +1,11 @@
 package au.com.mineauz.PlayerSpy.rollback;
 
+import java.util.ArrayList;
 import java.util.concurrent.Future;
 
 import org.bukkit.entity.Player;
 
+import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.search.SearchFilter;
 import au.com.mineauz.PlayerSpy.search.SearchResults;
 
@@ -23,4 +25,6 @@ public class RollbackSession
 	
 	public int changed = 0;
 	public int failed = 0;
+	
+	public ArrayList<Record> modified; 
 }

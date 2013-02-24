@@ -5,10 +5,16 @@ import java.util.Calendar;
 
 import org.bukkit.World;
 
+import au.com.mineauz.PlayerSpy.IndexEntry;
+import au.com.mineauz.PlayerSpy.LogFile;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 
 public abstract class Record 
 {
+	public LogFile sourceFile;
+	public IndexEntry sourceEntry;
+	public short sourceIndex;
+	
 	protected Record(RecordType type)
 	{
 		mType = type;

@@ -19,9 +19,6 @@ public class LogFileRegistry
 	public static final String cGlobalFilePrefix = "__";
 	
 	private static HashMap<String, LogFile> mLoadedLogs = new HashMap<String, LogFile>();
-	
-	private static HashMap<World, LogFile> mLoadedGlobalLogs = new HashMap<World, LogFile>();
-	
 	/**
 	 * Sets the directory that the logs are stored in
 	 */
@@ -38,16 +35,11 @@ public class LogFileRegistry
 		return mLogsRoot;
 	}
 	
-	/**
-	 * Gets a loaded log file for the player, or loads one. It does NOT create one if it doesnt exist
-	 * Calling this will add a reference onto it so make sure to close it when done
-	 * @return null if it didnt exist.
-	 */
-	public static LogFile getLogFile(OfflinePlayer player)
+	public static LogFile getLogFile(String name)
 	{
-		if(mLoadedLogs.containsKey(player.getName()))
+		if(mLoadedLogs.containsKey(name))
 		{
-			LogFile log = mLoadedLogs.get(player.getName());
+			LogFile log = mLoadedLogs.get(name);
 			if(log.isLoaded() || log.isTimingOut())
 			{
 				log.addReference();
@@ -55,19 +47,29 @@ public class LogFileRegistry
 			}
 		}
 		
-		File file = new File(mLogsRoot, sanitiseName(player.getName()) + cFileExt);
+		File file = new File(mLogsRoot, sanitiseName(name) + cFileExt);
 		if(!file.exists())
 			return null;
 		
 		LogFile log = new LogFile();
 		if(!log.load(file.getAbsolutePath()))
 		{
-			LogUtil.severe("Player log for " + player.getName() + " failed to load. Corrupted?");
+			LogUtil.severe("Log for " + name + " failed to load. Corrupted?");
 			return null;
 		}
 		
-		mLoadedLogs.put(player.getName(), log);
+		mLoadedLogs.put(name, log);
 		return log;
+	}
+	
+	/**
+	 * Gets a loaded log file for the player, or loads one. It does NOT create one if it doesnt exist
+	 * Calling this will add a reference onto it so make sure to close it when done
+	 * @return null if it didnt exist.
+	 */
+	public static LogFile getLogFile(OfflinePlayer player)
+	{
+		return getLogFile(player.getName());
 	}
 	
 	public static LogFile makeReplacementLog(OfflinePlayer player)
@@ -129,29 +131,7 @@ public class LogFileRegistry
 	 */
 	public static LogFile getLogFile(World world)
 	{
-		if(mLoadedGlobalLogs.containsKey(world))
-		{
-			LogFile log = mLoadedGlobalLogs.get(world);
-			if(log.isLoaded())
-			{
-				log.addReference();
-				return log;
-			}
-		}
-		
-		File file = new File(mLogsRoot, cGlobalFilePrefix + sanitiseName(world.getName()) + cFileExt);
-		if(!file.exists())
-			return null;
-		
-		LogFile log = new LogFile();
-		if(!log.load(file.getAbsolutePath()))
-		{
-			LogUtil.warning("World log for " + world.getName() + " failed to load. Corrupted?");
-			return null;
-		}
-		
-		mLoadedGlobalLogs.put(world, log);
-		return log;
+		return getLogFile(cGlobalFilePrefix + sanitiseName(world.getName()));
 	}
 	/**
 	 * Creates a log file for the player. If it already exists, this will fail
@@ -188,7 +168,7 @@ public class LogFileRegistry
 		if(log == null)
 			return null;
 		
-		mLoadedGlobalLogs.put(world, log);
+		mLoadedLogs.put(cGlobalFilePrefix + sanitiseName(world.getName()), log);
 		return log;
 	}
 	
@@ -218,7 +198,7 @@ public class LogFileRegistry
 	 */
 	public static boolean unloadLogFile(World world)
 	{
-		LogFile log = mLoadedGlobalLogs.get(world);
+		LogFile log = mLoadedLogs.get(cGlobalFilePrefix + sanitiseName(world.getName()));
 		
 		if(log == null)
 			return false;
@@ -227,7 +207,7 @@ public class LogFileRegistry
 
 		if(!log.isLoaded() && !log.isTimingOut())
 		{
-			return mLoadedGlobalLogs.remove(world) != null;
+			return mLoadedLogs.remove(cGlobalFilePrefix + sanitiseName(world.getName())) != null;
 		}
 		
 		return true;
@@ -275,15 +255,6 @@ public class LogFileRegistry
 				log.close(true);
 		}
 		mLoadedLogs.clear();
-		
-		for(LogFile log : mLoadedGlobalLogs.values())
-		{
-			if(log.isTimingOut())
-				log.addReference(); // Cancel the timeout
-			while(log.isLoaded())
-				log.close(true);
-		}
-		mLoadedGlobalLogs.clear();
 	}
 	
 	
