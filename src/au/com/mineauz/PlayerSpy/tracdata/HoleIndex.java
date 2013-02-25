@@ -58,7 +58,7 @@ public class HoleIndex extends Index<HoleEntry>
 	@Override
 	protected void updateSize( long newSize )
 	{
-		mHeader.HolesIndexSize = newSize;
+		mHeader.HolesIndexSize = newSize + mHeader.HolesIndexPadding;
 	}
 
 	@Override
@@ -130,6 +130,9 @@ public class HoleIndex extends Index<HoleEntry>
 	@Override
 	public int add( HoleEntry entry ) throws IOException
 	{
+		if(entry.Size == 0)
+			return -1;
+		
 		// Check if we need to merge it
 		for(int i = 0; i < mElements.size(); i++)
 		{
@@ -160,7 +163,7 @@ public class HoleIndex extends Index<HoleEntry>
 			
 			updateElementCount(mElements.size());
 			mHeader.HolesIndexPadding -= getEntrySize();
-			updateSize(mElements.size() * getEntrySize() + mHeader.HolesIndexPadding);
+			updateSize(mElements.size() * getEntrySize());
 			
 			
 			Debug.finest("Wrote %d/%d hole entries to %X -> %X Using padding. Remaining: %d bytes", mElements.size() - insertIndex, mElements.size(), getLocation() + insertIndex * getEntrySize(), getLocation() + getSize()-1, mHeader.HolesIndexPadding);
@@ -171,7 +174,7 @@ public class HoleIndex extends Index<HoleEntry>
 			write(insertIndex);
 			
 			updateElementCount(mElements.size());
-			updateSize(mElements.size() * getEntrySize() + mHeader.HolesIndexPadding);
+			updateSize(mElements.size() * getEntrySize());
 			
 			Debug.finest("Wrote %d/%d hole entries to %X -> %X", mElements.size() - insertIndex, mElements.size(), getLocation() + insertIndex * getEntrySize(), getLocation() + getSize()-1);
 
@@ -204,17 +207,17 @@ public class HoleIndex extends Index<HoleEntry>
 			}
 			
 			// Add it now if it wasnt merged
-			if(!merged)
+			if(!merged && oldIndexHole.Size != 0)
 			{
 				mElements.add(getInsertIndex(oldIndexHole), oldIndexHole);
 			}
 			
 			mHeader.HolesIndexPadding = HoleEntry.cSize;
 			// The total size of the hole index now including 1 extra entry as padding
-			long newSize = mElements.size() * getEntrySize() + mHeader.HolesIndexPadding;
+			long newSize = mElements.size() * getEntrySize();
 			
 			// Find a new location for the index
-			long newLocation = mLocator.findFreeSpace(newSize);
+			long newLocation = mLocator.findFreeSpace(newSize + mHeader.HolesIndexPadding);
 			if(newLocation == 0)
 				newLocation = mFile.length();
 			
@@ -266,5 +269,20 @@ public class HoleIndex extends Index<HoleEntry>
 		}
 		
 		return null;
+	}
+
+	public void applyReservations( SessionIndex sessionIndex )
+	{
+		for(SessionEntry session : sessionIndex)
+		{
+			for(HoleEntry hole : mElements)
+			{
+				if(hole.Location == session.Location + session.TotalSize)
+				{
+					hole.AttachedTo = session;
+					break;
+				}
+			}
+		}
 	}
 }

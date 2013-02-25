@@ -24,7 +24,7 @@ public class FileHeader
 	public long RollbackIndexLocation;
 	public long RollbackIndexSize;
 	public int RollbackIndexCount;
-	public byte[] Reserved = new byte[2];
+	public byte[] Reserved = new byte[4];
 	
 	public void write(RandomAccessFile file) throws IOException
 	{

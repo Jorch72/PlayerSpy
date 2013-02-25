@@ -23,6 +23,7 @@ import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
 import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.debugging.Profiler;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
@@ -127,19 +128,19 @@ public class LogFile
 		header.HolesIndexLocation = header.getSize();
 		header.HolesIndexSize = 0;
 		header.HolesIndexCount = 0;
-		header.HolesIndexPadding = HoleEntry.cSize;
+		header.HolesIndexPadding = 0;
 		
-		header.IndexLocation = header.getSize() + HoleEntry.cSize;
+		header.IndexLocation = header.getSize();
 		header.IndexSize = 0;
 		header.SessionCount = 0;
 		
 		header.OwnerMapCount = 0;
 		header.OwnerMapSize = 0;
-		header.OwnerMapLocation = header.getSize() + HoleEntry.cSize;
+		header.OwnerMapLocation = header.getSize();
 		
 		header.RollbackIndexCount = 0;
 		header.RollbackIndexSize = 0;
-		header.RollbackIndexLocation = header.getSize() + HoleEntry.cSize;
+		header.RollbackIndexLocation = header.getSize();
 		
 		if (playerName.startsWith(LogFileRegistry.cGlobalFilePrefix))
 			header.RequiresOwnerTags = true;
@@ -155,8 +156,6 @@ public class LogFile
 			
 			header.write(file);
 			
-			// write some padding in
-			file.write(new byte[HoleEntry.cSize]);
 			file.commit();
 		}
 		catch(IOException e)
@@ -260,6 +259,8 @@ public class LogFile
 			// Read the indices
 			mHoleIndex.read();
 			mSessionIndex.read();
+			
+			mHoleIndex.applyReservations(mSessionIndex);
 			
 			if(header.VersionMajor >= 2)
 				mOwnerTagIndex.read();
@@ -847,6 +848,9 @@ public class LogFile
 			short[] indices = getRolledBackRecords(session);
 			for(int i = 0; i < indices.length; ++i)
 			{
+				if(indices[i] < 0 || indices[i] >= records.size())
+					continue;
+				
 				Record record = records.get(indices[i]);
 				if(record instanceof IRollbackable)
 				{
@@ -1676,7 +1680,7 @@ public class LogFile
 				else if(mHeader.HolesIndexLocation == nextLocation)
 				{
 					type = 2;
-					nextSize = mHeader.HolesIndexSize + mHeader.HolesIndexPadding;
+					nextSize = mHeader.HolesIndexSize;
 				}
 				else if(mHeader.OwnerMapLocation == nextLocation)
 				{
@@ -1707,29 +1711,7 @@ public class LogFile
 			
 			if(nextSize != 0)
 			{
-				// Shift the data
-				long shiftAmount = holeData.Size;
-				
-				byte[] buffer = new byte[1024];
-				int rcount = 0;
-				for(long readStart = nextLocation; readStart < nextLocation + nextSize; readStart += buffer.length)
-				{
-					mFile.seek(readStart);
-					if(readStart + buffer.length >= nextLocation + nextSize)
-					{
-						rcount = (int)(nextSize - (readStart - nextLocation));
-						mFile.readFully(buffer,0, rcount);
-					}
-					else
-					{
-						mFile.readFully(buffer);
-						rcount = buffer.length;
-					}
-					
-					mFile.seek(readStart - shiftAmount);
-					mFile.write(buffer,0,rcount);
-				}
-				
+				Utility.shiftBytes(mFile, nextLocation, holeData.Location, nextSize);
 				
 				HoleEntry old = new HoleEntry();
 				old.Location = holeData.Location + nextSize;

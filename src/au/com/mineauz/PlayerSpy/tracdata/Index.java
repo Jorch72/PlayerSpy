@@ -120,7 +120,7 @@ public abstract class Index<T extends IndexEntry> implements Iterable<T>
 		mElements.add(insertIndex,entry);
 		
 		// Check if there is room in the file for this
-		if(mLocator.isFreeSpace(getLocation() + getSize(), getEntrySize(), entry))
+		if(mLocator.isFreeSpace(getLocation() + getSize(), getEntrySize()))
 		{
 			// Calculate the new header values
 			updateElementCount(mElements.size());
@@ -140,7 +140,7 @@ public abstract class Index<T extends IndexEntry> implements Iterable<T>
 			
 			long newSize = mElements.size() * getEntrySize();
 			// Find a new location for the index
-			long newLocation = mLocator.findFreeSpace(newSize, entry);
+			long newLocation = mLocator.findFreeSpace(newSize);
 			if(newLocation == 0)
 				newLocation = mFile.length();
 
