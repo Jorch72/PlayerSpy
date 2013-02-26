@@ -1,8 +1,6 @@
 package au.com.mineauz.PlayerSpy.commands;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.Map.Entry;
@@ -13,16 +11,14 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import au.com.mineauz.PlayerSpy.RecordList;
-import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
-import au.com.mineauz.PlayerSpy.Records.Record;
-import au.com.mineauz.PlayerSpy.Records.RecordType;
-import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.debugging.Profiler;
 import au.com.mineauz.PlayerSpy.tracdata.FileHeader;
 import au.com.mineauz.PlayerSpy.tracdata.HoleEntry;
+import au.com.mineauz.PlayerSpy.tracdata.HoleIndex;
+import au.com.mineauz.PlayerSpy.tracdata.RollbackEntry;
+import au.com.mineauz.PlayerSpy.tracdata.RollbackIndex;
 import au.com.mineauz.PlayerSpy.tracdata.SessionEntry;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
@@ -65,7 +61,6 @@ public class DebugCommand implements ICommand
 		return false;
 	}
 
-	@SuppressWarnings( "unchecked" )
 	private void analyseLog(CommandSender sender, String logName, String focus)
 	{
 		LogFile log = LogFileRegistry.getLogFile(Bukkit.getOfflinePlayer(logName));
@@ -75,108 +70,22 @@ public class DebugCommand implements ICommand
 			sender.sendMessage("Unable to find log " + logName);
 			return;
 		}
-		
-		RecordType detailType = null;
-		if(focus != null)
-		{
-			detailType = RecordType.valueOf(focus);
-			if(detailType == null)
-			{
-				sender.sendMessage("Invalid recordtype: " + focus);
-				return;
-			}
-		}
-		
-		HashMap<RecordType, Integer> mRecordTypeCounts = new HashMap<RecordType, Integer>();
-		HashMap<RecordType, Integer> mRecordTypeSizes = new HashMap<RecordType, Integer>();
-		HashMap<Object, Object> mDetailInfo = new HashMap<Object, Object>();
-		HashMap<String, Integer> mOwnerInfo = new HashMap<String, Integer>();
-		
+
 		int totalCount = 0;
 		sender.sendMessage(ChatColor.GREEN + "Totalling the log. Please wait.");
 		for(SessionEntry session : log.getSessions())
 		{
-			RecordList records = log.loadSession(session);
 			String tag = log.getOwnerTag(session);
-			boolean absolute = tag!=null;
 			if(session.Compressed)
-				sender.sendMessage((tag != null ? tag : " Session " + session.Id) + "(C): Total Size: " + session.TotalSize + " Total Size Uncompressed: " + records.getDataSize(absolute));
+				sender.sendMessage((tag != null ? tag : " Session " + session.Id) + "(C): Total Size: " + session.TotalSize);
 			else
 				sender.sendMessage((tag != null ? tag : " Session " + session.Id) + ": Total Size: " + session.TotalSize);
-			if(records != null)
-			{
-				for(Record record : records)
-				{
-					if(mRecordTypeCounts.containsKey(record.getType()))
-					{
-						mRecordTypeCounts.put(record.getType(), mRecordTypeCounts.get(record.getType()) + 1);
-						mRecordTypeSizes.put(record.getType(), mRecordTypeSizes.get(record.getType()) + record.getSize(absolute));
-					}
-					else
-					{
-						mRecordTypeCounts.put(record.getType(), 1);
-						mRecordTypeSizes.put(record.getType(), record.getSize(absolute));
-					}
-					
-					if(record.getType() == detailType)
-					{
-						String owner = log.getOwnerTag(session);
-						
-						if(mOwnerInfo.containsKey(owner))
-							mOwnerInfo.put(owner,mOwnerInfo.get(owner) + 1);
-						else
-							mOwnerInfo.put(owner, 1);
-						
-						if(detailType == RecordType.BlockChange)
-						{
-							if(mDetailInfo.containsKey(((BlockChangeRecord)record).getBlock().getType()))
-								mDetailInfo.put(((BlockChangeRecord)record).getBlock().getType(), (Integer)mDetailInfo.get(((BlockChangeRecord)record).getBlock().getType()) + 1);
-							else
-								mDetailInfo.put(((BlockChangeRecord)record).getBlock().getType(), 1);
-						}
-						else if(detailType == RecordType.UpdateInventory)
-						{
-							Integer count = ((UpdateInventoryRecord)record).Slots.size();
-							
-							if(mDetailInfo.containsKey(count))
-								mDetailInfo.put(count, (Integer)mDetailInfo.get(count) + 1);
-							else
-								mDetailInfo.put(count, 1);
-						}
-					}
-					totalCount++;
-				}
-			}
 		}
-		
-		LogFileRegistry.unloadLogFile(Bukkit.getOfflinePlayer(logName));
 		
 		sender.sendMessage(ChatColor.GREEN + "Results ( " + totalCount + " total ): ");
-		if(detailType == null)
-		{
-			for(Entry<RecordType, Integer> entry : mRecordTypeCounts.entrySet())
-			{
-				sender.sendMessage(" " + entry.getKey().toString() + ": " + entry.getValue() + " = " + mRecordTypeSizes.get(entry.getKey()) + "bytes");
-			}
-		}
-		else if(mRecordTypeCounts.containsKey(detailType))
-		{
-			sender.sendMessage(" " + detailType.toString() + ": " + mRecordTypeCounts.get(detailType) + " = " + mRecordTypeSizes.get(detailType) + "bytes");
-			
-			for(Entry<Object,Object> entry : mDetailInfo.entrySet())
-			{
-				sender.sendMessage("  " + entry.getKey() + ": " + entry.getValue());
-			}
-			
-			sender.sendMessage(ChatColor.GREEN + "Owner Counts:");
-			
-			for(Entry<String,Integer> entry : mOwnerInfo.entrySet())
-			{
-				sender.sendMessage("  " + entry.getKey() + ": " + entry.getValue());
-			}
-		}
 		
-		ArrayList<HoleEntry> holeIndex;
+		HoleIndex holeIndex;
+		RollbackIndex rollbackIndex;
 		FileHeader header;
 		
 		try
@@ -184,12 +93,17 @@ public class DebugCommand implements ICommand
 			Field field = log.getClass().getDeclaredField("mHoleIndex");
 			field.setAccessible(true);
 			
-			holeIndex = (ArrayList<HoleEntry>) field.get(log);
+			holeIndex = (HoleIndex) field.get(log);
 			
 			field = log.getClass().getDeclaredField("mHeader");
 			field.setAccessible(true);
 			
 			header = (FileHeader)field.get(log);
+			
+			field = log.getClass().getDeclaredField("mRollbackIndex");
+			field.setAccessible(true);
+			
+			rollbackIndex = (RollbackIndex) field.get(log);
 		}
 		catch(Exception e)
 		{
@@ -205,17 +119,29 @@ public class DebugCommand implements ICommand
 		sortedItems.put(0L, new Pair<Long,Object>((long)header.getSize(),"Header"));
 		
 		sortedItems.put(header.IndexLocation, new Pair<Long,Object>(header.IndexSize,"Index"));
-		sortedItems.put(header.HolesIndexLocation, new Pair<Long,Object>(header.HolesIndexSize + header.HolesIndexPadding,"Holes Index (" + header.HolesIndexPadding + ")"));
+		sortedItems.put(header.HolesIndexLocation, new Pair<Long,Object>(header.HolesIndexSize,"Holes Index (" + header.HolesIndexPadding + ")"));
 		sortedItems.put(header.OwnerMapLocation, new Pair<Long,Object>(header.OwnerMapSize,"OwnerMap"));
+		sortedItems.put(header.RollbackIndexLocation, new Pair<Long,Object>(header.RollbackIndexSize,"RollbackIndex"));
 		
 		for(HoleEntry hole : holeIndex)
 		{
-			sortedItems.put(hole.Location, new Pair<Long,Object>(hole.Size,"Hole"));
+			
 			//sender.sendMessage(" loc:" + hole.Location + " size:" + hole.Size + " attached to:" + (hole.AttachedTo == null ? "none" : hole.AttachedTo.Id));
 			if(hole.AttachedTo != null)
+			{
+				sortedItems.put(hole.Location, new Pair<Long,Object>(hole.Size,"Hole (R)"));
 				totalReservedSpace += hole.Size;
+			}
 			else
+			{
+				sortedItems.put(hole.Location, new Pair<Long,Object>(hole.Size,"Hole"));
 				totalFreeSpace += hole.Size;
+			}
+		}
+		
+		for(RollbackEntry entry : rollbackIndex)
+		{
+			sortedItems.put(entry.detailLocation, new Pair<Long,Object>(entry.detailSize,"RollbackDetail for Session " + entry.sessionId));
 		}
 		
 		for(SessionEntry session : log.getSessions())
@@ -225,6 +151,29 @@ public class DebugCommand implements ICommand
 			sortedItems.put(session.Location, new Pair<Long,Object>(session.TotalSize,"Session " + (tag != null ? tag : session.Id)));
 		}
 		
+		// Find any Unallocated space
+		TreeMap<Long, Pair<Long, Object>> extra = new TreeMap<Long, Pair<Long, Object>>();
+		
+		long lastPos = 0;
+		String last = "";
+		for(Entry<Long, Pair<Long, Object>> entry : sortedItems.entrySet())
+		{
+			if(lastPos > entry.getKey())
+				extra.put(entry.getKey()+1, new Pair<Long,Object>(lastPos - entry.getKey(), ChatColor.RED + "CONFLICT!! " + entry.getKey() + " -> " + (entry.getKey() + entry.getValue().getArg1()) + " with " + last));
+			else if(lastPos < entry.getKey())
+			{
+				extra.put(lastPos, new Pair<Long,Object>(entry.getKey() - lastPos, ChatColor.RED + "Unallocated space!"));
+				lastPos = entry.getKey() + entry.getValue().getArg1();
+				last = (String)entry.getValue().getArg2();
+			}
+			else
+			{
+				lastPos = entry.getKey() + entry.getValue().getArg1();
+				last = (String)entry.getValue().getArg2();
+			}
+		}
+		sortedItems.putAll(extra);
+		
 		for(Entry<Long, Pair<Long, Object>> entry : sortedItems.entrySet())
 		{
 			sender.sendMessage(entry.getValue().getArg2() + ": loc=" + entry.getKey() + " size=" + entry.getValue().getArg1());
@@ -232,6 +181,8 @@ public class DebugCommand implements ICommand
 		
 		sender.sendMessage(ChatColor.GREEN + "Total Free Space: " + ChatColor.RESET + totalFreeSpace);
 		sender.sendMessage(ChatColor.GREEN + "Total Reserved Space: " + ChatColor.RESET + totalReservedSpace);
+		
+		LogFileRegistry.unloadLogFile(Bukkit.getOfflinePlayer(logName));
 	}
 	
 	@Override
