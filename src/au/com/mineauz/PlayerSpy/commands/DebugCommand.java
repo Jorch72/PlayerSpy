@@ -118,7 +118,7 @@ public class DebugCommand implements ICommand
 		TreeMap<Long,Pair<Long,Object>> sortedItems = new TreeMap<Long, Pair<Long,Object>>();
 		sortedItems.put(0L, new Pair<Long,Object>((long)header.getSize(),"Header"));
 		
-		sortedItems.put(header.IndexLocation, new Pair<Long,Object>(header.IndexSize,"Index"));
+		sortedItems.put(header.IndexLocation, new Pair<Long,Object>(header.IndexSize,"Session Index"));
 		sortedItems.put(header.HolesIndexLocation, new Pair<Long,Object>(header.HolesIndexSize,"Holes Index (" + header.HolesIndexPadding + ")"));
 		sortedItems.put(header.OwnerMapLocation, new Pair<Long,Object>(header.OwnerMapSize,"OwnerMap"));
 		sortedItems.put(header.RollbackIndexLocation, new Pair<Long,Object>(header.RollbackIndexSize,"RollbackIndex"));
@@ -127,16 +127,8 @@ public class DebugCommand implements ICommand
 		{
 			
 			//sender.sendMessage(" loc:" + hole.Location + " size:" + hole.Size + " attached to:" + (hole.AttachedTo == null ? "none" : hole.AttachedTo.Id));
-			if(hole.AttachedTo != null)
-			{
-				sortedItems.put(hole.Location, new Pair<Long,Object>(hole.Size,"Hole (R)"));
-				totalReservedSpace += hole.Size;
-			}
-			else
-			{
-				sortedItems.put(hole.Location, new Pair<Long,Object>(hole.Size,"Hole"));
-				totalFreeSpace += hole.Size;
-			}
+			sortedItems.put(hole.Location, new Pair<Long,Object>(hole.Size,"Hole"));
+			totalFreeSpace += hole.Size;
 		}
 		
 		for(RollbackEntry entry : rollbackIndex)
@@ -148,7 +140,7 @@ public class DebugCommand implements ICommand
 		{
 			String tag = log.getOwnerTag(session);
 			
-			sortedItems.put(session.Location, new Pair<Long,Object>(session.TotalSize,"Session " + (tag != null ? tag : session.Id)));
+			sortedItems.put(session.Location, new Pair<Long,Object>(session.TotalSize,"Session " + (tag != null ? tag + "(" + session.Id + ")" : session.Id) + " Padding: " + session.Padding));
 		}
 		
 		// Find any Unallocated space

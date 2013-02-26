@@ -1,6 +1,6 @@
 package au.com.mineauz.PlayerSpy.tracdata;
 
-public class SessionData implements IData<SessionEntry>
+public class SessionData implements IMovableData<SessionEntry>
 {
 	private final SessionEntry mSession;
 	

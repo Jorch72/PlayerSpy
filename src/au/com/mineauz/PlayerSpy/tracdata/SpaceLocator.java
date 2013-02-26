@@ -7,8 +7,10 @@ import au.com.mineauz.PlayerSpy.debugging.Debug;
 public class SpaceLocator
 {
 	private HoleIndex mIndex;
-	public SpaceLocator()
+	private LogFile mLog;
+	public SpaceLocator(LogFile log)
 	{
+		mLog = log;
 	}
 	
 	public void setHoleIndex(HoleIndex index)
@@ -16,12 +18,12 @@ public class SpaceLocator
 		mIndex = index;
 	}
 	
-	private int findHoleAt(long location, Object key)
+	private int findHoleAt(long location)
 	{
 		int i = 0;
 		for(HoleEntry hole : mIndex)
 		{
-			if(hole.Location <= location && hole.Location + hole.Size >= location && (hole.AttachedTo == null || hole.AttachedTo.equals(key)))
+			if(hole.Location <= location && hole.Location + hole.Size >= location)
 				return i;
 			else if(hole.Location + hole.Size > location)
 				return -1;
@@ -32,60 +34,49 @@ public class SpaceLocator
 		return -1;
 	}
 	
-	public boolean isFreeSpace(long location, long size)
+	public long getFreeSpace(long location)
 	{
-		return isFreeSpace(location, size, null);
-	}
-	
-	public boolean isFreeSpace(long location, long size, Object key)
-	{
-		int hole = findHoleAt(location, key);
+		int hole = findHoleAt(location);
 		
 		if(hole != -1)
 		{
 			HoleEntry entry = mIndex.get(hole);
-			
-			if(entry.Size - (location - entry.Location) >= size)
-				return true;
+			mLog.checkSpaceStatus(entry.Location, entry.Size, true);
+			return entry.Size;
 		}
+		else
+			mLog.checkSpaceStatus(location, 1, false);
 		
 		if(location == mIndex.getEndOfFile())
-			return true;
+			return Long.MAX_VALUE;
 
-		return false;
+		return 0;
+	}
+	public boolean isFreeSpace(long location, long size)
+	{
+		return getFreeSpace(location) >= size;
 	}
 	
 	public long findFreeSpace(long size)
 	{
-		return findFreeSpace(size, null);
-	}
-	
-	public long findFreeSpace(long size, Object key)
-	{
 		for(HoleEntry hole : mIndex)
 		{
-			if(hole.AttachedTo != null && !hole.AttachedTo.equals(key))
-				continue;
-				
 			if(hole.Size >= size)
 			{
+				mLog.checkSpaceStatus(hole.Location, hole.Size, true);
+				
 				Debug.finest("Found free space at %X->%X", hole.Location, hole.Location + hole.Size - 1);
 				return hole.Location;
 			}
 		}
 		
-		Debug.finest("Found free space at EOF");
+		Debug.finest("Found free space at EOF (%X)", mIndex.getEndOfFile());
 		return mIndex.getEndOfFile();
 	}
 	
 	public void consumeSpace(long location, long size) throws IOException
 	{
-		consumeSpace(location, size, null);
-	}
-	
-	public void consumeSpace(long location, long size, Object key) throws IOException
-	{
-		int hole = findHoleAt(location, key);
+		int hole = findHoleAt(location);
 		
 		if(hole != -1)
 		{

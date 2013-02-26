@@ -7,6 +7,7 @@ import java.util.concurrent.ExecutionException;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
+import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.LogTasks.MarkRecordRollbackStateTask;
 import au.com.mineauz.PlayerSpy.Records.IRollbackable;
@@ -201,11 +202,21 @@ public class RollbackManager
 				
 				MarkRecordRollbackStateTask task = new MarkRecordRollbackStateTask(session.modified, !session.restore);
 				SpyPlugin.getExecutor().submit(task);
-				
-				if(session.restore)
-					session.notifyPlayer.sendMessage(ChatColor.GOLD + "[PlayerSpy] " + ChatColor.WHITE + "Restore complete" + (session.failed > 0 ? ". " + session.failed + " records could not be restored." : ""));
+
+				if(session.notifyPlayer != null)
+				{
+					if(session.restore)
+						session.notifyPlayer.sendMessage(ChatColor.GOLD + "[PlayerSpy] " + ChatColor.WHITE + "Restore complete" + (session.failed > 0 ? ". " + session.failed + " records could not be restored." : ""));
+					else
+						session.notifyPlayer.sendMessage(ChatColor.GOLD + "[PlayerSpy] " + ChatColor.WHITE + "Rollback complete" + (session.failed > 0 ? ". " + session.failed + " records could not be rolled back." : ""));
+				}
 				else
-					session.notifyPlayer.sendMessage(ChatColor.GOLD + "[PlayerSpy] " + ChatColor.WHITE + "Rollback complete" + (session.failed > 0 ? ". " + session.failed + " records could not be rolled back." : ""));
+				{
+					if(session.restore)
+						LogUtil.info("Restore complete" + (session.failed > 0 ? ". " + session.failed + " records could not be restored." : ""));
+					else
+						LogUtil.info("Rollback complete" + (session.failed > 0 ? ". " + session.failed + " records could not be rolled back." : ""));
+				}
 				
 				mSessions.remove(i);
 				i--;

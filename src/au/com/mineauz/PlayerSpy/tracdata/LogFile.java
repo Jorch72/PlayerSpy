@@ -2,6 +2,7 @@ package au.com.mineauz.PlayerSpy.tracdata;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReentrantLock;
@@ -10,6 +11,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import java.io.*;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -177,7 +179,7 @@ public class LogFile
 		log.mFilePath = new File(filename);
 		log.mPlayerName = playerName;
 		
-		log.mSpaceLocator = new SpaceLocator();
+		log.mSpaceLocator = new SpaceLocator(log);
 		log.mHoleIndex = new HoleIndex(log, header, file, log.mSpaceLocator);
 		log.mSpaceLocator.setHoleIndex(log.mHoleIndex);
 		
@@ -185,6 +187,7 @@ public class LogFile
 		log.mOwnerTagIndex = new OwnerTagIndex(log, header, file, log.mSpaceLocator);
 		log.mRollbackIndex = new RollbackIndex(log, header, file, log.mSpaceLocator);
 		
+		log.mIndexs = new Index[] {log.mHoleIndex, log.mSessionIndex, log.mOwnerTagIndex, log.mRollbackIndex};
 		
 		log.mIsLoaded = true;
 		log.mFile = file;
@@ -248,7 +251,7 @@ public class LogFile
 			mHeader = header;
 			
 			// Initialize the indexes
-			mSpaceLocator = new SpaceLocator();
+			mSpaceLocator = new SpaceLocator(this);
 			mHoleIndex = new HoleIndex(this, mHeader, file, mSpaceLocator);
 			mSpaceLocator.setHoleIndex(mHoleIndex);
 			
@@ -256,14 +259,16 @@ public class LogFile
 			mOwnerTagIndex = new OwnerTagIndex(this, mHeader, file, mSpaceLocator);
 			mRollbackIndex = new RollbackIndex(this, mHeader, file, mSpaceLocator);
 			
+			mIndexs = new Index[] {mHoleIndex, mSessionIndex, mOwnerTagIndex, mRollbackIndex};
+			
 			// Read the indices
 			mHoleIndex.read();
-			mSessionIndex.read();
-			
-			mHoleIndex.applyReservations(mSessionIndex);
 			
 			if(header.VersionMajor >= 2)
 				mOwnerTagIndex.read();
+
+			// So that active sessions are mapped correctly
+			mSessionIndex.read();
 			
 			if(header.VersionMajor >= 3 && header.VersionMinor >= 1)
 				mRollbackIndex.read();
@@ -893,19 +898,13 @@ public class LogFile
 		try
 		{
 			// Calculate the amount of space there is availble to extend into
-			long availableSpace = 0;
+			long availableSpace = session.Padding;
+			
 			HoleEntry hole = mHoleIndex.getHoleAfter(session.Location + session.TotalSize);
 			if(hole != null)
-			{
-				if(hole.AttachedTo != null && hole.AttachedTo != session)
-					hole = null;
-				else
-					availableSpace = hole.Size;
-			}
+				availableSpace += hole.Size;
 			
-			// Check if this is at the end of the file
-			if(session.Location + session.TotalSize == mFile.length())
-				availableSpace = Long.MAX_VALUE;
+			// Removed getting as much space as they like when at the end of the file. This was actually quite bad allowing single sessions to become extremely large 
 			
 			Debug.fine("*Avaiable Space: " + availableSpace);
 			
@@ -977,17 +976,27 @@ public class LogFile
 				// ensure i havent messed up the implementation of getSize()
 				Debug.loggedAssert(totalSize == bstream.size(), "Get size returned bad size");
 				
-				// Write it into the file
-				mFile.seek(session.Location + session.TotalSize);
-				Debug.finest("*Writing from %X -> %X", session.Location + session.TotalSize, session.Location + session.TotalSize + bstream.size()-1);
+				// Work out where to write from and how much padding will be left
+				long startLocation = session.Location + session.TotalSize - session.Padding;
+				long oldPadding = session.Padding;
 				
+				long temp = Math.min(session.Padding, totalSize);
+				session.Padding -= temp;
+				totalSize -= temp;
+				
+				// Consume the space before we write it
+				if(session.Padding == 0)
+				{
+					mSpaceLocator.consumeSpace(startLocation + oldPadding,totalSize);
+					session.TotalSize += totalSize;
+				}
+				
+				// Write it into the file
+				mFile.seek(startLocation);
+				Debug.finest("*Writing from %X -> %X", startLocation, startLocation + bstream.size()-1);
 				mFile.write(bstream.toByteArray());
 	
-				// Consume the space
-				mSpaceLocator.consumeSpace(session.Location + session.TotalSize,bstream.size(), session);
-				
 				// Update the session info
-				session.TotalSize += bstream.size();
 				session.EndTimestamp = records.getEndTimestamp();
 				session.RecordCount += records.size();
 				mSessionIndex.set(mSessionIndex.indexOf(session), session);
@@ -1004,7 +1013,8 @@ public class LogFile
 				// Finalize the old session by compressing it
 				Debug.info("Found more records to write in new session. Compressing session");
 				
-				byte[] sessionData = new byte[(int)session.TotalSize];
+				byte[] sessionData = new byte[(int)(session.TotalSize - session.Padding)];
+				Debug.finest("Reading %X->%X", session.Location, session.Location + sessionData.length - 1);
 				mFile.seek(session.Location);
 				mFile.readFully(sessionData);
 				
@@ -1014,24 +1024,23 @@ public class LogFile
 				compressor.write(sessionData);
 				compressor.finish();
 				
-				if(ostream.size() < session.TotalSize)
+				if(ostream.size() < (session.TotalSize - session.Padding))
 				{
-					Debug.fine("Compressed to %d from %d. Reduction of %.1f%%", ostream.size(), session.TotalSize, (session.TotalSize-ostream.size()) / (double)session.TotalSize * 100F);
+					Debug.fine("Compressed to %d from %d. Reduction of %.1f%%", ostream.size(), (session.TotalSize - session.Padding), ((session.TotalSize - session.Padding)-ostream.size()) / (double)(session.TotalSize - session.Padding) * 100F);
 					
 					mFile.seek(session.Location);
 					mFile.write(ostream.toByteArray());
 					
-					mSpaceLocator.releaseSpace(session.Location + ostream.size(), session.TotalSize - ostream.size());
+					long oldSize = session.TotalSize;
 					
 					session.TotalSize = ostream.size();
 					session.Compressed = true;
 					
 					mSessionIndex.set(mSessionIndex.indexOf(session), session);
-
-					if(hole != null)
-						hole.AttachedTo = null;
 					
-					pullData(session.Location + ostream.size());
+					mSpaceLocator.releaseSpace(session.Location + ostream.size(), oldSize - ostream.size());
+
+					//pullData(session.Location + ostream.size());
 				}
 				else
 					Debug.fine("Compression cancelled as the result was larger than the original");
@@ -1390,37 +1399,22 @@ public class LogFile
 			session.Location = mSpaceLocator.findFreeSpace(Math.max(session.TotalSize,DesiredMaximumSessionSize));
 		
 			// Write the session
-			if(session.Location == mHoleIndex.getEndOfFile())
-			{
-				// Append to the file
-				Debug.finest(" Writing session %d to %X -> %X", session.Id, session.Location, session.Location + bstream.size() - 1);
-				
-				mFile.seek(session.Location);
-				mFile.write(bstream.toByteArray());
-				Debug.finest(" done");
-				// Keep some space for fast appends
-				if(session.TotalSize < DesiredMaximumSessionSize)
-				{
-					HoleEntry hole = new HoleEntry();
-					
-					hole.Location = mFile.getFilePointer();
-					hole.Size = DesiredMaximumSessionSize - session.TotalSize;
-					hole.AttachedTo = session;
-					mFile.seek(hole.Location + hole.Size - 1);
-					//for(long i = 0; i < hole.Size; i++)
-					mFile.writeByte(0);
-					
-					mHoleIndex.add(hole);
-				}
-			}
-			else
-			{
-				// Write it in the hole
-				mFile.seek(session.Location);
-				Debug.finest(" Writing session %d to %X -> %X", session.Id, session.Location, session.Location + bstream.size() - 1);
-				mFile.write(bstream.toByteArray());
-			}
+			Debug.finest(" Writing session %d to %X -> %X", session.Id, session.Location, session.Location + bstream.size() - 1);
 			
+			mFile.seek(session.Location);
+			mFile.write(bstream.toByteArray());
+			Debug.finest(" adding padding");
+			// Keep some space for fast appends
+			session.Padding = Math.max(0, DesiredMaximumSessionSize - session.TotalSize);
+			session.TotalSize += session.Padding;
+			
+			if(session.Padding > 0)
+			{
+				// This is for incase this is at the end of the file 
+				mFile.seek(session.Location + session.TotalSize - 1);
+				mFile.writeByte(0);
+			}
+
 			mSpaceLocator.consumeSpace(session.Location, session.TotalSize);
 			
 			// Write the index entry
@@ -1646,12 +1640,6 @@ public class LogFile
 		// TODO: Remove the recursion here
 		if(holeData != null)
 		{
-			if(holeData.AttachedTo != null)
-			{
-				Debug.finest("Skipping over reserved space from %X -> %X attached to %d", holeData.Location, holeData.Location + holeData.Size - 1, holeData.AttachedTo.Id);
-				pullData(holeData.Location + holeData.Size);
-			}
-			
 			// Find what data needs to be pulled
 			nextLocation = holeData.Location + holeData.Size;
 			int type = 0;
@@ -1784,96 +1772,77 @@ public class LogFile
 	
 	private short[] getRolledBackRecords(SessionEntry session) throws IOException
 	{
-		if(mRollbackIndex.getRollbackEntryById(session.Id) == null)
+		RollbackEntry entry = mRollbackIndex.getRollbackEntryById(session.Id);
+		if(entry == null)
 			return new short[0];
 		
-		RollbackData list = getRollbackDetail(mRollbackIndex.getRollbackEntryById(session.Id));
-		if(list != null)
-			return list.items;
-		return new short[0];
-	}
-	
-	private RollbackData getRollbackDetail(RollbackEntry entry) throws IOException
-	{
-		if(entry.detailSize == 0)
-			return null;
-		
 		mFile.seek(entry.detailLocation);
+		short[] data = new short[entry.count];
+		for(int i = 0; i < entry.count; ++i)
+			data[i] = mFile.readShort();
 		
-		RollbackData list = new RollbackData(entry);
-		list.read(mFile);
-		
-		return list;
+		return data;
 	}
 	
-	private void updateDetail(RollbackEntry entry, RollbackData detail, List<Short> newList) throws IOException
+	private void updateDetail(RollbackEntry entry, List<Short> newList) throws IOException
 	{
-		int diff = newList.size() - detail.items.length;
+		Debug.fine("Updaing rollback detail for %d", entry.sessionId);
+		
+		int diff = newList.size() - entry.count;
 		if(diff < 0)
 		{
-			
+			Debug.finer("Losing %d entries", diff);
+			throw new NotImplementedException();
 		}
 		else if(diff > 0)
 		{
-			int startIndex = 0;
-			boolean isNew = entry.detailSize == 0;
+			Debug.finer("Gaining %d entries", diff);
+			long availableSpace = entry.padding;
+			availableSpace += mSpaceLocator.getFreeSpace(entry.detailLocation + entry.detailSize);
 			
-			// Consume padding if there is any
-			if(detail.padding >= 2 && !isNew)
-			{
-				int count = detail.padding / 2;
-				count = Math.min(count, diff);
-				
-				detail.padding -= count * 2;
-				short[] tempList = new short[detail.items.length + count];
-				for(int i = 0; i < tempList.length; ++i)
-					tempList[i] = newList.get(i);
-				startIndex = tempList.length;
-				
-				detail.items = tempList;
-				
-				mFile.seek(entry.detailLocation);
-				detail.write(mFile);
-				
-				Debug.finest("Rollback detail expanded by %d into padding. Location is unchanged: %X -> %X", count * 2, entry.detailLocation, entry.detailLocation + entry.detailSize - 1);
-			}
+			Debug.finer("*Avaiable Space: " + availableSpace);
 			
-			if(startIndex == newList.size())
-				return;
+			long newSize = newList.size() * 2;
+			long oldSize = entry.detailSize - entry.padding;
 			
-			long oldSize = detail.getSize();
-			
-			// Copy the whole thing across
-			short[] tempList = new short[newList.size()];
-			for(int i = 0; i < tempList.length; ++i)
-				tempList[i] = newList.get(i);
-			detail.items = tempList;
-			
-			if(mSpaceLocator.isFreeSpace(entry.detailLocation + oldSize, detail.getSize() - oldSize))
+			if(newSize <= availableSpace)
 			{
 				mFile.seek(entry.detailLocation);
-				detail.write(mFile);
+				for(Short index : newList)
+					mFile.writeShort(index);
 				
-				entry.detailSize = detail.getSize();
+				// Work out how much padding will be left
+				newSize -= oldSize;
+				long temp = Math.min(entry.padding, newSize);
+				entry.padding -= temp;
+				newSize -= temp;
+				
+				if(entry.padding == 0)
+				{
+					// There is a hole to consume
+					mSpaceLocator.consumeSpace(entry.detailLocation + entry.detailSize, newSize);
+				}
+				
+				entry.detailSize += newSize;
 				mRollbackIndex.set(mRollbackIndex.indexOf(entry), entry);
 				
-				// Consume the hole
-				mSpaceLocator.consumeSpace(entry.detailLocation + oldSize, detail.getSize() - oldSize);
-				Debug.finest("Rollback detail expanded by %d. Location is now: %X -> %X", diff * 2, entry.detailLocation, entry.detailLocation + entry.detailSize - 1);
+				Debug.finest("Rollback detail expanded to %X -> %X", entry.detailLocation, entry.detailLocation + entry.detailSize - 1);
 			}
 			else
 			{
+				// Relocate it
 				long oldLocation = entry.detailLocation;
 				oldSize = entry.detailSize;
 				
-				if(detail.padding < 8)
-					detail.padding = 8;
+				// Reset the padding
+				entry.padding = 8;
 				
-				entry.detailSize = detail.getSize();
+				entry.detailSize = newSize;
 				entry.detailLocation = mSpaceLocator.findFreeSpace(entry.detailSize);
 				
 				mFile.seek(entry.detailLocation);
-				detail.write(mFile);
+				for(Short index : newList)
+					mFile.writeShort(index);
 				
 				// Update rollback entry
 				mRollbackIndex.set(mRollbackIndex.indexOf(entry), entry);
@@ -1904,13 +1873,9 @@ public class LogFile
 				entry.sessionId = session.Id;
 				mRollbackIndex.add(entry);
 			}
-
-			// Get the existing detail
-			RollbackData list = getRollbackDetail(entry);
 			
-			if(list == null)
-				list = new RollbackData(entry);
-
+			short[] existing = getRolledBackRecords(session);
+			
 			// Modify the detail
 			boolean[] add = new boolean[indices.size()];
 			boolean[] remove = new boolean[indices.size()];
@@ -1919,9 +1884,9 @@ public class LogFile
 			{
 				add[ind] = true;
 				remove[ind] = false;
-				for(int i = 0; i < list.items.length; ++i)
+				for(int i = 0; i < existing.length; ++i)
 				{
-					if(list.items[i] == (short)indices.get(ind))
+					if(existing[i] == (short)indices.get(ind))
 					{
 						add[ind] = false;
 						if(!state)
@@ -1934,9 +1899,9 @@ public class LogFile
 				}
 			}
 			
-			ArrayList<Short> newList = new ArrayList<Short>(list.items.length);
-			for(int i = 0; i < list.items.length; ++i)
-				newList.add(list.items[i]);
+			ArrayList<Short> newList = new ArrayList<Short>(existing.length);
+			for(int i = 0; i < existing.length; ++i)
+				newList.add(existing[i]);
 			
 			for(int i = 0; i < indices.size(); ++i)
 			{
@@ -1946,7 +1911,7 @@ public class LogFile
 					newList.add(indices.get(i));
 			}
 			
-			updateDetail(entry, list, newList);
+			updateDetail(entry, newList);
 		}
 		finally
 		{
@@ -1968,8 +1933,8 @@ public class LogFile
 		}
 		catch(Exception e)
 		{
+			Debug.logException(e);
 			mFile.rollback();
-			throw e;
 		}
 		finally
 		{
@@ -1977,6 +1942,68 @@ public class LogFile
 		}
 	}
 
+	public List<IData<?>> getAllData()
+	{
+		TreeMap<Long, IData<?>> data = new TreeMap<Long, IData<?>>(); 
+		
+		data.put(0L, mHeader);
+		
+		for(Index<?> index : mIndexs)
+			data.put(index.getLocation(), index);
+		
+		for(SessionEntry entry : mSessionIndex)
+		{
+			IData<?> d = mSessionIndex.getDataFor(entry);
+			if(d.getSize() == 0)
+				continue;
+			data.put(d.getLocation(), d);
+		}
+		
+		for(HoleEntry entry : mHoleIndex)
+		{
+			IData<?> d = mHoleIndex.getDataFor(entry);
+			if(d.getSize() == 0)
+				continue;
+			data.put(d.getLocation(), d);
+		}
+		
+		for(RollbackEntry entry : mRollbackIndex)
+		{
+			IData<?> d = mRollbackIndex.getDataFor(entry);
+			if(d.getSize() == 0)
+				continue;
+			data.put(d.getLocation(), d);
+		}
+		
+		return new ArrayList<IData<?>>(data.values());
+	}
+	
+	/**
+	 * Debugging method used to check whether a space is really free, instead of believing what the hole index says
+	 */
+	public void checkSpaceStatus(long location, long size, boolean free)
+	{
+		List<IData<?>> data = getAllData();
+		
+		for(IData<?> item : data)
+		{
+			if(item instanceof HoleData)
+				continue;
+			
+			if((location >= item.getLocation() && location < item.getLocation() + item.getSize()) ||
+				(location + size > item.getLocation() && location + size < item.getLocation() + item.getSize()) ||
+				(location < item.getLocation() && location + size > item.getLocation() + item.getSize()))
+			{
+				if(free)
+					throw new RuntimeException(String.format("Holes indicate that this section is free. But absolute scan says othewise. Location: %X->%X. Space occupied by %s from %X->%X", location, location + size - 1, item.getClass().getSimpleName(), item.getLocation(), item.getLocation() + item.getSize()-1));
+				else
+					return;
+			}
+		}
+		
+		if(!free)
+			throw new RuntimeException(String.format("Holes indicate that this section is not free. But absolute scan says othewise. Location: %X->%X", location, location + size - 1));
+	}
 	/**
 	 *  Gets the name of the player whose activities are recorded here
 	 */
@@ -2002,6 +2029,8 @@ public class LogFile
 	private boolean mIsClosing = false;
 	private int mTimeoutId = -1;
 	private String mPlayerName;
+	
+	private Index<?>[] mIndexs;
 
 	SessionIndex mSessionIndex;
 	HoleIndex mHoleIndex;

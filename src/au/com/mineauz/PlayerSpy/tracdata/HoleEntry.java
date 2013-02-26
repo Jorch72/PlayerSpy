@@ -13,8 +13,6 @@ public class HoleEntry extends IndexEntry
 	// The size of the hole
 	public long Size;
 	
-	public SessionEntry AttachedTo;
-	
 	public void write(RandomAccessFile file) throws IOException
 	{
 		file.writeInt((int)Location);

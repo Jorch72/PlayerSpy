@@ -5,7 +5,7 @@ import java.io.RandomAccessFile;
 
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
-public class FileHeader
+public class FileHeader implements IData<IndexEntry>
 {
 	public byte VersionMajor = 3;
 	public byte VersionMinor = 1;
@@ -102,7 +102,7 @@ public class FileHeader
 			file.readFully(new byte[14]);
 	}
 	
-	public int getSize()
+	public long getSize()
 	{
 		if(VersionMajor == 1)
 			return 24 + Utility.getUTFLength(PlayerName);
@@ -110,5 +110,17 @@ public class FileHeader
 			return 49 +  + Utility.getUTFLength(PlayerName);
 		else
 			throw new IllegalArgumentException("Invalid Version " + VersionMajor);
+	}
+	
+	@Override
+	public long getLocation()
+	{
+		return 0;
+	}
+	
+	@Override
+	public IndexEntry getIndexEntry()
+	{
+		return null;
 	}
 }

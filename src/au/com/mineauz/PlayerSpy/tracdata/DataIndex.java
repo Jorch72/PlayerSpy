@@ -6,7 +6,7 @@ import java.io.RandomAccessFile;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 
-public abstract class DataIndex<T extends IndexEntry, Y extends IData<T>> extends Index<T>
+public abstract class DataIndex<T extends IndexEntry, Y extends IMovableData<T>> extends Index<T>
 {
 	public DataIndex( LogFile log, FileHeader header, RandomAccessFile file, SpaceLocator locator )
 	{

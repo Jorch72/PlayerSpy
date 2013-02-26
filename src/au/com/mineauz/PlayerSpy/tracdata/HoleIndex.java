@@ -104,11 +104,6 @@ public class HoleIndex extends DataIndex<HoleEntry, HoleData>
 			merged.Size = Math.max(b.Size, (a.Location - b.Location) + a.Size);
 		}
 		
-		if(a.AttachedTo != null)
-			merged.AttachedTo = a.AttachedTo;
-		if(b.AttachedTo != null)
-			merged.AttachedTo = b.AttachedTo;
-		
 		return merged;
 	}
 	
@@ -132,6 +127,8 @@ public class HoleIndex extends DataIndex<HoleEntry, HoleData>
 	{
 		if(entry.Size == 0)
 			return -1;
+		
+		Debug.finer("Adding hole from %X->%X", entry.Location, entry.Location + entry.Size - 1);
 		
 		// Check if we need to merge it
 		for(int i = 0; i < mElements.size(); i++)
@@ -234,7 +231,7 @@ public class HoleIndex extends DataIndex<HoleEntry, HoleData>
 
 			Debug.finest("Moving hole index from %X to (%X -> %X) setting %d bytes padding", oldLocation, getLocation(), getLocation() + getSize() - 1, mHeader.HolesIndexPadding);
 			
-			mLocator.consumeSpace(newLocation, newSize);
+			mLocator.consumeSpace(newLocation, newSize + mHeader.HolesIndexPadding);
 		}
 		
 		mFile.seek(0);
@@ -270,20 +267,12 @@ public class HoleIndex extends DataIndex<HoleEntry, HoleData>
 		
 		return null;
 	}
-
-	public void applyReservations( SessionIndex sessionIndex )
+	
+	@Override
+	public void set( int index, HoleEntry entry ) throws IOException
 	{
-		for(SessionEntry session : sessionIndex)
-		{
-			for(HoleEntry hole : mElements)
-			{
-				if(hole.Location == session.Location + session.TotalSize)
-				{
-					hole.AttachedTo = session;
-					break;
-				}
-			}
-		}
+		super.set(index, entry);
+		Debug.fine("Set hole @%d range to %X->%X", index, entry.Location, entry.Location + entry.Size - 1);
 	}
 
 	@Override

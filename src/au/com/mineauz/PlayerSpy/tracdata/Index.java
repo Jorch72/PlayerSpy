@@ -12,7 +12,7 @@ import com.google.common.collect.UnmodifiableIterator;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 
-public abstract class Index<T extends IndexEntry> implements Iterable<T>
+public abstract class Index<T extends IndexEntry> implements Iterable<T>, IData<IndexEntry>
 {
 	protected final FileHeader mHeader;
 	protected final RandomAccessFile mFile;
@@ -272,5 +272,11 @@ public abstract class Index<T extends IndexEntry> implements Iterable<T>
 	public int indexOf(T entry)
 	{
 		return mElements.indexOf(entry);
+	}
+	
+	@Override
+	public IndexEntry getIndexEntry()
+	{
+		return null;
 	}
 }

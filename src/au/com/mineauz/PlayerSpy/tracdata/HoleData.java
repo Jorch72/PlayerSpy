@@ -1,6 +1,6 @@
 package au.com.mineauz.PlayerSpy.tracdata;
 
-public class HoleData implements IData<HoleEntry>
+public class HoleData implements IMovableData<HoleEntry>
 {
 	private final HoleEntry mHole;
 	
