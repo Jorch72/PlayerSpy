@@ -5,7 +5,7 @@ import java.io.RandomAccessFile;
 
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 
-public class HoleIndex extends Index<HoleEntry>
+public class HoleIndex extends DataIndex<HoleEntry, HoleData>
 {
 
 	public HoleIndex( LogFile log, FileHeader header, RandomAccessFile file, SpaceLocator locator )
@@ -284,5 +284,11 @@ public class HoleIndex extends Index<HoleEntry>
 				}
 			}
 		}
+	}
+
+	@Override
+	protected HoleData createNewDataElement( HoleEntry entry )
+	{
+		return new HoleData(entry);
 	}
 }

@@ -5,7 +5,7 @@ import java.io.RandomAccessFile;
 import java.util.HashMap;
 
 
-public class RollbackIndex extends Index<RollbackEntry>
+public class RollbackIndex extends DataIndex<RollbackEntry, RollbackData>
 {
 	private HashMap<Integer,Integer> mRollbackMap = new HashMap<Integer, Integer>();
 	
@@ -131,5 +131,11 @@ public class RollbackIndex extends Index<RollbackEntry>
 			return get(mRollbackMap.get(id));
 		
 		return null;
+	}
+	
+	@Override
+	protected RollbackData createNewDataElement( RollbackEntry entry )
+	{
+		return new RollbackData(entry);
 	}
 }

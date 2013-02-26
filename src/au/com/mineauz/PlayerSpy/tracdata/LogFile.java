@@ -1787,26 +1787,26 @@ public class LogFile
 		if(mRollbackIndex.getRollbackEntryById(session.Id) == null)
 			return new short[0];
 		
-		RollbackListEntry list = getRollbackDetail(mRollbackIndex.getRollbackEntryById(session.Id));
+		RollbackData list = getRollbackDetail(mRollbackIndex.getRollbackEntryById(session.Id));
 		if(list != null)
 			return list.items;
 		return new short[0];
 	}
 	
-	private RollbackListEntry getRollbackDetail(RollbackEntry entry) throws IOException
+	private RollbackData getRollbackDetail(RollbackEntry entry) throws IOException
 	{
 		if(entry.detailSize == 0)
 			return null;
 		
 		mFile.seek(entry.detailLocation);
 		
-		RollbackListEntry list = new RollbackListEntry();
+		RollbackData list = new RollbackData(entry);
 		list.read(mFile);
 		
 		return list;
 	}
 	
-	private void updateDetail(RollbackEntry entry, RollbackListEntry detail, List<Short> newList) throws IOException
+	private void updateDetail(RollbackEntry entry, RollbackData detail, List<Short> newList) throws IOException
 	{
 		int diff = newList.size() - detail.items.length;
 		if(diff < 0)
@@ -1906,10 +1906,10 @@ public class LogFile
 			}
 
 			// Get the existing detail
-			RollbackListEntry list = getRollbackDetail(entry);
+			RollbackData list = getRollbackDetail(entry);
 			
 			if(list == null)
-				list = new RollbackListEntry();
+				list = new RollbackData(entry);
 
 			// Modify the detail
 			boolean[] add = new boolean[indices.size()];

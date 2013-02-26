@@ -6,7 +6,7 @@ import java.util.HashMap;
 
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 
-public class SessionIndex extends Index<SessionEntry>
+public class SessionIndex extends DataIndex<SessionEntry, SessionData>
 {
 	private static int NextId = (int)(System.currentTimeMillis() / 1000);
 	private HashMap<Integer, Integer> mSessionMap = new HashMap<Integer, Integer>();
@@ -176,5 +176,11 @@ public class SessionIndex extends Index<SessionEntry>
 			mActiveSessions.remove(ownerTag);
 		else
 			mActiveSessions.put(ownerTag, session.Id);
+	}
+
+	@Override
+	protected SessionData createNewDataElement( SessionEntry entry )
+	{
+		return new SessionData(entry);
 	}
 }

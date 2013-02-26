@@ -103,7 +103,11 @@ public class SpaceLocator
 					// It covers the start of the hole
 					entry.Size = (entry.Location + entry.Size) - (location + size);
 					entry.Location += size;
-					mIndex.set(hole, entry);
+					
+					if(entry.Size > 0)
+						mIndex.set(hole, entry);
+					else
+						mIndex.remove(hole);
 				}
 			}
 			else

@@ -3,8 +3,21 @@ package au.com.mineauz.PlayerSpy.tracdata;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-public class RollbackListEntry
+public class RollbackData implements IData<RollbackEntry>
 {
+	private final RollbackEntry mRollbackEntry;
+	
+	public RollbackData(RollbackEntry entry)
+	{
+		mRollbackEntry = entry;
+	}
+	
+	@Override
+	public RollbackEntry getIndexEntry()
+	{
+		return mRollbackEntry;
+	}
+	
 	public short[] items = new short[0];
 	public short padding = 8;
 	
@@ -30,8 +43,19 @@ public class RollbackListEntry
 			items[i] = input.readShort();
 	}
 	
-	public int getSize()
+	public long getSize()
 	{
 		return 4 + padding + items.length * 2;
+	}
+	
+	@Override
+	public long getLocation()
+	{
+		return mRollbackEntry.detailLocation;
+	}
+	@Override
+	public void setLocation( long newLocation )
+	{
+		mRollbackEntry.detailLocation = newLocation;
 	}
 }
