@@ -130,6 +130,14 @@ public class HoleIndex extends DataIndex<HoleEntry, HoleData>
 		
 		Debug.finer("Adding hole from %X->%X", entry.Location, entry.Location + entry.Size - 1);
 		
+		// Prevent holes from being added at eof
+		if(entry.Location + entry.Size == getEndOfFile())
+		{
+			mFile.setLength(entry.Location);
+			Debug.finer("Hole was at EOF, shrinking file to %X", getEndOfFile());
+			return mElements.size();
+		}
+		
 		// Check if we need to merge it
 		for(int i = 0; i < mElements.size(); i++)
 		{
@@ -145,7 +153,7 @@ public class HoleIndex extends DataIndex<HoleEntry, HoleData>
 				
 				Debug.finest("Merging new hole into @%d changing range from (%X->%X) into (%X->%X)", i, existing.Location, existing.Location + existing.Size-1,newHole.Location, newHole.Location + newHole.Size-1);
 				
-				return -1;
+				return i;
 			}
 		}
 		

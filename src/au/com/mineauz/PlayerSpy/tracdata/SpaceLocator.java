@@ -23,7 +23,7 @@ public class SpaceLocator
 		int i = 0;
 		for(HoleEntry hole : mIndex)
 		{
-			if(hole.Location <= location && hole.Location + hole.Size >= location)
+			if(hole.Location <= location && hole.Location + hole.Size > location)
 				return i;
 			else if(hole.Location + hole.Size > location)
 				return -1;
@@ -84,7 +84,7 @@ public class SpaceLocator
 			
 			if(location == entry.Location)
 			{
-				if(size == entry.Size)
+				if(location + size >= entry.Location + entry.Size)
 				{
 					// It completely covers the hole
 					mIndex.remove(hole);
@@ -103,11 +103,10 @@ public class SpaceLocator
 			}
 			else
 			{
-				if(location + size == entry.Location + entry.Size)
+				if(location + size >= entry.Location + entry.Size)
 				{
 					// It covers the end of the hole
 					entry.Size = (location - entry.Location);
-					entry.Location = location;
 					
 					mIndex.set(hole, entry);
 				}
