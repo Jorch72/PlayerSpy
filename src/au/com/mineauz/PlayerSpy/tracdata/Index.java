@@ -154,8 +154,8 @@ public abstract class Index<T extends IndexEntry> implements Iterable<T>, IData<
 			
 			Debug.finest(getIndexName() + " relocated from %X -> (%X->%X)", oldLocation, newLocation, newLocation + newSize - 1);
 			
-			mLocator.releaseSpace(oldLocation, oldSize);
 			mLocator.consumeSpace(newLocation, newSize);
+			mLocator.releaseSpace(oldLocation, oldSize);
 		}
 		
 		// Save the header

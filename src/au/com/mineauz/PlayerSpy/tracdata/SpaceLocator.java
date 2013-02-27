@@ -44,8 +44,6 @@ public class SpaceLocator
 			mLog.checkSpaceStatus(entry.Location, entry.Size, true);
 			return entry.Size;
 		}
-		else
-			mLog.checkSpaceStatus(location, 1, false);
 		
 		if(location == mIndex.getEndOfFile())
 			return Long.MAX_VALUE;

@@ -1183,6 +1183,8 @@ public class LogFile
 			{
 				Debug.logException(e);
 				mFile.rollback();
+				
+				readIndexes();
 				result = false;
 			}
 			finally
@@ -1276,6 +1278,8 @@ public class LogFile
 			{
 				Debug.logException(e);
 				mFile.rollback();
+				
+				readIndexes();
 				result = false;
 			}
 			finally
@@ -1612,12 +1616,16 @@ public class LogFile
 				Debug.logException(e);
 				result = false;
 				mFile.rollback();
+				
+				readIndexes();
 			}
 			catch(Exception e)
 			{
 				Debug.logException(e);
 				result = false;
 				mFile.rollback();
+				
+				readIndexes();
 			}
 			finally
 			{
@@ -1920,7 +1928,7 @@ public class LogFile
 			Profiler.endTimingSection();
 		}
 	}
-	public void setRollbackState(SessionEntry session, List<Short> indices, boolean state) throws IOException
+	public void setRollbackState(SessionEntry session, List<Short> indices, boolean state)
 	{
 		mLock.writeLock().lock();
 		
@@ -1935,6 +1943,7 @@ public class LogFile
 		{
 			Debug.logException(e);
 			mFile.rollback();
+			readIndexes();
 		}
 		finally
 		{
@@ -2003,6 +2012,34 @@ public class LogFile
 		
 		if(!free)
 			throw new RuntimeException(String.format("Holes indicate that this section is not free. But absolute scan says othewise. Location: %X->%X", location, location + size - 1));
+	}
+	
+	/**
+	 * Remember to call this any time the file is rolled back, otherwise the indexes and header which store stuff in ram too, will be in an inconsistent state
+	 */
+	private void readIndexes()
+	{
+		try
+		{
+			mFile.seek(0);
+			mHeader.read(mFile);
+			
+			// Read the indices
+			mHoleIndex.read();
+			
+			if(mHeader.VersionMajor >= 2)
+				mOwnerTagIndex.read();
+	
+			// So that active sessions are mapped correctly
+			mSessionIndex.read();
+			
+			if(mHeader.VersionMajor >= 3 && mHeader.VersionMinor >= 1)
+				mRollbackIndex.read();
+		}
+		catch(IOException e)
+		{
+			Debug.logException(e);
+		}
 	}
 	/**
 	 *  Gets the name of the player whose activities are recorded here
