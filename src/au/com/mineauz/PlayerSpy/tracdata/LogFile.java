@@ -11,7 +11,6 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import java.io.*;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -1800,7 +1799,24 @@ public class LogFile
 		if(diff < 0)
 		{
 			Debug.finer("Losing %d entries", diff);
-			throw new NotImplementedException();
+			if(newList.size() == 0)
+			{
+				mSpaceLocator.releaseSpace(entry.detailLocation,entry.detailSize);
+				mRollbackIndex.remove(entry);
+			}
+			else
+			{
+				long newSize = newList.size() * 2;
+				long oldSize = entry.detailSize - entry.padding;
+				
+				// Update the entries
+				mFile.seek(entry.detailLocation);
+				for(Short index : newList)
+					mFile.writeShort(index);
+				
+				entry.padding += (oldSize - newSize);
+				Debug.finer("Adding %d bytes of padding", (oldSize - newSize));
+			}
 		}
 		else if(diff > 0)
 		{

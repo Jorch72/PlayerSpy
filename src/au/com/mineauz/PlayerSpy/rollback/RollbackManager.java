@@ -1,6 +1,7 @@
 package au.com.mineauz.PlayerSpy.rollback;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 
@@ -21,6 +22,7 @@ public class RollbackManager
 	public static final RollbackManager instance;
 	
 	private ArrayList<RollbackSession> mSessions = new ArrayList<RollbackSession>();
+	private HashMap<Player, RollbackSession> mLastSessions = new HashMap<Player, RollbackSession>();
 	
 	static
 	{
@@ -59,9 +61,13 @@ public class RollbackManager
 		session.modified = new ArrayList<Record>();
 		
 		mSessions.add(session);
+		if(!session.preview)
+			mLastSessions.put(notifyPlayer, session);
 		
 		if(notifyPlayer != null)
 			notifyPlayer.sendMessage(ChatColor.GOLD + "[PlayerSpy] " + ChatColor.WHITE + " Starting rollback of " + filter.getDescription());
+		else
+			LogUtil.info("Starting rollback of " + filter.getDescription());
 	}
 	
 	/**
@@ -71,6 +77,11 @@ public class RollbackManager
 	public void startRollback(SearchFilter filter)
 	{
 		startRollback(filter, null, false);
+	}
+	
+	public RollbackSession getLastRollbackSessionFor(Player player)
+	{
+		return mLastSessions.get(player);
 	}
 	
 	/**
@@ -96,6 +107,11 @@ public class RollbackManager
 		session.modified = new ArrayList<Record>();
 		
 		mSessions.add(session);
+		
+		if(notifyPlayer != null)
+			notifyPlayer.sendMessage(ChatColor.GOLD + "[PlayerSpy] " + ChatColor.WHITE + " Undoing last rollback");
+		else
+			LogUtil.info("Undoing last rollback");
 	}
 	
 	public void undoRollback(RollbackSession session)

@@ -12,6 +12,7 @@ import org.bukkit.entity.Player;
 import au.com.mineauz.PlayerSpy.Cause;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
 import au.com.mineauz.PlayerSpy.rollback.RollbackManager;
+import au.com.mineauz.PlayerSpy.rollback.RollbackSession;
 import au.com.mineauz.PlayerSpy.search.DateConstraint;
 import au.com.mineauz.PlayerSpy.search.DistanceConstraint;
 import au.com.mineauz.PlayerSpy.search.EndResultOnlyModifier;
@@ -43,7 +44,7 @@ public class RollbackCommand implements ICommand
 	@Override
 	public String getUsageString( String label )
 	{
-		return label + " [c:<cause>] [r:<radius>] [t:<time>]";
+		return label + " [undo|[c:<cause>] [r:<radius>] [t:<time>]]";
 	}
 
 	@Override
@@ -55,6 +56,21 @@ public class RollbackCommand implements ICommand
 	@Override
 	public boolean onCommand( CommandSender sender, String label, String[] args )
 	{
+		if(args.length == 1 && args[0].equalsIgnoreCase("undo"))
+		{
+			Player who = null;
+			if(sender instanceof Player)
+				who = (Player)sender;
+			
+			RollbackSession session = RollbackManager.instance.getLastRollbackSessionFor(who);
+			if(session == null)
+			{
+				sender.sendMessage(ChatColor.RED + "There is nothing to undo");
+				return true;
+			}
+			RollbackManager.instance.undoRollback(session, who);
+			return true;
+		}
 		SearchFilter filter = new SearchFilter();
 		filter.modifiers.add(new EndResultOnlyModifier());
 		filter.noLimit = true;
