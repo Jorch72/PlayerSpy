@@ -32,7 +32,7 @@ public class InspectCommand implements ICommand
 	@Override
 	public String getUsageString(String label) 
 	{
-		return label + ChatColor.GREEN + " [entities] [transactions] [uses] [resultCount]";
+		return label + ChatColor.GREEN + " [entities] [transactions] [uses] [blocks] [resultCount]";
 	}
 
 	@Override
@@ -54,6 +54,7 @@ public class InspectCommand implements ICommand
 		boolean tra = false;
 		boolean use = false;
 		boolean res = false;
+		boolean block = false;
 		
 		for (int i = 0; i < args.length; ++i)
 		{
@@ -65,8 +66,8 @@ public class InspectCommand implements ICommand
 					return true;
 				}
 				
-				if(!ent && !tra && !use)
-					settings.showEntities = settings.showItems = settings.showUse = false;
+				if(!ent && !tra && !use && !block)
+					settings.showEntities = settings.showItems = settings.showUse = settings.showBlocks = false;
 				
 				ent = true;
 				settings.showEntities = true;
@@ -79,8 +80,8 @@ public class InspectCommand implements ICommand
 					return true;
 				}
 				
-				if(!ent && !tra && !use)
-					settings.showEntities = settings.showItems = settings.showUse = false;
+				if(!ent && !tra && !use && !block)
+					settings.showEntities = settings.showItems = settings.showUse = settings.showBlocks = false;
 				
 				tra = true;
 				settings.showItems = true;
@@ -93,11 +94,25 @@ public class InspectCommand implements ICommand
 					return true;
 				}
 				
-				if(!ent && !tra && !use)
-					settings.showEntities = settings.showItems = settings.showUse = false;
+				if(!ent && !tra && !use && !block)
+					settings.showEntities = settings.showItems = settings.showUse = settings.showBlocks = false;
 				
 				use = true;
 				settings.showUse = true;
+			}
+			else if(args[i].equalsIgnoreCase("blocks"))
+			{
+				if(block)
+				{
+					sender.sendMessage(ChatColor.RED + "blocks already specified!");
+					return true;
+				}
+				
+				if(!ent && !tra && !use && !block)
+					settings.showEntities = settings.showItems = settings.showUse = settings.showBlocks = false;
+				
+				block = true;
+				settings.showBlocks = true;
 			}
 			else
 			{
@@ -135,7 +150,7 @@ public class InspectCommand implements ICommand
 		
 		if(Inspector.instance.isInspecting((Player)sender))
 		{
-			if(ent || tra || use || res)
+			if(ent || tra || use || res || block)
 				Inspector.instance.updateInspect((Player)sender, settings);
 			else
 				Inspector.instance.disableInspect((Player)sender);

@@ -8,6 +8,7 @@ public class InspectInfo
 	public boolean showEntities;
 	public boolean showUse;
 	public boolean showItems;
+	public boolean showBlocks;
 	
 	public int itemCount;
 	
@@ -18,5 +19,6 @@ public class InspectInfo
 		showEntities = SpyPlugin.getSettings().inspectEntities;
 		showUse = SpyPlugin.getSettings().inspectUse;
 		showItems = SpyPlugin.getSettings().inspectTransactions;
+		showBlocks = true;
 	}
 }
