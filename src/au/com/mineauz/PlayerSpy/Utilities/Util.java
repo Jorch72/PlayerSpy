@@ -213,6 +213,9 @@ public class Util
 				}
 				else if(m.group(8).equals("current"))
 				{
+					if(current == 0)
+						return 0;
+					
 					time = current;
 				}
 				else if(m.group(8).equals("today"))
@@ -232,10 +235,16 @@ public class Util
 				}
 				else if(m.group(8).equals("start"))
 				{
+					if(start == 0)
+						return 0;
+					
 					time = start;
 				}
 				else if(m.group(8).equals("end"))
 				{
+					if(end == 0)
+						return 0;
+					
 					time = end;
 				}
 			}

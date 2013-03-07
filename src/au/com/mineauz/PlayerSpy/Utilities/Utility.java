@@ -1,5 +1,7 @@
 package au.com.mineauz.PlayerSpy.Utilities;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.text.SimpleDateFormat;
@@ -9,13 +11,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
+import org.bukkit.inventory.PlayerInventory;
 
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.storage.InventorySlot;
+import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftInventoryPlayer;
 import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftItemStack;
 import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftWorld;
 import au.com.mineauz.PlayerSpy.wrappers.minecraft.Entity;
@@ -26,6 +33,9 @@ import au.com.mineauz.PlayerSpy.wrappers.minecraft.ItemPotion;
 import au.com.mineauz.PlayerSpy.wrappers.minecraft.ItemStack;
 import au.com.mineauz.PlayerSpy.wrappers.minecraft.MobEffect;
 import au.com.mineauz.PlayerSpy.wrappers.minecraft.PotionBrewer;
+import au.com.mineauz.PlayerSpy.wrappers.nbt.NBTCompressedStreamTools;
+import au.com.mineauz.PlayerSpy.wrappers.nbt.NBTTagCompound;
+import au.com.mineauz.PlayerSpy.wrappers.nbt.NBTTagList;
 import au.com.mineauz.PlayerSpy.wrappers.packet.Packet23VehicleSpawn;
 import au.com.mineauz.PlayerSpy.wrappers.packet.Packet5EntityEquipment;
 
@@ -430,6 +440,70 @@ public class Utility
 				file.seek(readStart + shiftAmount);
 				file.write(buffer,0,rcount);
 			}
+		}
+	}
+	
+	public static PlayerInventory getOfflinePlayerInventory(OfflinePlayer player)
+	{
+		if(!player.hasPlayedBefore())
+			return null;
+		
+		World sourceWorld = Bukkit.getWorlds().get(0);
+		try
+		{
+			String path = sourceWorld.getName() + "/players/" + player.getName() + ".dat";
+			FileInputStream istream = new FileInputStream(path);
+			NBTTagCompound root = NBTCompressedStreamTools.readCompressed(istream);
+			
+			au.com.mineauz.PlayerSpy.wrappers.minecraft.EntityShadowPlayer shadowPlayer = new au.com.mineauz.PlayerSpy.wrappers.minecraft.EntityShadowPlayer(CraftWorld.castFrom(sourceWorld).getHandle(), player.getName());
+			
+			NBTTagList items = root.getList("Inventory");
+			shadowPlayer.inventory.get().readFromNBT(items);
+			istream.close();
+			
+			CraftInventoryPlayer playerInv = new CraftInventoryPlayer(shadowPlayer.inventory.get());
+			return (PlayerInventory)playerInv.getNativeInstance();
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+			return null;
+		}
+	}
+	public static boolean setOfflinePlayerInventory(OfflinePlayer player, PlayerInventory inventory)
+	{
+		if(!player.hasPlayedBefore())
+			return false;
+		
+		World sourceWorld = Bukkit.getWorlds().get(0);
+		try
+		{
+			// Read it first
+			String path = sourceWorld.getName() + "/players/" + player.getName() + ".dat";
+			FileInputStream stream = new FileInputStream(path);
+			NBTTagCompound root = NBTCompressedStreamTools.readCompressed(stream);
+			stream.close();
+			
+			// Update it
+			NBTTagList items = new NBTTagList("Inventory");
+			CraftInventoryPlayer craftInv = CraftInventoryPlayer.castFrom(inventory);
+			au.com.mineauz.PlayerSpy.wrappers.minecraft.PlayerInventory playerInv = craftInv.getInventory();
+			playerInv.writeToNBT(items);
+			
+			root.set("Inventory", items);
+			
+			// Write it back
+			FileOutputStream ostream = new FileOutputStream(path);
+			NBTCompressedStreamTools.writeCompressed(root, ostream);
+			
+			stream.close();
+
+			return true;
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+			return false;
 		}
 	}
 }

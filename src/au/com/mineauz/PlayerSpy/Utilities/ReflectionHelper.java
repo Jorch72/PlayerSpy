@@ -3,6 +3,7 @@ package au.com.mineauz.PlayerSpy.Utilities;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -24,6 +25,24 @@ public class ReflectionHelper
 		{
 			return null;
 		}
+	}
+	
+	public static Method getInheritedMethod(Class<?> clazz, String name, Class<?> returnType, Class<?>... parameters)
+	{
+		while(clazz != null)
+		{
+			try
+			{
+				Method m = clazz.getDeclaredMethod(name, parameters);
+				if(m.getReturnType().equals(returnType))
+					return m;
+			}
+			catch(Exception e) {}
+			
+			clazz = clazz.getSuperclass();
+		}
+		
+		return null;
 	}
 	
 	/**

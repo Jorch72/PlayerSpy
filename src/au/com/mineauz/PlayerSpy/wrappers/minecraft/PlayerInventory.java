@@ -10,6 +10,7 @@ import au.com.mineauz.PlayerSpy.wrappers.WrapperClass;
 import au.com.mineauz.PlayerSpy.wrappers.WrapperConstructor;
 import au.com.mineauz.PlayerSpy.wrappers.WrapperField;
 import au.com.mineauz.PlayerSpy.wrappers.WrapperMethod;
+import au.com.mineauz.PlayerSpy.wrappers.nbt.NBTTagList;
 
 @WrapperClass("net.minecraft.server.*.PlayerInventory")
 public class PlayerInventory extends AutoWrapper
@@ -94,5 +95,27 @@ public class PlayerInventory extends AutoWrapper
 		
 		Arrays.fill(items, null);
 		Arrays.fill(armor, null);
+	}
+
+	@WrapperMethod(name="b", returnType=Void.class, parameterTypes=NBTTagList.class)
+	private static Method mReadFromNBT;
+	public void readFromNBT( NBTTagList items )
+	{
+		callMethod(mReadFromNBT, items);
+	}
+	
+	@WrapperMethod(name="a", returnType=NBTTagList.class, parameterTypes=NBTTagList.class)
+	private static Method mWriteToNBT;
+	public NBTTagList writeToNBT( NBTTagList items )
+	{
+		return callMethod(mWriteToNBT, items);
+	}
+	
+	public static PlayerInventory castFrom(Object iinventory)
+	{
+		PlayerInventory inv = new PlayerInventory();
+		inv.mInstance = getWrappedClass(PlayerInventory.class).cast(iinventory);
+		
+		return inv;
 	}
 }

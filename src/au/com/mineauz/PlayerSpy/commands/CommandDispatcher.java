@@ -42,6 +42,7 @@ public class CommandDispatcher implements CommandExecutor, TabCompleter
 		registerCommand(new SearchCommand());
 		registerCommand(new ReloadCommand());
 		registerCommand(new RollbackCommand());
+		registerCommand(new InventoryCommand());
 	}
 	/**
 	 * Registers a command to be handled by this dispatcher

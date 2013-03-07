@@ -187,6 +187,9 @@ public abstract class AutoWrapper
 				
 				if(annotation != null)
 				{
+					if(!Modifier.isStatic(field.getModifiers()))
+						throw new WrapperValidationException("Wrapper declaration validation failed: " + thisClass.getName() + ":" + field.getName() + " is not static.");
+					
 					// Swap out this class for the wrapped class
 					Class<?> retType = convert(annotation.returnType());
 
@@ -209,6 +212,9 @@ public abstract class AutoWrapper
 				
 				if(annotation != null)
 				{
+					if(!Modifier.isStatic(field.getModifiers()))
+						throw new WrapperValidationException("Wrapper declaration validation failed: " + thisClass.getName() + ":" + field.getName() + " is not static.");
+					
 					// Swap out this class for the wrapped class
 					Class<?>[] parTypes = annotation.value();
 					for(int i = 0; i < parTypes.length; ++i)

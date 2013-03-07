@@ -36,6 +36,7 @@ public class PreLoadValidator
 			AutoWrapper.initialize(World.class);
 			AutoWrapper.initialize(WorldServer.class);
 			
+			AutoWrapper.initialize(NBTCompressedStreamTools.class);
 			AutoWrapper.initialize(NBTBase.class);
 			AutoWrapper.initialize(NBTTagByte.class);
 			AutoWrapper.initialize(NBTTagCompound.class);

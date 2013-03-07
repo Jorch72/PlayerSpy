@@ -53,3 +53,9 @@ permissions:
   playerspy.restore:
     default: op
     description: Allows a player to restore changes that were undone with rollback
+  playerspy.inventory:
+    default: op
+    description: Allows a player to view another players inventory
+  playerspy.inventory.edit:
+    default: op
+    description: Allows a player to modify another players inventory

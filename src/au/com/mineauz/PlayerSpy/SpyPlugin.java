@@ -66,6 +66,7 @@ public class SpyPlugin extends JavaPlugin
 		
 		//addExistingMonitors();
 		GlobalMonitor.instance.initialize();
+		InventoryViewer.initialize();
 	}
 	public void onDisable()
 	{

@@ -48,4 +48,11 @@ public class NBTTagCompound extends NBTBase
 	{
 		callMethod(mSetMethod, name, tag);
 	}
+	
+	@WrapperMethod(name="getList", returnType=NBTTagList.class, parameterTypes={String.class})
+	private static Method mGetListMethod;
+	public NBTTagList getList(String name)
+	{
+		return callMethod(mGetListMethod, name);
+	}
 }
