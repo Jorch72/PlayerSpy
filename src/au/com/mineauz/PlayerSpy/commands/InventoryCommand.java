@@ -8,10 +8,11 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
 import au.com.mineauz.PlayerSpy.InventoryViewer;
+import au.com.mineauz.PlayerSpy.SpyPlugin;
+import au.com.mineauz.PlayerSpy.LogTasks.DisplayInventoryTask;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
@@ -54,37 +55,13 @@ public class InventoryCommand implements ICommand
 		return false;
 	}
 
-	private void printItem(CommandSender toWho, ItemStack item, String loc)
-	{
-		if(item == null)
-			toWho.sendMessage("    " + loc + ": *empty*");
-		else
-			toWho.sendMessage("    " + loc + ": " + Utility.formatItemName(item) + "x" + item.getAmount());
-	}
+	
 	public void showInventory(CommandSender toWho, Inventory inv, OfflinePlayer offlineOwner, boolean canEdit)
 	{
 		if(toWho instanceof Player)
-		{
 			InventoryViewer.openInventory(inv, (Player)toWho, offlineOwner, canEdit );
-		}
 		else
-		{
-			toWho.sendMessage("Inventory of " + inv.getTitle() + ":");
-			toWho.sendMessage("  Hotbar:");
-			for(int i = 0; i < 9; ++i)
-				printItem(toWho, inv.getItem(i), "" + i);
-
-			toWho.sendMessage("");
-			toWho.sendMessage("  Main Inventory:");
-			for(int i = 9; i < 36; ++i)
-				printItem(toWho, inv.getItem(i), String.format("%d,%d", (i-9)%9, (i-9)/9));
-			
-			toWho.sendMessage("  Armour:");
-			printItem(toWho, inv.getItem(36), "Helmet");
-			printItem(toWho, inv.getItem(37), "Chestplate");
-			printItem(toWho, inv.getItem(38), "Leggings");
-			printItem(toWho, inv.getItem(39), "Boots");
-		}
+			InventoryViewer.printInventory(inv, toWho);
 	}
 	@Override
 	public boolean onCommand( CommandSender sender, String label, String[] args )
@@ -139,9 +116,15 @@ public class InventoryCommand implements ICommand
 		}
 		else
 		{
-			sender.sendMessage("Not yet implemented");
-			return true;
-			// TODO: implement this
+			OfflinePlayer oPlayer = Bukkit.getOfflinePlayer(playerName);
+			
+			if(!oPlayer.hasPlayedBefore())
+			{
+				sender.sendMessage(ChatColor.RED + "Unknown player: " + playerName);
+				return true;
+			}
+			
+			SpyPlugin.getExecutor().submit(new DisplayInventoryTask(oPlayer, sender, date));
 		}
 		
 		return true;
