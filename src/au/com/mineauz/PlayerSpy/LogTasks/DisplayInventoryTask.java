@@ -69,9 +69,9 @@ public class DisplayInventoryTask implements Task<Void>
 		
 		ItemStack[] inv = Arrays.copyOf(currentInventory.getItems(), 40);
 		for(int i = 0; i < 4; ++i)
-			inv[36+i] = currentInventory.getArmour()[i];
+			inv[36+i] = currentInventory.getArmour()[3-i];
 		
-		inventory.setContents(currentInventory.getItems());
+		inventory.setContents(inv);
 		
 		// Display it
 		if(mSender instanceof Player)

@@ -7,6 +7,11 @@ import java.io.IOException;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.BrewingStand;
+import org.bukkit.block.Chest;
+import org.bukkit.block.Dispenser;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -18,6 +23,7 @@ import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.storage.StoredBlock;
 import au.com.mineauz.PlayerSpy.storage.StoredItemStack;
 import au.com.mineauz.PlayerSpy.storage.StoredInventoryInformation;
 import au.com.mineauz.PlayerSpy.storage.StoredInventoryInformation.InventoryType;
@@ -148,7 +154,9 @@ public class InventoryTransactionRecord extends Record implements IRollbackable,
 	@Override
 	public boolean canBeRolledBack()
 	{
-		return true;
+		if(mInvInfo.getType() == InventoryType.Chest || mInvInfo.getType() == InventoryType.Enderchest)
+			return true;
+		return false;
 	}
 	@Override
 	public boolean wasRolledBack()
@@ -158,13 +166,76 @@ public class InventoryTransactionRecord extends Record implements IRollbackable,
 	@Override
 	public boolean rollback( boolean preview, Player previewTarget )
 	{
-		// TODO Auto-generated method stub
+		if(preview)
+			return false;
+		
+		if(!canBeRolledBack())
+			return false;
+		
+		if(mInvInfo.getBlock() != null)
+		{
+			StoredBlock block = mInvInfo.getBlock();
+			Block current = block.getLocation().getBlock();
+			Inventory dest = null;
+			if(current.getType() == block.getType())
+			{
+				BlockState state = current.getState();
+				if(state instanceof Chest)
+					dest = ((Chest)state).getBlockInventory();
+				else if(state instanceof Dispenser)
+					dest = ((Dispenser)state).getInventory();
+				else if(state instanceof BrewingStand)
+					dest = ((BrewingStand)state).getInventory();
+			}
+			
+			if(dest == null)
+				return false;
+			
+			if(mTake)
+				dest.addItem(mItem);
+			else
+				dest.removeItem(mItem);
+			
+			mIsRolledBack = true;
+			return true;
+		}
+		
 		return false;
 	}
 	@Override
 	public boolean restore()
 	{
-		// TODO Auto-generated method stub
+		if(!canBeRolledBack())
+			return false;
+		
+		if(mInvInfo.getBlock() != null)
+		{
+			StoredBlock block = mInvInfo.getBlock();
+			Block current = block.getLocation().getBlock();
+			Inventory dest = null;
+			if(current.getType() == block.getType())
+			{
+				BlockState state = current.getState();
+				if(state instanceof Chest)
+					dest = ((Chest)state).getBlockInventory();
+				else if(state instanceof Dispenser)
+					dest = ((Dispenser)state).getInventory();
+				else if(state instanceof BrewingStand)
+					dest = ((BrewingStand)state).getInventory();
+			}
+			
+			if(dest == null)
+				return false;
+			
+			if(mTake)
+				dest.removeItem(mItem);
+			else
+				dest.addItem(mItem);
+			
+			mIsRolledBack = false;
+			return true;
+		}
+		
 		return false;
 	}
 	@Override
