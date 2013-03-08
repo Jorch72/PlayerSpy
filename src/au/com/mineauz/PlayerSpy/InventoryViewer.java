@@ -1,5 +1,6 @@
 package au.com.mineauz.PlayerSpy;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.bukkit.Bukkit;
@@ -17,6 +18,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
+import au.com.mineauz.PlayerSpy.storage.InventorySlot;
 
 public class InventoryViewer
 {
@@ -38,6 +41,8 @@ public class InventoryViewer
 		
 		mOpenInventories.put(viewer, state);
 		
+		if(offlineOwner != null)
+			GlobalMonitor.instance.getItemFlowTracker().recordInventoryState(inventory);
 		viewer.openInventory(inventory);
 	}
 	
@@ -104,6 +109,9 @@ public class InventoryViewer
 						onlinePlayer.getInventory().setContents(state.inventory.getContents());
 					else
 						Utility.setOfflinePlayerInventory(state.offlineOwner, (PlayerInventory)state.inventory);
+					
+					ArrayList<InventorySlot> changes = GlobalMonitor.instance.getItemFlowTracker().detectChanges(state.inventory, false);
+					GlobalMonitor.instance.getItemFlowTracker().recordInventoryChanges(state.inventory, changes);
 				}
 				mOpenInventories.remove(event.getPlayer());
 			}

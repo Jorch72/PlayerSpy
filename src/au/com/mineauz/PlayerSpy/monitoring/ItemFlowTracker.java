@@ -23,6 +23,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
+import au.com.mineauz.PlayerSpy.Cause;
+import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
@@ -422,6 +424,11 @@ public class ItemFlowTracker implements Listener
 					mon.logRecord(new UpdateInventoryRecord(changes));
 					handled = true;
 				}
+			}
+			else
+			{
+				LogUtil.info("Logging inventory changes to " + holder.getName());
+				GlobalMonitor.instance.logRecord(new UpdateInventoryRecord(changes), Cause.playerCause(Bukkit.getOfflinePlayer(holder.getName())), null);
 			}
 		}
 		

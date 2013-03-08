@@ -1247,4 +1247,8 @@ public class GlobalMonitor implements Listener
 		}
 	}
 
+	public ItemFlowTracker getItemFlowTracker()
+	{
+		return mItemTracker;
+	}
 }
