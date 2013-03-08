@@ -22,7 +22,7 @@ public class StopSpyCommand implements ICommand
 	@Override
 	public String[] getAliases() 
 	{
-		return null;
+		return new String[] { "stop" };
 	}
 
 	@Override
@@ -32,9 +32,15 @@ public class StopSpyCommand implements ICommand
 	}
 
 	@Override
-	public String getUsageString(String label) 
+	public String[] getUsageString(String label, CommandSender sender) 
 	{
-		return label + ChatColor.GOLD + " <player>";
+		return new String[] {label + ChatColor.GOLD + " <player>"};
+	}
+	
+	@Override
+	public String getDescription()
+	{
+		return "Stops deeply recording a player.";
 	}
 
 	@Override

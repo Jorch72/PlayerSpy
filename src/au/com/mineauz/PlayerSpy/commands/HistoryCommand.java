@@ -160,9 +160,15 @@ public class HistoryCommand implements ICommand
 	}
 
 	@Override
-	public String getUsageString(String label) 
+	public String[] getUsageString(String label, CommandSender sender) 
 	{
-		return label + ChatColor.GREEN + " [page] | [args]";
+		return new String[] {label + ChatColor.GREEN + " [page] | [args]"};
+	}
+	
+	@Override
+	public String getDescription()
+	{
+		return "Shows the complete history of a location selected using inspect";
 	}
 
 	@Override

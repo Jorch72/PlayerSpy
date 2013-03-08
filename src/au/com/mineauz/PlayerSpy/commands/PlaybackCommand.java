@@ -50,11 +50,17 @@ public class PlaybackCommand implements ICommand
 	}
 
 	@Override
-	public String getUsageString(String label) 
+	public String[] getUsageString(String label, CommandSender sender) 
 	{
-		return label + ChatColor.GREEN + " [player]";
+		return new String[] {label + ChatColor.GREEN + " [player]"};
 	}
 
+	@Override
+	public String getDescription()
+	{
+		return "Activates playback mode. Specifying a player will skip the player secification step later.";
+	}
+	
 	@Override
 	public boolean canBeConsole() {	return false; }
 

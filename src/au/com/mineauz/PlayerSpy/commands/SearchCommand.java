@@ -374,11 +374,16 @@ public class SearchCommand implements ICommand
 	}
 
 	@Override
-	public String getUsageString(String label) 
+	public String[] getUsageString(String label, CommandSender sender) 
 	{
-		return label + " <args>. See docs for more info";
+		return new String[] {label + " <args>" };
 	}
 
+	@Override
+	public String getDescription()
+	{
+		return "Searches through the databases to find relavent records.";
+	}
 	@Override
 	public boolean canBeConsole() { return true; }
 	

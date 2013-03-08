@@ -45,11 +45,17 @@ public class DebugCommand implements ICommand
 	}
 
 	@Override
-	public String getUsageString(String label) 
+	public String[] getUsageString(String label, CommandSender sender) 
 	{
-		return label + "(level|analyse <logname>|log|resetlog)";
+		return new String[] {label + "(level|analyse <logname>|log|resetlog)"};
 	}
 
+	@Override
+	public String getDescription()
+	{
+		return "Debug command";
+	}
+	
 	@Override
 	public boolean canBeConsole() 
 	{

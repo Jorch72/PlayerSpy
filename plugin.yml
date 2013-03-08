@@ -12,17 +12,40 @@ commands:
     usage: /<command> <spy | stopspy | list | playback | help> [args] 
     aliases: ps
 permissions:
+  playerspy.basic:
+    description: Provides read only commands and abilities.
+    default: false
+    children:
+      playerspy.playback: true
+      playerspy.help: true
+      playerspy.inspect: true
+      playerspy.search: true
+      playerspy.inventory: true
+      playerspy.list: true
+      
+  playerspy.normal:
+    description: Provides all commands and abilities for normal admin use.
+    default: false
+    children:
+      playerspy.basic: true
+      playerspy.spy: true
+      playerspy.rollback: true
+      playerspy.restore: true
+      playerspy.inventory.edit: true
+  
+  playerspy.op:
+    description: Provides every ability.
+    default: op
+    children:
+      playerspy.normal: true
+      playerspy.purge: true
+      playerspy.reload: true
+  
   playerspy.*:
     default: op
     children:
-      playerspy.spy: true
-      playerspy.playback: true
-      playerspy.list: true
-      playerspy.help: true
-      playerspy.purge: true
-      playerspy.inspect: true
-      playerspy.search: true
-      playerspy.reload: true
+      playerspy.op: true
+
   playerspy.spy:
     default: op
     description: Allows a player to record the movements and activities of a player.
@@ -59,3 +82,5 @@ permissions:
   playerspy.inventory.edit:
     default: op
     description: Allows a player to modify another players inventory
+    children:
+      playerspy.inventory: true

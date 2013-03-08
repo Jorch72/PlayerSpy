@@ -30,11 +30,17 @@ public class InspectCommand implements ICommand
 	}
 
 	@Override
-	public String getUsageString(String label) 
+	public String[] getUsageString(String label, CommandSender sender) 
 	{
-		return label + ChatColor.GREEN + " [entities] [transactions] [uses] [blocks] [resultCount]";
+		return new String[] {label + ChatColor.GREEN + " [entities] [transactions] [uses] [blocks] [resultCount]"};
 	}
 
+	@Override
+	public String getDescription()
+	{
+		return "Toggles inspect with /ps inspect. You can optionally specify exactly what results you wish to see. You can change what options are enabled without leaving inspect.";
+	}
+	
 	@Override
 	public boolean canBeConsole() {	return false; }
 

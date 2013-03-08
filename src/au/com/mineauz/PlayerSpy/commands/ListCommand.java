@@ -32,11 +32,17 @@ public class ListCommand implements ICommand
 	}
 
 	@Override
-	public String getUsageString(String label) 
+	public String[] getUsageString(String label, CommandSender sender) 
 	{
-		return label + " " + ChatColor.GREEN + "[page]";
+		return new String[] {label + " " + ChatColor.GREEN + "[page]"};
 	}
 
+	@Override
+	public String getDescription()
+	{
+		return "Displays all the players who are being deeply recorded or played back currently.";
+	}
+	
 	@Override
 	public boolean canBeConsole() { return true; }
 	

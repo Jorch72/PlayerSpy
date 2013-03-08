@@ -42,11 +42,18 @@ public class RollbackCommand implements ICommand
 	}
 
 	@Override
-	public String getUsageString( String label )
+	public String[] getUsageString( String label, CommandSender sender )
 	{
-		return label + " [undo|[c:<cause>] [r:<radius>] [t:<time>]]";
+		return new String[] {label + " [undo|[c:<cause>] [r:<radius>] [t:<time>]]"};
 	}
 
+	@Override
+	public String getDescription()
+	{
+		return "Rolls back data. If no options are specified, ALL data will be rolled back. Specifying undo will restore the last rollback you did.";
+	}
+	
+	
 	@Override
 	public boolean canBeConsole() { return true; }
 

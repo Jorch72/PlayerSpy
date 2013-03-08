@@ -41,9 +41,15 @@ public class PurgeCommand implements ICommand
 	}
 
 	@Override
-	public String getUsageString(String label) 
+	public String[] getUsageString(String label, CommandSender sender) 
 	{
-		return label + ChatColor.GOLD + " (<player>|<world>|all) " + ChatColor.GREEN + "[before <datetime> | after <datetime> | between <datetime> <datetime>]";
+		return new String[] {label + ChatColor.GOLD + " (<player>|<world>|all) " + ChatColor.GREEN + "[before <datetime> | after <datetime> | between <datetime> <datetime>]"};
+	}
+	
+	@Override
+	public String getDescription()
+	{
+		return "Purges records from the database. It is wise to purge old data to save hard disk space.";
 	}
 
 	@Override

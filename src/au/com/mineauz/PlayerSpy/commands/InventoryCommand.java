@@ -38,9 +38,15 @@ public class InventoryCommand implements ICommand
 	}
 
 	@Override
-	public String getUsageString( String label )
+	public String[] getUsageString( String label, CommandSender sender)
 	{
-		return label + ChatColor.GOLD + " <player> " + ChatColor.GREEN + "[date]";
+		return new String[] {label + ChatColor.GOLD + " <player> " + ChatColor.GREEN + "[date]"};
+	}
+	
+	@Override
+	public String getDescription()
+	{
+		return "Displays the inventory for a player at the specified time or current.";
 	}
 
 	@Override

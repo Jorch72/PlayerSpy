@@ -29,11 +29,17 @@ public class ReloadCommand implements ICommand
 	}
 
 	@Override
-	public String getUsageString( String label )
+	public String[] getUsageString( String label, CommandSender sender )
 	{
-		return label;
+		return new String[] {label};
 	}
 
+	@Override
+	public String getDescription()
+	{
+		return "Reloads the playerspy configuration.";
+	}
+	
 	@Override
 	public boolean canBeConsole() { return true; }
 	

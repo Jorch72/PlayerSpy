@@ -43,7 +43,19 @@ public class SpyPlugin extends JavaPlugin
 		sPluginInstance = this;
 		PreLoadValidator.validateWrappers();
 		
-		CommandDispatcher dispatch = new CommandDispatcher();
+		CommandDispatcher dispatch = new CommandDispatcher("playerspy", "PlayerSpy player tracking and observation tool. Version " + getDescription().getVersion());
+		dispatch.registerCommand(new SpyCommand());
+		dispatch.registerCommand(new StopSpyCommand());
+		dispatch.registerCommand(new PlaybackCommand());
+		dispatch.registerCommand(new ListCommand());
+		dispatch.registerCommand(new PurgeCommand());
+		dispatch.registerCommand(new InspectCommand());
+		dispatch.registerCommand(new HistoryCommand());
+		dispatch.registerCommand(new DebugCommand());
+		dispatch.registerCommand(new SearchCommand());
+		dispatch.registerCommand(new ReloadCommand());
+		dispatch.registerCommand(new RollbackCommand());
+		dispatch.registerCommand(new InventoryCommand());
 		getCommand("playerspy").setExecutor(dispatch);
 		getCommand("playerspy").setTabCompleter(dispatch);
 		

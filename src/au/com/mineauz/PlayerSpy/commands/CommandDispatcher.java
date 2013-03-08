@@ -27,28 +27,24 @@ import org.bukkit.command.TabCompleter;
  */
 public class CommandDispatcher implements CommandExecutor, TabCompleter
 {
-	static
+	private String mRootCommandName;
+	private String mRootCommandDescription;
+	private HashMap<String, ICommand> mCommands;
+	
+	public CommandDispatcher(String commandName, String description)
 	{
 		mCommands = new HashMap<String, ICommand>();
-		registerCommand(new SpyCommand());
-		registerCommand(new StopSpyCommand());
-		registerCommand(new PlaybackCommand());
-		registerCommand(new ListCommand());
-		registerCommand(new HelpCommand());
-		registerCommand(new PurgeCommand());
-		registerCommand(new InspectCommand());
-		registerCommand(new HistoryCommand());
-		registerCommand(new DebugCommand());
-		registerCommand(new SearchCommand());
-		registerCommand(new ReloadCommand());
-		registerCommand(new RollbackCommand());
-		registerCommand(new InventoryCommand());
+		
+		mRootCommandName = commandName;
+		mRootCommandDescription = description;
+		
+		registerCommand(new InternalHelp());
 	}
 	/**
 	 * Registers a command to be handled by this dispatcher
 	 * @param command
 	 */
-	private static void registerCommand(ICommand command)
+	public void registerCommand(ICommand command)
 	{
 		mCommands.put(command.getName().toLowerCase(), command);
 	}
@@ -118,7 +114,25 @@ AliasCheck:	for(Entry<String, ICommand> ent : mCommands.entrySet())
 		
 		if(!com.onCommand(sender, subCommand, subArgs))
 		{
-			sender.sendMessage(ChatColor.RED + "Usage: /" + label + " " + com.getUsageString(subCommand));
+			String[] lines = com.getUsageString(subCommand, sender);
+			String usageString = "";
+			
+			if(lines.length > 1)
+				usageString = ChatColor.RED + "Usage:\n    ";
+			else
+				usageString = ChatColor.RED + "Usage: ";
+			
+			boolean first = true;
+			for(String line : lines)
+			{
+				if(!first)
+					usageString += "\n    ";
+				first = false;
+				
+				usageString += ChatColor.GRAY + "/" + label + " " + line;
+			}
+				
+			sender.sendMessage(usageString);
 		}
 		
 		return true;
@@ -127,34 +141,49 @@ AliasCheck:	for(Entry<String, ICommand> ent : mCommands.entrySet())
 	{
 		String usage = "";
 		
-		if(subcommand != null)
-		{
-			sender.sendMessage(ChatColor.RED + "Unknown command: " + ChatColor.RESET + "/" + label + " " + ChatColor.GOLD + subcommand);
-			sender.sendMessage("Valid commands are:");
-		}
-		else
-		{
-			sender.sendMessage(ChatColor.RED + "No command specified: " + ChatColor.RESET + "/" + label + ChatColor.GOLD + " <command>");
-			sender.sendMessage("Valid commands are:");;
-		}
-		
 		boolean first = true;
+		boolean odd = true;
 		// Build the list
-		for(Entry<String, ICommand> ent : mCommands.entrySet())
+		for(ICommand command : mCommands.values())
 		{
-			if(first)
-				usage += ent.getKey();
+			// Check that the sender is correct
+			if(!command.canBeConsole() && (sender instanceof ConsoleCommandSender || sender instanceof RemoteConsoleCommandSender))
+				continue;
+			
+			// Check that they have permission
+			if(command.getPermission() != null && !sender.hasPermission(command.getPermission()))
+				continue;
+			
+			if(odd)
+				usage += ChatColor.WHITE;
 			else
-				usage += ", " + ent.getKey();
+				usage += ChatColor.GRAY;
+			odd = !odd;
+			
+			if(first)
+				usage += command.getName();
+			else
+				usage += ", " + command.getName();
 			
 			first = false;
 		}
 		
-		sender.sendMessage(usage);
+		if(subcommand != null)
+			sender.sendMessage(ChatColor.RED + "Unknown command: " + ChatColor.RESET + "/" + label + " " + ChatColor.GOLD + subcommand);
+		else
+			sender.sendMessage(ChatColor.RED + "No command specified: " + ChatColor.RESET + "/" + label + ChatColor.GOLD + " <command>");
+
+		if(!first)
+		{
+			sender.sendMessage("Valid commands are:");
+			sender.sendMessage(usage);
+		}
+		else
+			sender.sendMessage("There are no commands available to you");
+		
+		
 	}
 	
-	private static HashMap<String, ICommand> mCommands;
-
 	@Override
 	public List<String> onTabComplete( CommandSender sender, Command command, String label, String[] args )
 	{
@@ -164,7 +193,17 @@ AliasCheck:	for(Entry<String, ICommand> ent : mCommands.entrySet())
 			for(ICommand registeredCommand : mCommands.values())
 			{
 				if(registeredCommand.getName().toLowerCase().startsWith(args[0].toLowerCase()))
+				{
+					// Check that the sender is correct
+					if(!registeredCommand.canBeConsole() && (sender instanceof ConsoleCommandSender || sender instanceof RemoteConsoleCommandSender))
+						continue;
+					
+					// Check that they have permission
+					if(registeredCommand.getPermission() != null && !sender.hasPermission(registeredCommand.getPermission()))
+						continue;
+					
 					results.add(registeredCommand.getName());
+				}
 			}
 		}
 		else
@@ -205,7 +244,7 @@ AliasCheck:	for(Entry<String, ICommand> ent : mCommands.entrySet())
 			}
 			
 			// Check that the sender is correct
-			if(!com.canBeConsole() && sender instanceof ConsoleCommandSender)
+			if(!com.canBeConsole() && (sender instanceof ConsoleCommandSender || sender instanceof RemoteConsoleCommandSender))
 			{
 				return results;
 			}
@@ -221,5 +260,99 @@ AliasCheck:	for(Entry<String, ICommand> ent : mCommands.entrySet())
 				return new ArrayList<String>();
 		}
 		return results;
+	}
+	
+	private class InternalHelp implements ICommand
+	{
+
+		@Override
+		public String getName()
+		{
+			return "help";
+		}
+
+		@Override
+		public String[] getAliases()
+		{
+			return null;
+		}
+
+		@Override
+		public String getPermission()
+		{
+			return null;
+		}
+
+		@Override
+		public String[] getUsageString( String label, CommandSender sender )
+		{
+			return new String[] {label};
+		}
+
+		@Override
+		public String getDescription()
+		{
+			return "Displays this screen.";
+		}
+
+		@Override
+		public boolean canBeConsole()
+		{
+			return true;
+		}
+
+		@Override
+		public boolean canBeCommandBlock()
+		{
+			return true;
+		}
+
+		@Override
+		public boolean onCommand( CommandSender sender, String label, String[] args )
+		{
+			if(args.length != 0)
+				return false;
+			
+			sender.sendMessage(ChatColor.GOLD + mRootCommandDescription);
+			sender.sendMessage(ChatColor.GOLD + "Commands: \n");
+			
+			for(ICommand command : mCommands.values())
+			{
+				// Dont show commands that are irrelevant
+				if(!command.canBeCommandBlock() && sender instanceof BlockCommandSender)
+					continue;
+				if(!command.canBeConsole() && (sender instanceof ConsoleCommandSender || sender instanceof RemoteConsoleCommandSender))
+					continue;
+				
+				if(command.getPermission() != null && !sender.hasPermission(command.getPermission()))
+					continue;
+				
+				
+				String usageString = "";
+				boolean first = true;
+				for(String line : command.getUsageString(command.getName(), sender))
+				{
+					if(!first)
+						usageString += "\n";
+					
+					first = false;
+					
+					usageString += ChatColor.GOLD + "/" + mRootCommandName + " " + line;
+				}
+
+				sender.sendMessage(usageString);
+				String[] descriptionLines = command.getDescription().split("\n");
+				for(String line : descriptionLines)
+					sender.sendMessage("  " + ChatColor.WHITE + line);
+			}
+			return true;
+		}
+
+		@Override
+		public List<String> onTabComplete( CommandSender sender, String label, String[] args )
+		{
+			return null;
+		}
+		
 	}
 }

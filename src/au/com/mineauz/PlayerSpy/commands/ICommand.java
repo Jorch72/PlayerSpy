@@ -24,9 +24,15 @@ public interface ICommand
 	/**
 	 * Gets the usage string for this command. This should be in the format of: "<command> <usage>"
 	 * @param label This is either the name of the command or an alias if they used one.
+	 * @param sender The sender of the command
 	 * @return The usage string  
 	 */
-	public String getUsageString(String label);
+	public String[] getUsageString(String label, CommandSender sender);
+	
+	/**
+	 * Gets the description of the command for the help system
+	 */
+	public String getDescription();
 
 	/**
 	 * Can the sender of this command be a console?
