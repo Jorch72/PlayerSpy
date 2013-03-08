@@ -58,6 +58,10 @@ public class ItemFlowTracker implements Listener
 		if(GlobalMonitor.instance.getDeepMonitor((Player)event.getWhoClicked()) != null)
 			scheduleInventoryUpdate(event.getView().getBottomInventory());
 		
+		// There is no event for opening your own inventory, so this should be a good replacement
+		else if(!mLastRecordedState.containsKey(event.getView().getBottomInventory()))
+			recordInventoryState(event.getView().getBottomInventory());
+		
 		if(event.getInventory().getType() == InventoryType.CRAFTING || event.getInventory().getType() == InventoryType.CREATIVE)
 			return;
 		
@@ -138,11 +142,18 @@ public class ItemFlowTracker implements Listener
 	{
 		if(!(event.getPlayer() instanceof Player))
 			return;
-	
+
+		recordInventoryState(event.getView().getBottomInventory());
+		
 		if(event.getInventory().getType() == InventoryType.CRAFTING || event.getInventory().getType() == InventoryType.CREATIVE)
 			return;
 		if(event.getInventory().getType() == InventoryType.PLAYER && event.getInventory().getHolder() == event.getPlayer())
 			return;
+		
+		// Record the state of their inventory
+		if(event.getInventory().getType() == InventoryType.PLAYER)
+			recordInventoryState(event.getView().getTopInventory());
+		
 		ShallowMonitor mon = GlobalMonitor.instance.getMonitor((Player)event.getPlayer());
 		if(mon != null)
 		{
@@ -156,7 +167,6 @@ public class ItemFlowTracker implements Listener
 			}
 			
 			mon.beginTransaction(event.getInventory(),enderChestLocation);
-			recordInventoryState(event.getView().getBottomInventory());
 		}
 	}
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -166,10 +176,26 @@ public class ItemFlowTracker implements Listener
 			return;
 	
 		if(event.getInventory().getType() == InventoryType.CRAFTING || event.getInventory().getType() == InventoryType.CREATIVE)
+		{
+			ArrayList<InventorySlot> slots = detectChanges(event.getView().getBottomInventory(), false);
+			recordInventoryChanges(event.getView().getBottomInventory(), slots);
+			applyInventoryChanges(event.getView().getBottomInventory(), slots);
 			return;
+		}
 		
 		if(event.getInventory().getType() == InventoryType.PLAYER && event.getInventory().getHolder() == event.getPlayer())
+		{
+			ArrayList<InventorySlot> slots = detectChanges(event.getView().getBottomInventory(), false);
+			recordInventoryChanges(event.getView().getBottomInventory(), slots);
+			applyInventoryChanges(event.getView().getBottomInventory(), slots);
 			return;
+		}
+		if(event.getInventory().getType() == InventoryType.PLAYER)
+		{
+			// When interacting with another players inventory, update theirs too
+			scheduleInventoryUpdate(event.getView().getTopInventory());
+		}
+		
 		ShallowMonitor mon = GlobalMonitor.instance.getMonitor((Player)event.getPlayer());
 		if(mon != null)
 		{
@@ -258,7 +284,7 @@ public class ItemFlowTracker implements Listener
 		// Get the last recorded state
 		ItemStack[] stored = mLastRecordedState.get(inventory);
 		if(stored == null)
-			return null;
+			return new ArrayList<InventorySlot>();
 		
 		// Detect the changes
 		ArrayList<InventorySlot> changes = detectChanges(inventory, stored, diff);

@@ -116,7 +116,11 @@ public class InventoryCommand implements ICommand
 		}
 		else
 		{
-			OfflinePlayer oPlayer = Bukkit.getOfflinePlayer(playerName);
+			OfflinePlayer oPlayer;
+			
+			oPlayer = Bukkit.getPlayer(playerName);
+			if(oPlayer == null)
+				oPlayer = Bukkit.getOfflinePlayer(playerName);
 			
 			if(!oPlayer.hasPlayedBefore())
 			{

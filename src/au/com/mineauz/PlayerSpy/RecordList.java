@@ -134,7 +134,7 @@ public class RecordList extends ArrayList<Record>
 			return null;
 		
 		// Now apply updates
-		for(; i < index; i++)
+		for(; i <= index; i++)
 		{
 			switch(get(i).getType())
 			{
