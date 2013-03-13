@@ -17,7 +17,9 @@ import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.Records.InventoryRecord;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
+import au.com.mineauz.PlayerSpy.search.CompoundConstraint;
 import au.com.mineauz.PlayerSpy.search.DateConstraint;
+import au.com.mineauz.PlayerSpy.search.FilterCauseConstraint;
 import au.com.mineauz.PlayerSpy.search.RecordTypeConstraint;
 import au.com.mineauz.PlayerSpy.search.SearchFilter;
 import au.com.mineauz.PlayerSpy.search.SearchResults;
@@ -40,15 +42,14 @@ public class DisplayInventoryTask implements Task<Void>
 	{
 		// Find the records we are interested in
 		SearchFilter filter = new SearchFilter();
-		filter.causes.add(Cause.playerCause(mInvOwner));
+		filter.causes.add(new FilterCauseConstraint(Cause.playerCause(mInvOwner).friendlyName()));
 		
 		DateConstraint dc = new DateConstraint();
 		dc.startDate = new Date(0);
 		dc.endDate = new Date(mDate);
 		filter.andConstraints.add(dc);
 		
-		filter.orConstraints.add(new RecordTypeConstraint(RecordType.FullInventory));
-		filter.orConstraints.add(new RecordTypeConstraint(RecordType.UpdateInventory));
+		filter.andConstraints.add(new CompoundConstraint(false, new RecordTypeConstraint(RecordType.FullInventory), new RecordTypeConstraint(RecordType.UpdateInventory)));
 		
 		SearchTask task = new SearchTask(filter);
 		SearchResults results = task.call();

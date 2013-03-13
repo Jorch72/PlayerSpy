@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 import au.com.mineauz.PlayerSpy.PlaybackContext;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.search.Match;
 
 public class SeekCommand extends Command
 {
@@ -21,7 +22,10 @@ public class SeekCommand extends Command
 			String dateString = args[0];
 			for(int i = 1; i < args.length; i++)
 				dateString += " " + args[i];
-			long time = Util.parseDate(dateString, playback.getPlaybackDate(), playback.getStartDate(), playback.getEndDate());
+			long time = 0;
+			Match m = Util.parseDate(dateString, playback.getPlaybackDate(), playback.getStartDate(), playback.getEndDate());
+			if(m != null)
+				time = (Long)m.value;
 			
 			if(time != 0)
 			{

@@ -22,6 +22,7 @@ import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
 import au.com.mineauz.PlayerSpy.monitoring.ShallowMonitor;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex.SessionInFile;
+import au.com.mineauz.PlayerSpy.search.interfaces.CauseConstraint;
 import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 import au.com.mineauz.PlayerSpy.search.interfaces.FormatterModifier;
 import au.com.mineauz.PlayerSpy.search.interfaces.Modifier;
@@ -156,23 +157,6 @@ public class SearchTask implements Task<SearchResults>
 					continue;
 			}
 			
-			// Now do the or constraints
-			if(!mFilter.orConstraints.isEmpty())
-			{
-				ok = false;
-				for(Constraint constraint : mFilter.orConstraints)
-				{
-					if(constraint.matches(record))
-					{
-						ok = true;
-						break;
-					}
-				}
-				if(!ok)
-					continue;
-			}
-			
-			
 			// Passed all the constraints
 			insertRecord(record, id);
 			addedRecords = true;
@@ -226,12 +210,12 @@ public class SearchTask implements Task<SearchResults>
 				// Check the constraints
 				if(mFilter.causes.size() != 0)
 				{
-					boolean constraintOk = false;
-					for(Cause testCause : mFilter.causes)
+					boolean constraintOk = true;
+					for(CauseConstraint constraint : mFilter.causes)
 					{
-						if(cause.equals(testCause) || (testCause.isGlobal() && testCause.getExtraCause().equalsIgnoreCase(cause.getExtraCause())))
+						if(!constraint.matches(cause))
 						{
-							constraintOk = true;
+							constraintOk = false;
 							break;
 						}
 					}
@@ -260,12 +244,12 @@ public class SearchTask implements Task<SearchResults>
 				// Check the constraints
 				if(mFilter.causes.size() != 0)
 				{
-					boolean constraintOk = false;
-					for(Cause testCause : mFilter.causes)
+					boolean constraintOk = true;
+					for(CauseConstraint constraint : mFilter.causes)
 					{
-						if(cause.equals(testCause) || (testCause.isGlobal() && testCause.getExtraCause().equalsIgnoreCase(cause.getExtraCause())))
+						if(!constraint.matches(cause))
 						{
-							constraintOk = true;
+							constraintOk = false;
 							break;
 						}
 					}
@@ -287,12 +271,12 @@ public class SearchTask implements Task<SearchResults>
 			// Check the constraints
 			if(mFilter.causes.size() != 0)
 			{
-				boolean constraintOk = false;
-				for(Cause testCause : mFilter.causes)
+				boolean constraintOk = true;
+				for(CauseConstraint constraint : mFilter.causes)
 				{
-					if(pending.getArg2().equals(testCause) || (testCause.isGlobal() && testCause.getExtraCause().equalsIgnoreCase(pending.getArg2().getExtraCause())))
+					if(!constraint.matches(pending.getArg2()))
 					{
-						constraintOk = true;
+						constraintOk = false;
 						break;
 					}
 				}
@@ -342,12 +326,12 @@ public class SearchTask implements Task<SearchResults>
 			// Check the constraints
 			if(mFilter.causes.size() != 0)
 			{
-				boolean constraintOk = false;
-				for(Cause testCause : mFilter.causes)
+				boolean constraintOk = true;
+				for(CauseConstraint constraint : mFilter.causes)
 				{
-					if(cause.equals(testCause) || (testCause.isGlobal() && testCause.getExtraCause().equalsIgnoreCase(cause.getExtraCause())))
+					if(!constraint.matches(cause))
 					{
-						constraintOk = true;
+						constraintOk = false;
 						break;
 					}
 				}

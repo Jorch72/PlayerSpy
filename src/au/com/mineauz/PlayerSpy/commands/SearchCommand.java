@@ -1,360 +1,36 @@
 package au.com.mineauz.PlayerSpy.commands;
 
-import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
+import org.bukkit.Location;
+
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 
-import au.com.mineauz.PlayerSpy.Utilities.Pair;
-import au.com.mineauz.PlayerSpy.fsa.*;
 import au.com.mineauz.PlayerSpy.search.*;
+import au.com.mineauz.PlayerSpy.search.AttributeParser.ParsedAttribute;
+import au.com.mineauz.PlayerSpy.search.interfaces.CauseConstraint;
 import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 
 public class SearchCommand implements ICommand 
 {
-	private static State mStartState;
+	private static AttributeParser mParser;
+	
 	static
 	{
-		setupFSA();
+		mParser = new AttributeParser();
+		Modifier notModifier = new Modifier("not", "!");
+		
+		mParser.addAttribute(new TypeAttribute().addModifier(notModifier));
+		mParser.addAttribute(new Attribute("filter",AttributeValueType.Sentence, "f:").addModifier(notModifier).setSingular(false));
+		mParser.addAttribute(new Attribute("dist",AttributeValueType.Number, "d:").addModifier(notModifier));
+		mParser.addAttribute(new Attribute("by",AttributeValueType.String, "@").addModifier(notModifier).setSingular(false));
+		mParser.addAttribute(new Attribute("after",AttributeValueType.Date, "ts:"));
+		mParser.addAttribute(new Attribute("before",AttributeValueType.Date, "te:"));
 	}
-	
-	private static void setupFSA()
-	{
-		State terminator = new FinalCompactorDA().addNext(new FinalState());
-		
-		// Constraints
-	
-		State dateEnd = new DateConstraintDA().addNext(terminator);
-		
-		State beforeTimeState = new StringState("before")
-			.addNext(new DateState()
-				.addNext(new TimeState()
-					.addNext(new DateCompactorDA()
-						.addNext(dateEnd)
-					)
-				)
-				.addNext(dateEnd)
-			)
-			.addNext(new TimeState()
-				.addNext(new TimeOnlyDA()
-					.addNext(dateEnd)
-				)
-			)
-		;
-		State afterTimeState = new StringState("after")
-			.addNext(new DateState()
-				.addNext(new TimeState()
-					.addNext(new DateCompactorDA()
-						.addNext(dateEnd)
-					)
-				)
-				.addNext(dateEnd)
-			)
-			.addNext(new TimeState()
-				.addNext(new TimeOnlyDA()
-					.addNext(dateEnd)
-				)
-			)
-		;
-		
-		State betweenPt2 = new StringState("and")
-			.addNext(new DateState()
-				.addNext(new TimeState()
-					.addNext(new DateCompactorDA()
-						.addNext(dateEnd)
-					)
-				)
-				.addNext(dateEnd)
-			)
-			.addNext(new TimeState()
-				.addNext(new TimeOnlyDA()
-					.addNext(dateEnd)
-				)
-			)
-		;
-		
-		State betweenTimeState = new StringState("between")
-			.addNext(new DateState()
-				.addNext(new TimeState()
-					.addNext(new DateCompactorDA()
-						.addNext(betweenPt2)
-					)
-				)
-				.addNext(betweenPt2)
-			)
-			.addNext(new TimeState()
-				.addNext(new TimeOnlyDA()
-					.addNext(betweenPt2)
-				)
-			)
-		;
-		
-		State dateConstraint = new NullState()
-			.addNext(beforeTimeState)
-			.addNext(afterTimeState)
-			.addNext(betweenTimeState)
-			.addNext(terminator)
-		;
-		
-		State modifiers = new NullState()
-			.addNext(new StringState("show")
-				.addNext(new MultiStringState("location","locations")
-					.addNext(new ShowLocationDA()
-						.addNext(dateConstraint)
-					)
-				)
-			)
-			.addNext(dateConstraint)
-		;
-		
-		State extraCauseConstraint = new StringState("or");
-		
-		extraCauseConstraint.addNext(new CauseState()
-			.addNext(extraCauseConstraint)
-			.addNext(modifiers)
-		);
-		
-		
-		State causeConstraint = new NullState()
-			.addNext(new StringState("by")
-				.addNext(new CauseState()
-					.addNext(extraCauseConstraint)
-					.addNext(modifiers)
-				)
-			)
-			.addNext(modifiers)
-		;
-			
-		
-		
-		State endOfActions = new NullState()
-			.addNext(new StringState("within")
-				.addNext(new IntState(0, Integer.MAX_VALUE)
-					.addNext(new DistanceConstraintDA()
-						.addNext(causeConstraint)
-					)
-				)
-			)
-			.addNext(causeConstraint)
-		;
-		
-		
-		// All block related ones
-		State endOfBlockAction = new BlockConstraintDA().addNext(endOfActions);
-		
-		State anyBlock = new StringState("any").addNext(new StringState("block")
-			.addNext(new AnyBlockDA()
-				.addNext(endOfBlockAction)
-			)
-		);
-		State painting = new StringState("painting").addNext(new PaintingDA().addNext(endOfBlockAction));
-		
-		State blockId = new TypeIdState(true,false).addNext(endOfBlockAction);
-		
-		// All entity related ones
-		State entityId = new EntityTypeState().addNext(new EntityConstraintDA(false)
-			.addNext(endOfActions)
-		);
-		
-		State anyEntity = new StringState("any").addNext(new StringState("entity")
-			.addNext(new AnyEntityDA()
-				.addNext(new EntityConstraintDA(false)
-					.addNext(endOfActions)
-				)
-			)
-		);
-		
-		State playerName = new PlayerNameState().addNext(new EntityConstraintDA(true)
-			.addNext(endOfActions)
-		);
-		State playerNameAlt = new StringState("player").addNext(new PlayerNameState()
-			.addNext(new AltPlayerDA()
-				.addNext(new EntityConstraintDA(true)
-					.addNext(endOfActions)
-				)
-			)
-		);
-		
-		// All chat / command related ones
-		State endOfChatAction = new ChatCommandConstraintDA(false).addNext(causeConstraint);
-		State chatCommandMatches = new StringState("contains").addNext(new StringState(null)
-			.addNext(new ChatCommandConstraintDA(true)
-				.addNext(causeConstraint)
-			)
-		);
-		
-		State transactionEnd = new TransactionDA().addNext(endOfActions);
-		
-		State transactionTarget = new NullState()
-			.addNext(new TypeIdState(true,false)
-				.addNext(transactionEnd)
-			)
-			.addNext(new EntityTypeState()
-				.addNext(transactionEnd)
-			)
-			.addNext(new PlayerNameState()
-				.addNext(transactionEnd)
-			)
-		;
-			
-		
-		State takeState = new NullState()
-			.addNext(new TypeIdState(true,true)
-				.addNext(new IntState(0,Integer.MAX_VALUE)
-					.addNext(new StringState("from")
-						.addNext(transactionTarget)
-					)
-					.addNext(transactionEnd)
-				)
-				.addNext(new StringState("from")
-					.addNext(transactionTarget)
-				)
-				.addNext(transactionEnd)
-			)
-			.addNext(new MultiStringState("any","anything")
-				.addNext(new GenericDA(new Pair<Material,Integer>(Material.AIR,-1),1)
-					.addNext(new IntState(0,Integer.MAX_VALUE)
-						.addNext(new StringState("from")
-							.addNext(transactionTarget)
-						)
-						.addNext(transactionEnd)
-					)
-					.addNext(new StringState("from")
-						.addNext(transactionTarget)
-					)
-					.addNext(transactionEnd)
-				)
-			)
-		;
-		
-		State giveState = new NullState()
-			.addNext(new TypeIdState(true,true)
-				.addNext(new IntState(0,Integer.MAX_VALUE)
-					.addNext(new StringState("to")
-						.addNext(transactionTarget)
-					)
-					.addNext(transactionEnd)
-				)
-				.addNext(new StringState("to")
-					.addNext(transactionTarget)
-				)
-				.addNext(transactionEnd)
-			)
-			.addNext(new MultiStringState("any","anything")
-				.addNext(new GenericDA(new Pair<Material,Integer>(Material.AIR,-1),1)
-					.addNext(new IntState(0,Integer.MAX_VALUE)
-						.addNext(new StringState("to")
-							.addNext(transactionTarget)
-						)
-						.addNext(transactionEnd)
-					)
-					.addNext(new StringState("to")
-						.addNext(transactionTarget)
-					)
-					.addNext(transactionEnd)
-				)
-			)
-		;
-		
-		State itemFinal = new ItemConstraintDA().addNext(endOfActions);
-		
-		State itemAmountState = new NullState()
-			.addNext(new IntState(0,Integer.MAX_VALUE)
-				.addNext(itemFinal)
-			)
-			.addNext(itemFinal)
-		;
-		State itemState = new NullState()
-			.addNext(new MultiStringState("any","anything","anyitem")
-				.addNext(new GenericDA(new Pair<Material,Integer>(Material.AIR,-1), 1)
-					.addNext(itemAmountState)
-				)
-			)
-			.addNext(new TypeIdState(true, true)
-				.addNext(itemAmountState)
-			)	
-		;
-		
-		State interactEnd = new InteractConstraintDA().addNext(endOfActions);
-		
-		State interactState = new NullState()
-			.addNext(new StringState("with")
-				.addNext(new EntityTypeState()
-					.addNext(interactEnd)
-				)
-				.addNext(new TypeIdState(true, false)
-					.addNext(interactEnd)
-				)
-				.addNext(new StringState("any")
-					.addNext(new StringState("entity")
-						.addNext(new GenericDA((short)-1, 2)
-							.addNext(interactEnd)
-						)
-					)
-					.addNext(new StringState("block")
-						.addNext(new GenericDA(new Pair<Material,Integer>(Material.AIR,-1),2)
-							.addNext(interactEnd)
-						)
-					)
-					.addNext(interactEnd)
-				)
-			)
-			.addNext(interactEnd)
-		;
-		
-		mStartState = new InitialState()
-			.addNext(new StringState("for")
-				.addNext(new MultiStringState("place","placed","placing")
-					.addNext(blockId)
-					.addNext(anyBlock)
-					.addNext(painting)
-				)
-				.addNext(new MultiStringState("break","mine","mined","dug","destroyed","breaking","broken","removed","remove")
-					.addNext(blockId)
-					.addNext(anyBlock)
-					.addNext(painting)
-				)
-				.addNext(new MultiStringState("take","took")
-					.addNext(takeState)
-				)
-				.addNext(new MultiStringState("put","give","gave")
-					.addNext(giveState)
-				)
-				.addNext(new MultiStringState("drop","dropped")
-					.addNext(itemState)
-				)
-				.addNext(new MultiStringState("pickup","pickedup")
-					.addNext(itemState)
-				)
-				.addNext(new MultiStringState("interact","interaction","interactions")
-					.addNext(interactState)
-				)	
-//				.addNext(new StringState("spawn")
-//					.addNext(anyEntity)
-//					.addNext(entityId)
-//				)
-				.addNext(new MultiStringState("kill","killed")
-					.addNext(playerNameAlt)
-					.addNext(anyEntity)
-					.addNext(entityId)
-					.addNext(playerName)
-				)
-				.addNext(new MultiStringState("command","cmd")
-					.addNext(chatCommandMatches)
-					.addNext(endOfChatAction)
-					.addNext(terminator)
-				)
-				.addNext(new StringState("chat")
-					.addNext(chatCommandMatches)
-					.addNext(endOfChatAction)
-					.addNext(terminator)
-				)
-			);
-	}
+
 	@Override
 	public String getName() 
 	{
@@ -390,12 +66,10 @@ public class SearchCommand implements ICommand
 	@Override
 	public boolean canBeCommandBlock() { return false; }
 
+	@SuppressWarnings( "unchecked" )
 	@Override
 	public boolean onCommand(CommandSender sender, String label, String[] args) 
 	{
-		if(args.length == 0)
-			return false;
-		
 		// Try page
 		if(args.length == 1)
 		{
@@ -429,26 +103,70 @@ public class SearchCommand implements ICommand
 		
 		try
 		{
-			ArrayDeque<Object> results = FiniteStateAutomata.parse(inputString.toLowerCase(), mStartState);
-			SearchFilter filter = (SearchFilter)results.pop();
+			List<ParsedAttribute> attributes = mParser.parse(inputString);
 			
-			for(Constraint constraint : filter.andConstraints)
+			ArrayList<Constraint> constraints = new ArrayList<Constraint>();
+			ArrayList<CauseConstraint> causeConstraints = new ArrayList<CauseConstraint>();
+			
+			for(ParsedAttribute res : attributes)
 			{
-				if(constraint instanceof DistanceConstraint)
+				Constraint constraint = null;
+				CauseConstraint causeConstraint = null;
+				
+				if(res.source.getName().equals("type"))
+					constraint = new CompoundConstraint(false,(ArrayList<Constraint>)res.value);
+				else if(res.source.getName().equals("dist"))
 				{
-					if(sender instanceof ConsoleCommandSender)
+					Location loc = null;
+					if(sender instanceof Player)
+						loc = ((Player)sender).getLocation();
+					
+					if(loc == null)
 					{
-						sender.sendMessage(ChatColor.RED + "You need to be a player to use 'within <range>'");
+						sender.sendMessage(ChatColor.RED + "You must be in-game to use the distance attribute.");
 						return true;
 					}
-					((DistanceConstraint) constraint).location = ((Player)sender).getLocation().clone();
+					
+					constraint = new DistanceConstraint((Double)res.value, loc);
 				}
+				else if(res.source.getName().equals("filter"))
+					constraint = new FilterConstraint((String)res.value);
+				else if(res.source.getName().equals("after"))
+					constraint = new TimeConstraint((Long)res.value, true);
+				else if(res.source.getName().equals("before"))
+					constraint = new TimeConstraint((Long)res.value, false);
+				else if(res.source.getName().equals("by"))
+					causeConstraint = new FilterCauseConstraint((String)res.value);
+				
+				// TODO: Remove this once everything has been implemented
+				if(constraint == null && causeConstraint == null)
+					continue;
+				
+				// Apply modifiers
+				for(Modifier mod : res.appliedModifiers)
+				{
+					if(mod.getName().equals("not"))
+					{
+						if(constraint != null)
+							constraint = new NotConstraint(constraint);
+						if(causeConstraint != null)
+							causeConstraint = new NotCauseConstraint(causeConstraint);
+					}
+				}
+				
+				if(constraint != null)
+					constraints.add(constraint);
+				if(causeConstraint != null)
+					causeConstraints.add(causeConstraint);
 			}
-		
-			sender.sendMessage(ChatColor.GREEN + "Searching...");
+			
+			SearchFilter filter = new SearchFilter();
+			filter.andConstraints = constraints;
+			filter.causes = causeConstraints;
+			
 			Searcher.instance.searchAndDisplay(sender, filter);
 		}
-		catch(ParseException e)
+		catch(IllegalArgumentException e)
 		{
 			sender.sendMessage(ChatColor.RED + e.getMessage());
 		}

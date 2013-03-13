@@ -15,6 +15,7 @@ import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.LogTasks.DisplayInventoryTask;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.search.Match;
 
 public class InventoryCommand implements ICommand
 {
@@ -81,9 +82,21 @@ public class InventoryCommand implements ICommand
 		long date = current;
 		
 		if(args.length == 2)
-			date = Util.parseDate(args[1], 0, 0, 0);
+		{
+			Match m = Util.parseDate(args[1], 0, 0, 0);
+			if(m == null)
+				date = 0;
+			else
+				date = (Long)m.value;
+		}
 		else if(args.length == 3)
-			date = Util.parseDate(args[1] + " " + args[2], 0, 0, 0);
+		{
+			Match m = Util.parseDate(args[1] + " " + args[2], 0, 0, 0);
+			if(m == null)
+				date = 0;
+			else
+				date = (Long)m.value;
+		}
 		
 		if(date == 0)
 		{

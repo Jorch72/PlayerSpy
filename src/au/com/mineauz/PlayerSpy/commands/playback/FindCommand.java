@@ -10,6 +10,7 @@ import au.com.mineauz.PlayerSpy.PlaybackContext;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.search.Match;
 
 public class FindCommand extends Command 
 {
@@ -60,7 +61,11 @@ public class FindCommand extends Command
 						dateString += " " + args[i];
 					
 					
-					date = Util.parseDate(dateString, playback.getPlaybackDate(), playback.getStartDate(), playback.getEndDate());
+					Match m = Util.parseDate(dateString, playback.getPlaybackDate(), playback.getStartDate(), playback.getEndDate());
+					if(m == null)
+						date = 0;
+					else
+						date = (Long)m.value;
 				}
 				else
 					date = playback.getPlaybackDate();
@@ -135,7 +140,11 @@ public class FindCommand extends Command
 						dateString += " " + args[i];
 					
 					
-					date = Util.parseDate(dateString, playback.getPlaybackDate(), playback.getStartDate(), playback.getEndDate());
+					Match m = Util.parseDate(dateString, playback.getPlaybackDate(), playback.getStartDate(), playback.getEndDate());
+					if(m == null)
+						date = 0;
+					else
+						date = (Long)m.value;
 				}
 				else
 					date = playback.getPlaybackDate();
@@ -238,7 +247,11 @@ public class FindCommand extends Command
 					for(int i = argStart+1; i < args.length; i++)
 						dateString += " " + args[i];
 					
-					date = Util.parseDate(dateString, playback.getPlaybackDate(), playback.getStartDate(), playback.getEndDate());
+					Match m = Util.parseDate(dateString, playback.getPlaybackDate(), playback.getStartDate(), playback.getEndDate());
+					if(m == null)
+						date = 0;
+					else
+						date = (Long)m.value;
 				}
 				else
 					date = playback.getPlaybackDate();
@@ -323,7 +336,11 @@ public class FindCommand extends Command
 					for(int i = 4; i < args.length; i++)
 						dateString += " " + args[i];
 					
-					date = Util.parseDate(dateString, playback.getPlaybackDate(), playback.getStartDate(), playback.getEndDate());
+					Match m = Util.parseDate(dateString, playback.getPlaybackDate(), playback.getStartDate(), playback.getEndDate());
+					if(m == null)
+						date = 0;
+					else
+						date = (Long)m.value;
 				}
 				else
 					date = playback.getPlaybackDate();

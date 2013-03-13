@@ -243,6 +243,9 @@ public class Utility
 	}
 	public static String formatItemName( org.bukkit.inventory.ItemStack myItem )
     {
+		if(myItem == null || myItem.getType() == Material.AIR)
+			return "Nothing";
+		
 		ItemStack nativeStack = convertToNative(myItem);
 		
 		if(nativeStack.getItem() instanceof ItemPotion)

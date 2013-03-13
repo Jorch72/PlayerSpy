@@ -16,6 +16,7 @@ import au.com.mineauz.PlayerSpy.rollback.RollbackSession;
 import au.com.mineauz.PlayerSpy.search.DateConstraint;
 import au.com.mineauz.PlayerSpy.search.DistanceConstraint;
 import au.com.mineauz.PlayerSpy.search.EndResultOnlyModifier;
+import au.com.mineauz.PlayerSpy.search.FilterCauseConstraint;
 import au.com.mineauz.PlayerSpy.search.SearchFilter;
 import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 
@@ -124,7 +125,7 @@ public class RollbackCommand implements ICommand
 					return true;
 				}
 				
-				filter.causes.add(cause);
+				filter.causes.add(new FilterCauseConstraint(cause.friendlyName()));
 			}
 			else if(c.equals("r")) // Radius
 			{

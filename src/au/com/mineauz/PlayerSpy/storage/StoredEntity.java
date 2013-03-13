@@ -126,10 +126,20 @@ public class StoredEntity
 		return mOriginalId;
 	}
 	
+	public String getName()
+	{
+		if(getEntityType() == EntityType.PLAYER)
+			return getPlayerName();
+		else
+			return getEntityType().getName();
+	}
+	
 	private short mTypeId;
 	private StoredLocation mLocation;
 	private String mPlayerName;
 	private int mOriginalId;
+	
+	
 	
 	
 }

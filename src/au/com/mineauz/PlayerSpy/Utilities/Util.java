@@ -9,6 +9,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 
 import au.com.mineauz.PlayerSpy.SpyPlugin;
+import au.com.mineauz.PlayerSpy.search.Match;
 
 public class Util 
 {
@@ -183,18 +184,18 @@ public class Util
 	{
 		return Utility.formatTime(date, "dd/MM/yy HH:mm:ss");
 	}
-	public static long parseDate(String date, long current, long start, long end)
+	public static Match parseDate(String date, long current, long start, long end)
 	{
 		if(date == null)
-			return 0;
+			return null;
 		
 		// Mother of all regular expressions :S
-		Pattern datePattern = Pattern.compile("^(?:(?:(\\d{1,2})\\s*/\\s*(\\d{1,2})\\s*(?:/\\s*(\\d{2}|\\d{4}))?\\s+)?(\\d{1,2})\\s*:\\s*(\\d{1,2})\\s*(?::\\s*(\\d{1,2})\\s*)?(am|pm)?|(now|yesterday|current|today|start|end))(?:\\s*(\\-|\\+)\\s*(?:([0-9]+)y)?\\s*(?:([0-9]+)mo)?\\s*(?:([0-9]+)w)?\\s*(?:([0-9]+)d)?\\s*(?:([0-9]+)h)?\\s*(?:([0-9]+)m)?\\s*(?:([0-9]+)s)?\\s*)?$");
+		Pattern datePattern = Pattern.compile("^(?:(?:(\\d{1,2})\\s*/\\s*(\\d{1,2})\\s*(?:/\\s*(\\d{2}|\\d{4}))?\\s+)?(\\d{1,2})\\s*:\\s*(\\d{1,2})\\s*(?::\\s*(\\d{1,2})\\s*)?(am|pm)?|(now|yesterday|current|today|start|end))(?:\\s*(\\-|\\+)\\s*(?:([0-9]+)y)?\\s*(?:([0-9]+)mo)?\\s*(?:([0-9]+)w)?\\s*(?:([0-9]+)d)?\\s*(?:([0-9]+)h)?\\s*(?:([0-9]+)m)?\\s*(?:([0-9]+)s)?\\s*)?");
 		date = date.toLowerCase();
 		
 		Matcher m = datePattern.matcher(date);
 		
-		if(m.matches())
+		if(m.find())
 		{
 			long time = 0;
 			
@@ -214,7 +215,7 @@ public class Util
 				else if(m.group(8).equals("current"))
 				{
 					if(current == 0)
-						return 0;
+						return null;
 					
 					time = current;
 				}
@@ -236,14 +237,14 @@ public class Util
 				else if(m.group(8).equals("start"))
 				{
 					if(start == 0)
-						return 0;
+						return null;
 					
 					time = start;
 				}
 				else if(m.group(8).equals("end"))
 				{
 					if(end == 0)
-						return 0;
+						return null;
 					
 					time = end;
 				}
@@ -288,46 +289,46 @@ public class Util
 	
 				// Validate the date
 				if(month > 12 || month == 0)
-					return 0;
+					return null;
 				
 				// Validate day of month
 				if(month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12)
 				{
 					if(day == 0 || day > 31)
-						return 0;
+						return null;
 				}
 				else if(month == 2)
 				{
 					if(day == 0)
-						return 0;
+						return null;
 					if(year % 4 == 0 && year % 400 != 0)
 					{
 						 if(day > 29)
-							 return 0;
+							 return null;
 					}
 					else
 					{
 						if(day > 28)
-							 return 0;
+							 return null;
 					}
 				}
 				else
 				{
 					if(day == 0 || day > 30)
-						return 0;
+						return null;
 				}
 				
 				if(minute >= 60)
-					return 0;
+					return null;
 				
 				if(second >= 60)
-					return 0;
+					return null;
 				
 				// Validate time
 				if(m.group(7) != null)
 				{
 					if(hour > 12 || hour == 0)
-						return 0;
+						return null;
 					
 					if(m.group(7).equals("pm"))
 					{
@@ -339,7 +340,7 @@ public class Util
 				else
 				{
 					if(hour >= 24)
-						return 0;
+						return null;
 				}
 				
 				
@@ -417,10 +418,10 @@ public class Util
 				time += temp;
 			}
 			
-			return time;
+			return new Match(0, m.end(), time, null);
 		}
 		
-		return 0;
+		return null;
 	}
 
 	public static EntityType parseEntity(String entity)
