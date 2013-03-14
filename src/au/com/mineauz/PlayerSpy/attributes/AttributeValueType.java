@@ -6,5 +6,7 @@ public enum AttributeValueType
 	Sentence,
 	Number,
 	NumberRange,
-	Date
+	Date,
+	Set,
+	Null
 }

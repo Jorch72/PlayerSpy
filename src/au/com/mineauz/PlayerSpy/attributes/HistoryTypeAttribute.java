@@ -12,7 +12,7 @@ import au.com.mineauz.PlayerSpy.search.ItemTransactionConstraint;
 import au.com.mineauz.PlayerSpy.search.RecordTypeConstraint;
 import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 
-public class HistoryTypeAttribute extends SetAttribute<Constraint>
+public class HistoryTypeAttribute extends Attribute
 {
 
 private static HashMap<String, Constraint> mTypeMapping;
@@ -72,11 +72,11 @@ private static HashMap<String, Constraint> mTypeMapping;
 	
 	public HistoryTypeAttribute()
 	{
-		super("type");
+		super("type", AttributeValueType.Set);
 	}
 
 	@Override
-	protected int parseElement( String input, int start, List<Constraint> output ) throws IllegalArgumentException
+	protected int parseElement( String input, int start, List<Object> output ) throws IllegalArgumentException
 	{
 		String bestMatch = "";
 		for(String name : mTypeMapping.keySet())

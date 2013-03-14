@@ -43,6 +43,6 @@ public class NamedAttribute extends Attribute
 		if(m == null)
 			return null;
 		
-		return new Match(nameStart, start, m.value, this);
+		return new Match(nameStart, m.endPosition, m.value, this);
 	}
 }

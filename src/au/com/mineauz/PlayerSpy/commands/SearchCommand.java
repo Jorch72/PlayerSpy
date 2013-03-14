@@ -13,6 +13,7 @@ import au.com.mineauz.PlayerSpy.attributes.AttributeParser;
 import au.com.mineauz.PlayerSpy.attributes.AttributeValueType;
 import au.com.mineauz.PlayerSpy.attributes.Modifier;
 import au.com.mineauz.PlayerSpy.attributes.NamedAttribute;
+import au.com.mineauz.PlayerSpy.attributes.OptionsAttribute;
 import au.com.mineauz.PlayerSpy.attributes.TypeAttribute;
 import au.com.mineauz.PlayerSpy.attributes.AttributeParser.ParsedAttribute;
 import au.com.mineauz.PlayerSpy.search.*;
@@ -33,6 +34,7 @@ public class SearchCommand implements ICommand
 		mParser.addAttribute(new NamedAttribute("filter",AttributeValueType.Sentence, "f:").addModifier(notModifier).setSingular(false));
 		mParser.addAttribute(new NamedAttribute("dist",AttributeValueType.Number, "d:").addModifier(notModifier));
 		mParser.addAttribute(new NamedAttribute("by",AttributeValueType.String, "@").addModifier(notModifier).setSingular(false));
+		mParser.addAttribute(new OptionsAttribute());
 		mParser.addAttribute(new NamedAttribute("after",AttributeValueType.Date, "ts:"));
 		mParser.addAttribute(new NamedAttribute("before",AttributeValueType.Date, "te:"));
 	}
@@ -113,7 +115,7 @@ public class SearchCommand implements ICommand
 			
 			ArrayList<Constraint> constraints = new ArrayList<Constraint>();
 			ArrayList<CauseConstraint> causeConstraints = new ArrayList<CauseConstraint>();
-			
+			ArrayList<au.com.mineauz.PlayerSpy.search.interfaces.Modifier> modifiers = new ArrayList<au.com.mineauz.PlayerSpy.search.interfaces.Modifier>();
 			for(ParsedAttribute res : attributes)
 			{
 				IConstraint<?> constraint = null;
@@ -142,6 +144,11 @@ public class SearchCommand implements ICommand
 					constraint = new TimeConstraint((Long)res.value, false);
 				else if(res.source.getName().equals("by"))
 					constraint = new FilterCauseConstraint((String)res.value);
+				else if(res.source.getName().equals("options"))
+					modifiers.addAll((List<au.com.mineauz.PlayerSpy.search.interfaces.Modifier>)res.value);
+				
+				if(constraint == null)
+					continue;
 				
 				// Apply modifiers
 				for(Modifier mod : res.appliedModifiers)
@@ -162,6 +169,7 @@ public class SearchCommand implements ICommand
 			SearchFilter filter = new SearchFilter();
 			filter.andConstraints = constraints;
 			filter.causes = causeConstraints;
+			filter.modifiers = modifiers;
 			
 			Searcher.instance.searchAndDisplay(sender, filter);
 		}

@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.NotImplementedException;
+
 import au.com.mineauz.PlayerSpy.Utilities.CharType;
 import au.com.mineauz.PlayerSpy.Utilities.IMatchable;
 import au.com.mineauz.PlayerSpy.Utilities.Match;
@@ -108,6 +110,11 @@ public class Attribute implements IMatchable
 			return "start";
 		else
 			return "..." + input.substring(i,start);
+	}
+	
+	protected int parseElement(String input, int start, List<Object> output) throws IllegalArgumentException
+	{
+		throw new NotImplementedException("parseElement needs to be overridden by a sub class to use a set");
 	}
 	
 	@Override
@@ -249,6 +256,52 @@ public class Attribute implements IMatchable
 			valueObject = value;
 			break;
 		}
+		case Set:
+		{
+			ArrayList<Object> elements = new ArrayList<Object>();
+			if(input.charAt(start) == '[')
+			{
+				++start;
+				start = StringUtil.getNextNonSpaceChar(input, start);
+				
+				boolean ended = false;
+				boolean first = true;
+				int lastStart = start;
+				while (start < input.length())
+				{
+					if(input.charAt(start) == ']')
+					{
+						ended = true;
+						++start;
+						break;
+					}
+					
+					if(!first)
+					{
+						StringUtil.validateExpected(input, start, ",", "Expected comma or ] after " + input.substring(lastStart,start));
+						start = StringUtil.getNextNonSpaceChar(input, start+1);
+					}
+					
+					lastStart = start;
+					start = parseElement(input,start,elements);
+					start = StringUtil.getNextNonSpaceChar(input, start);
+
+					first = false;
+				}
+				
+				if(!ended)
+					throw new IllegalArgumentException("Type list was not finished.");
+			}
+			else
+			{
+				start = parseElement(input, start, elements);
+			}
+			
+			valueObject = elements;
+			break;
+		}
+		case Null:
+			break;
 		}
 		
 		return new Match(valueStart, start, valueObject, this);
