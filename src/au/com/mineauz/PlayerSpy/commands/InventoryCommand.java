@@ -13,9 +13,9 @@ import org.bukkit.inventory.PlayerInventory;
 import au.com.mineauz.PlayerSpy.InventoryViewer;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.LogTasks.DisplayInventoryTask;
+import au.com.mineauz.PlayerSpy.Utilities.Match;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
-import au.com.mineauz.PlayerSpy.search.Match;
 
 public class InventoryCommand implements ICommand
 {

@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy.search;
+package au.com.mineauz.PlayerSpy.attributes;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 import au.com.mineauz.PlayerSpy.Utilities.CharType;
+import au.com.mineauz.PlayerSpy.Utilities.IMatchable;
+import au.com.mineauz.PlayerSpy.Utilities.Match;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.Utilities.StringUtil;
 import au.com.mineauz.PlayerSpy.Utilities.Util;

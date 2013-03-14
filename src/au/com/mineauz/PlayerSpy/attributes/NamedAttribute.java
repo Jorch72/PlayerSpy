@@ -1,5 +1,6 @@
-package au.com.mineauz.PlayerSpy.search;
+package au.com.mineauz.PlayerSpy.attributes;
 
+import au.com.mineauz.PlayerSpy.Utilities.Match;
 import au.com.mineauz.PlayerSpy.Utilities.StringUtil;
 
 public class NamedAttribute extends Attribute

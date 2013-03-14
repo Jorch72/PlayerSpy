@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy.search;
+package au.com.mineauz.PlayerSpy.attributes;
 
 public enum AttributeValueType
 {

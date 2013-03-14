@@ -1,10 +1,15 @@
-package au.com.mineauz.PlayerSpy.search;
+package au.com.mineauz.PlayerSpy.attributes;
 
 import java.util.HashMap;
 import java.util.List;
 
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Utilities.StringUtil;
+import au.com.mineauz.PlayerSpy.search.AttackConstraint;
+import au.com.mineauz.PlayerSpy.search.BlockChangeConstraint;
+import au.com.mineauz.PlayerSpy.search.CompoundConstraint;
+import au.com.mineauz.PlayerSpy.search.ItemTransactionConstraint;
+import au.com.mineauz.PlayerSpy.search.RecordTypeConstraint;
 import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 
 public class HistoryTypeAttribute extends SetAttribute<Constraint>

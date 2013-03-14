@@ -1,4 +1,5 @@
-package au.com.mineauz.PlayerSpy.search;
+package au.com.mineauz.PlayerSpy.Utilities;
+
 
 public interface IMatchable
 {

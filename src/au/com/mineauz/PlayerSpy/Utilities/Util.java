@@ -9,7 +9,6 @@ import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 
 import au.com.mineauz.PlayerSpy.SpyPlugin;
-import au.com.mineauz.PlayerSpy.search.Match;
 
 public class Util 
 {

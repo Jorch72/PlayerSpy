@@ -4,9 +4,9 @@ import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.PlaybackContext;
+import au.com.mineauz.PlayerSpy.Utilities.Match;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
-import au.com.mineauz.PlayerSpy.search.Match;
 
 public class SeekCommand extends Command
 {

@@ -8,9 +8,14 @@ import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import au.com.mineauz.PlayerSpy.attributes.AttributeParser;
+import au.com.mineauz.PlayerSpy.attributes.AttributeValueType;
+import au.com.mineauz.PlayerSpy.attributes.HistoryTypeAttribute;
+import au.com.mineauz.PlayerSpy.attributes.Modifier;
+import au.com.mineauz.PlayerSpy.attributes.NamedAttribute;
+import au.com.mineauz.PlayerSpy.attributes.AttributeParser.ParsedAttribute;
 import au.com.mineauz.PlayerSpy.inspect.Inspector;
 import au.com.mineauz.PlayerSpy.search.*;
-import au.com.mineauz.PlayerSpy.search.AttributeParser.ParsedAttribute;
 import au.com.mineauz.PlayerSpy.search.interfaces.CauseConstraint;
 import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 import au.com.mineauz.PlayerSpy.search.interfaces.IConstraint;

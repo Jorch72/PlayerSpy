@@ -1,8 +1,9 @@
-package au.com.mineauz.PlayerSpy.search;
+package au.com.mineauz.PlayerSpy.attributes;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import au.com.mineauz.PlayerSpy.Utilities.Match;
 import au.com.mineauz.PlayerSpy.Utilities.StringUtil;
 
 public abstract class SetAttribute<T> extends Attribute
