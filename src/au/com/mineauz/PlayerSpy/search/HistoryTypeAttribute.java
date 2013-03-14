@@ -7,42 +7,36 @@ import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Utilities.StringUtil;
 import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 
-public class TypeAttribute extends SetAttribute<Constraint>
+public class HistoryTypeAttribute extends SetAttribute<Constraint>
 {
-	private static HashMap<String, Constraint> mTypeMapping;
+
+private static HashMap<String, Constraint> mTypeMapping;
 	
 	static
 	{
 		mTypeMapping = new HashMap<String, Constraint>();
 		
-		Constraint c = new RecordTypeConstraint(RecordType.Login);
-		mTypeMapping.put("login", c);
-		mTypeMapping.put("logon", c);
-		mTypeMapping.put("join", c);
-		
-		c = new RecordTypeConstraint(RecordType.Logoff);
-		mTypeMapping.put("logout", c);
-		mTypeMapping.put("logoff", c);
-		mTypeMapping.put("quit", c);
-		mTypeMapping.put("leave", c);
-		
-		c = new RecordTypeConstraint(RecordType.ItemPickup);
+		Constraint c = new RecordTypeConstraint(RecordType.ItemPickup);
 		mTypeMapping.put("collect", c);
 		mTypeMapping.put("pickup", c);
 		
 		mTypeMapping.put("drop", new RecordTypeConstraint(RecordType.DropItem));
 		
+		mTypeMapping.put("items", new CompoundConstraint(false, new RecordTypeConstraint(RecordType.ItemPickup), new RecordTypeConstraint(RecordType.DropItem)));
+		
 		c = new RecordTypeConstraint(RecordType.Interact);
 		mTypeMapping.put("interact", c);
 		mTypeMapping.put("use", c);
+		mTypeMapping.put("interactions", c);
+		mTypeMapping.put("uses", c);
 		
-		mTypeMapping.put("chat", new ChatConstraint()); // Special: only displays the chat part
-		mTypeMapping.put("command", new CommandConstraint()); // Special: only displays the command part
-
 		mTypeMapping.put("death", new RecordTypeConstraint(RecordType.Death));
+		mTypeMapping.put("deaths", new RecordTypeConstraint(RecordType.Death));
 		
 		mTypeMapping.put("kill", new AttackConstraint(true)); // Special: only displays the kills
+		mTypeMapping.put("kills", new AttackConstraint(true)); // Special: only displays the kills
 		mTypeMapping.put("attack", new AttackConstraint(false)); // Special: only displays the attack part
+		mTypeMapping.put("attacks", new AttackConstraint(false)); // Special: only displays the attack part
 		
 		// Special: only displays the removes part
 		c = new BlockChangeConstraint(true, false, true, true);
@@ -52,9 +46,9 @@ public class TypeAttribute extends SetAttribute<Constraint>
 		
 		mTypeMapping.put("place", new BlockChangeConstraint(false, true, true, true)); // Special: only displays the placements
 		
-		c = new RecordTypeConstraint(RecordType.Damage);
-		mTypeMapping.put("damage", c);
-		mTypeMapping.put("damaged", c);
+		c = new BlockChangeConstraint(true, true, true, true);
+		mTypeMapping.put("block", c);
+		mTypeMapping.put("blocks", c);
 		
 		// Special: only the taking from inv
 		c = new ItemTransactionConstraint(true, false);
@@ -65,15 +59,19 @@ public class TypeAttribute extends SetAttribute<Constraint>
 		c = new ItemTransactionConstraint(false, true);
 		mTypeMapping.put("gave", c);
 		mTypeMapping.put("put", c);
+		
+		c = new ItemTransactionConstraint(true, true);
+		mTypeMapping.put("transaction", c);
+		mTypeMapping.put("transactions", c);
 	}
 	
-	public TypeAttribute( )
+	public HistoryTypeAttribute()
 	{
 		super("type");
 	}
 
 	@Override
-	protected int parseElement(String input, int start, List<Constraint> output) throws IllegalArgumentException
+	protected int parseElement( String input, int start, List<Constraint> output ) throws IllegalArgumentException
 	{
 		String bestMatch = "";
 		for(String name : mTypeMapping.keySet())
@@ -88,4 +86,5 @@ public class TypeAttribute extends SetAttribute<Constraint>
 		output.add(mTypeMapping.get(bestMatch));
 		return start + bestMatch.length();
 	}
+
 }

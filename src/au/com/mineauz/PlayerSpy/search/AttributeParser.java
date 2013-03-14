@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.Utilities.StringUtil;
 
 public class AttributeParser
@@ -41,9 +40,19 @@ public class AttributeParser
 			for(Attribute attr : mAttributes)
 			{
 				Match m;
+				Set<Modifier> modifiers = new HashSet<Modifier>();
 				try
 				{
-					m = attr.matchNext(input, start);
+					m = attr.matchModifiers(input, start);
+					
+					int pos = start;
+					if(m != null)
+					{
+						modifiers = (Set<Modifier>)m.value;
+						pos = m.endPosition;
+					}
+					
+					m = attr.matchNext(input, pos);
 					
 					if(m == null)
 						continue;
@@ -63,8 +72,8 @@ public class AttributeParser
 				start = m.endPosition;
 				ParsedAttribute res = new ParsedAttribute();
 				res.source = attr;
-				res.value = ((Pair<Set<Modifier>,Object>)m.value).getArg2();
-				res.appliedModifiers = ((Pair<Set<Modifier>,Object>)m.value).getArg1();
+				res.value = m.value;
+				res.appliedModifiers = modifiers;
 				
 				results.add(res);
 				foundAttributes.add(attr);

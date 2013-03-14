@@ -13,6 +13,7 @@ import au.com.mineauz.PlayerSpy.search.*;
 import au.com.mineauz.PlayerSpy.search.AttributeParser.ParsedAttribute;
 import au.com.mineauz.PlayerSpy.search.interfaces.CauseConstraint;
 import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
+import au.com.mineauz.PlayerSpy.search.interfaces.IConstraint;
 
 public class SearchCommand implements ICommand 
 {
@@ -24,11 +25,11 @@ public class SearchCommand implements ICommand
 		Modifier notModifier = new Modifier("not", "!");
 		
 		mParser.addAttribute(new TypeAttribute().addModifier(notModifier));
-		mParser.addAttribute(new Attribute("filter",AttributeValueType.Sentence, "f:").addModifier(notModifier).setSingular(false));
-		mParser.addAttribute(new Attribute("dist",AttributeValueType.Number, "d:").addModifier(notModifier));
-		mParser.addAttribute(new Attribute("by",AttributeValueType.String, "@").addModifier(notModifier).setSingular(false));
-		mParser.addAttribute(new Attribute("after",AttributeValueType.Date, "ts:"));
-		mParser.addAttribute(new Attribute("before",AttributeValueType.Date, "te:"));
+		mParser.addAttribute(new NamedAttribute("filter",AttributeValueType.Sentence, "f:").addModifier(notModifier).setSingular(false));
+		mParser.addAttribute(new NamedAttribute("dist",AttributeValueType.Number, "d:").addModifier(notModifier));
+		mParser.addAttribute(new NamedAttribute("by",AttributeValueType.String, "@").addModifier(notModifier).setSingular(false));
+		mParser.addAttribute(new NamedAttribute("after",AttributeValueType.Date, "ts:"));
+		mParser.addAttribute(new NamedAttribute("before",AttributeValueType.Date, "te:"));
 	}
 
 	@Override
@@ -66,7 +67,7 @@ public class SearchCommand implements ICommand
 	@Override
 	public boolean canBeCommandBlock() { return false; }
 
-	@SuppressWarnings( "unchecked" )
+	@SuppressWarnings( { "unchecked", "rawtypes" } )
 	@Override
 	public boolean onCommand(CommandSender sender, String label, String[] args) 
 	{
@@ -110,8 +111,7 @@ public class SearchCommand implements ICommand
 			
 			for(ParsedAttribute res : attributes)
 			{
-				Constraint constraint = null;
-				CauseConstraint causeConstraint = null;
+				IConstraint<?> constraint = null;
 				
 				if(res.source.getName().equals("type"))
 					constraint = new CompoundConstraint(false,(ArrayList<Constraint>)res.value);
@@ -136,11 +136,7 @@ public class SearchCommand implements ICommand
 				else if(res.source.getName().equals("before"))
 					constraint = new TimeConstraint((Long)res.value, false);
 				else if(res.source.getName().equals("by"))
-					causeConstraint = new FilterCauseConstraint((String)res.value);
-				
-				// TODO: Remove this once everything has been implemented
-				if(constraint == null && causeConstraint == null)
-					continue;
+					constraint = new FilterCauseConstraint((String)res.value);
 				
 				// Apply modifiers
 				for(Modifier mod : res.appliedModifiers)
@@ -149,15 +145,13 @@ public class SearchCommand implements ICommand
 					{
 						if(constraint != null)
 							constraint = new NotConstraint(constraint);
-						if(causeConstraint != null)
-							causeConstraint = new NotCauseConstraint(causeConstraint);
 					}
 				}
 				
-				if(constraint != null)
-					constraints.add(constraint);
-				if(causeConstraint != null)
-					causeConstraints.add(causeConstraint);
+				if(constraint instanceof Constraint)
+					constraints.add((Constraint)constraint);
+				if(constraint instanceof CauseConstraint)
+					causeConstraints.add((CauseConstraint)constraint);
 			}
 			
 			SearchFilter filter = new SearchFilter();

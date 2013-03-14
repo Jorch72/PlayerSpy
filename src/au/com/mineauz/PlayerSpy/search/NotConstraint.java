@@ -1,12 +1,11 @@
 package au.com.mineauz.PlayerSpy.search;
 
-import au.com.mineauz.PlayerSpy.Records.Record;
-import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
+import au.com.mineauz.PlayerSpy.search.interfaces.IConstraint;
 
-public class NotConstraint extends Constraint
+public class NotConstraint<T> implements IConstraint<T>
 {
-	private Constraint mConstraint;
-	public NotConstraint(Constraint constraint)
+	private IConstraint<T> mConstraint;
+	public NotConstraint(IConstraint<T> constraint)
 	{
 		if(constraint == null)
 			throw new IllegalArgumentException("Constraint can not be null");
@@ -14,15 +13,15 @@ public class NotConstraint extends Constraint
 		mConstraint = constraint;
 	}
 	@Override
-	public boolean matches( Record record )
+	public boolean matches( T item )
 	{
-		return !mConstraint.matches(record);
+		return !mConstraint.matches(item);
 	}
 
 	@Override
 	public String getDescription()
 	{
-		return null;
+		return "not " + mConstraint.getDescription();
 	}
 
 }

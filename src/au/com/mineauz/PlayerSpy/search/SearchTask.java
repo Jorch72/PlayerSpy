@@ -171,16 +171,17 @@ public class SearchTask implements Task<SearchResults>
 		CrossReferenceIndex.Results sessionsToSearch = null;
 		Debug.info("Beginning search");
 		
-		// Get the contraints
-		
+		// Extract the time range from the constraints to speed up retrieval
 		for(Constraint constraint : mFilter.andConstraints)
 		{
-			if(constraint instanceof DateConstraint)
+			if(constraint instanceof TimeConstraint)
 			{
-				startTime = ((DateConstraint)constraint).startDate.getTime();
-				endTime = ((DateConstraint)constraint).endDate.getTime();
+				if(((TimeConstraint)constraint).isAfter())
+					startTime = ((TimeConstraint)constraint).getTime();
+				else
+					endTime = ((TimeConstraint)constraint).getTime();
+				
 				mFilter.andConstraints.remove(constraint);
-				break;
 			}
 		}
 		

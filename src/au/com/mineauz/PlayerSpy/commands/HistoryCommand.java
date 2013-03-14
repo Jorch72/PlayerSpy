@@ -1,146 +1,36 @@
 package au.com.mineauz.PlayerSpy.commands;
 
-import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import au.com.mineauz.PlayerSpy.fsa.*;
 import au.com.mineauz.PlayerSpy.inspect.Inspector;
 import au.com.mineauz.PlayerSpy.search.*;
+import au.com.mineauz.PlayerSpy.search.AttributeParser.ParsedAttribute;
+import au.com.mineauz.PlayerSpy.search.interfaces.CauseConstraint;
+import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
+import au.com.mineauz.PlayerSpy.search.interfaces.IConstraint;
 
 public class HistoryCommand implements ICommand
 {
-	private static State mStartState;
+	private static AttributeParser mParser;
 	
 	static
 	{
-		buildState();
+		mParser = new AttributeParser();
+		Modifier notModifier = new Modifier("not", "!");
+		
+		mParser.addAttribute(new HistoryTypeAttribute().addModifier(notModifier));
+		mParser.addAttribute(new NamedAttribute("filter",AttributeValueType.Sentence, "f:").addModifier(notModifier).setSingular(false));
+		mParser.addAttribute(new NamedAttribute("by",AttributeValueType.String, "@").addModifier(notModifier).setSingular(false));
+		mParser.addAttribute(new NamedAttribute("after",AttributeValueType.Date, "ts:"));
+		mParser.addAttribute(new NamedAttribute("before",AttributeValueType.Date, "te:"));
 	}
 	
-	private static void buildState()
-	{
-		State terminator = new FinalCompactorDA().addNext(new FinalState());
-		
-		State dateEnd = new DateConstraintDA().addNext(terminator);
-		
-		
-		State beforeTimeState = new StringState("before")
-			.addNext(new DateState()
-				.addNext(new TimeState()
-					.addNext(new DateCompactorDA()
-						.addNext(dateEnd)
-					)
-				)
-				.addNext(dateEnd)
-			)
-			.addNext(new TimeState()
-				.addNext(new TimeOnlyDA()
-					.addNext(dateEnd)
-				)
-			)
-		;
-		State afterTimeState = new StringState("after")
-			.addNext(new DateState()
-				.addNext(new TimeState()
-					.addNext(new DateCompactorDA()
-						.addNext(dateEnd)
-					)
-				)
-				.addNext(dateEnd)
-			)
-			.addNext(new TimeState()
-				.addNext(new TimeOnlyDA()
-					.addNext(dateEnd)
-				)
-			)
-		;
-		
-		State betweenPt2 = new StringState("and")
-			.addNext(new DateState()
-				.addNext(new TimeState()
-					.addNext(new DateCompactorDA()
-						.addNext(dateEnd)
-					)
-				)
-				.addNext(dateEnd)
-			)
-			.addNext(new TimeState()
-				.addNext(new TimeOnlyDA()
-					.addNext(dateEnd)
-				)
-			)
-		;
-		
-		State betweenTimeState = new StringState("between")
-			.addNext(new DateState()
-				.addNext(new TimeState()
-					.addNext(new DateCompactorDA()
-						.addNext(betweenPt2)
-					)
-				)
-				.addNext(betweenPt2)
-			)
-			.addNext(new TimeState()
-				.addNext(new TimeOnlyDA()
-					.addNext(betweenPt2)
-				)
-			)
-		;
-		
-		State timeConstraint = new NullState()
-			.addNext(beforeTimeState)
-			.addNext(afterTimeState)
-			.addNext(betweenTimeState)
-			.addNext(terminator)
-		;
-		
-		
-		State limitTo = new NullState()
-			.addNext(new StringState("limit")
-				.addNext(new StringState("to")
-					.addNext(new CauseState()
-						.addNext(timeConstraint)
-					)
-				)
-			)
-			.addNext(timeConstraint)
-		;
-		
-		State hideShowDA = new RecordFilterDA().addNext(limitTo);
-		
-		State hideState = new StringState("hide")
-			.addNext(new MultiStringState("blocks","block")
-				.addNext(hideShowDA)
-			)
-			.addNext(new MultiStringState("items","item","transactions","inventory","inventories")
-				.addNext(hideShowDA)
-			)
-			.addNext(new MultiStringState("interact","interactions")
-				.addNext(hideShowDA)
-			)
-		;
-		
-		State onlyState = new StringState("only")
-			.addNext(new MultiStringState("blocks","block")
-			.addNext(hideShowDA)
-			)
-			.addNext(new MultiStringState("items","item","transactions","inventory","inventories")
-				.addNext(hideShowDA)
-			)
-			.addNext(new MultiStringState("interact","interactions")
-				.addNext(hideShowDA)
-			)
-		;
-		
-		mStartState = new InitialState()
-			.addNext(onlyState)
-			.addNext(hideState)
-			.addNext(limitTo)
-		;
-	}
 	@Override
 	public String getName() 
 	{
@@ -177,6 +67,7 @@ public class HistoryCommand implements ICommand
 	@Override
 	public boolean canBeCommandBlock() { return false; }
 
+	@SuppressWarnings( { "rawtypes", "unchecked" } )
 	@Override
 	public boolean onCommand(CommandSender sender, String label, String[] args) 
 	{
@@ -219,13 +110,64 @@ public class HistoryCommand implements ICommand
 		
 		try
 		{
-			ArrayDeque<Object> results = FiniteStateAutomata.parse(inputString.toLowerCase(), mStartState);
-			SearchFilter filter = (SearchFilter)results.pop();
+			List<ParsedAttribute> attributes = mParser.parse(inputString);
+			
+			ArrayList<Constraint> constraints = new ArrayList<Constraint>();
+			ArrayList<CauseConstraint> causeConstraints = new ArrayList<CauseConstraint>();
+			
+			for(ParsedAttribute res : attributes)
+			{
+				IConstraint<?> constraint = null;
+				
+				if(res.source.getName().equals("type"))
+					constraint = new CompoundConstraint(false,(ArrayList<Constraint>)res.value);
+				else if(res.source.getName().equals("dist"))
+				{
+					Location loc = null;
+					if(sender instanceof Player)
+						loc = ((Player)sender).getLocation();
+					
+					if(loc == null)
+					{
+						sender.sendMessage(ChatColor.RED + "You must be in-game to use the distance attribute.");
+						return true;
+					}
+					
+					constraint = new DistanceConstraint((Double)res.value, loc);
+				}
+				else if(res.source.getName().equals("filter"))
+					constraint = new FilterConstraint((String)res.value);
+				else if(res.source.getName().equals("after"))
+					constraint = new TimeConstraint((Long)res.value, true);
+				else if(res.source.getName().equals("before"))
+					constraint = new TimeConstraint((Long)res.value, false);
+				else if(res.source.getName().equals("by"))
+					constraint = new FilterCauseConstraint((String)res.value);
+				
+				// Apply modifiers
+				for(Modifier mod : res.appliedModifiers)
+				{
+					if(mod.getName().equals("not"))
+					{
+						if(constraint != null)
+							constraint = new NotConstraint(constraint);
+					}
+				}
+				
+				if(constraint instanceof Constraint)
+					constraints.add((Constraint)constraint);
+				if(constraint instanceof CauseConstraint)
+					causeConstraints.add((CauseConstraint)constraint);
+			}
+			
+			SearchFilter filter = new SearchFilter();
+			filter.andConstraints = constraints;
 			filter.andConstraints.add(new DistanceConstraint(0.55, Inspector.instance.getSelectedBlock((Player)sender).clone().add(0.5,0.5,0.5)));
+			filter.causes = causeConstraints;
 			
 			Searcher.instance.getBlockHistory(sender, filter);
 		}
-		catch(ParseException e)
+		catch(IllegalArgumentException e)
 		{
 			sender.sendMessage(ChatColor.RED + e.getMessage());
 		}

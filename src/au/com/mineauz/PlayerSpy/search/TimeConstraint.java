@@ -30,5 +30,15 @@ public class TimeConstraint extends Constraint
 	{
 		return null;
 	}
+	
+	public boolean isAfter()
+	{
+		return mAfter;
+	}
+	
+	public long getTime()
+	{
+		return mTime;
+	}
 
 }

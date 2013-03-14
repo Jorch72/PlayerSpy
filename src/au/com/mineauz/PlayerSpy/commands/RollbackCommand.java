@@ -1,6 +1,5 @@
 package au.com.mineauz.PlayerSpy.commands;
 
-import java.util.Date;
 import java.util.List;
 
 import org.bukkit.Bukkit;
@@ -13,11 +12,11 @@ import au.com.mineauz.PlayerSpy.Cause;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
 import au.com.mineauz.PlayerSpy.rollback.RollbackManager;
 import au.com.mineauz.PlayerSpy.rollback.RollbackSession;
-import au.com.mineauz.PlayerSpy.search.DateConstraint;
 import au.com.mineauz.PlayerSpy.search.DistanceConstraint;
 import au.com.mineauz.PlayerSpy.search.EndResultOnlyModifier;
 import au.com.mineauz.PlayerSpy.search.FilterCauseConstraint;
 import au.com.mineauz.PlayerSpy.search.SearchFilter;
+import au.com.mineauz.PlayerSpy.search.TimeConstraint;
 import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 
 public class RollbackCommand implements ICommand
@@ -187,10 +186,8 @@ public class RollbackCommand implements ICommand
 					return true;
 				}
 				
-				DateConstraint constraint = new DateConstraint();
-				constraint.startDate = new Date(System.currentTimeMillis() - time);
-				constraint.endDate = new Date(System.currentTimeMillis());
-				filter.andConstraints.add(constraint);
+				filter.andConstraints.add(new TimeConstraint(System.currentTimeMillis() - time, true));
+				filter.andConstraints.add(new TimeConstraint(System.currentTimeMillis(), false));
 			}
 			else if(c.equals("preview"))
 			{

@@ -1,7 +1,6 @@
 package au.com.mineauz.PlayerSpy.LogTasks;
 
 import java.util.Arrays;
-import java.util.Date;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -18,12 +17,12 @@ import au.com.mineauz.PlayerSpy.Records.InventoryRecord;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
 import au.com.mineauz.PlayerSpy.search.CompoundConstraint;
-import au.com.mineauz.PlayerSpy.search.DateConstraint;
 import au.com.mineauz.PlayerSpy.search.FilterCauseConstraint;
 import au.com.mineauz.PlayerSpy.search.RecordTypeConstraint;
 import au.com.mineauz.PlayerSpy.search.SearchFilter;
 import au.com.mineauz.PlayerSpy.search.SearchResults;
 import au.com.mineauz.PlayerSpy.search.SearchTask;
+import au.com.mineauz.PlayerSpy.search.TimeConstraint;
 
 public class DisplayInventoryTask implements Task<Void>
 {
@@ -44,10 +43,8 @@ public class DisplayInventoryTask implements Task<Void>
 		SearchFilter filter = new SearchFilter();
 		filter.causes.add(new FilterCauseConstraint(Cause.playerCause(mInvOwner).friendlyName()));
 		
-		DateConstraint dc = new DateConstraint();
-		dc.startDate = new Date(0);
-		dc.endDate = new Date(mDate);
-		filter.andConstraints.add(dc);
+		filter.andConstraints.add(new TimeConstraint(0, true));
+		filter.andConstraints.add(new TimeConstraint(mDate, false));
 		
 		filter.andConstraints.add(new CompoundConstraint(false, new RecordTypeConstraint(RecordType.FullInventory), new RecordTypeConstraint(RecordType.UpdateInventory)));
 		
