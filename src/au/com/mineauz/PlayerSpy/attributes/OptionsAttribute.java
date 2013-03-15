@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import au.com.mineauz.PlayerSpy.Utilities.StringUtil;
+import au.com.mineauz.PlayerSpy.search.ReverserFormatter;
 import au.com.mineauz.PlayerSpy.search.ShowLocationModifier;
 import au.com.mineauz.PlayerSpy.search.interfaces.Modifier;
 
@@ -19,6 +20,8 @@ public class OptionsAttribute extends NamedAttribute
 		mOptions.put("show location", m);
 		mOptions.put("showlocation", m);
 		mOptions.put("show-location", m);
+		
+		mOptions.put("reverse", new ReverserFormatter());
 	}
 	
 	public OptionsAttribute()
