@@ -78,8 +78,8 @@ public class BlockChangeRecord extends Record implements IRollbackable, ILocatio
 	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		stream.writeBoolean(mPlaced);
-		mInitialBlock.write(stream, absolute);
-		mFinalBlock.write(stream, absolute);
+		mInitialBlock.write(stream, absolute, true);
+		mFinalBlock.write(stream, absolute, true);
 	}
 
 	@Override
@@ -96,7 +96,7 @@ public class BlockChangeRecord extends Record implements IRollbackable, ILocatio
 	@Override
 	protected int getContentSize(boolean absolute) 
 	{
-		return 1 + mInitialBlock.getSize(absolute) + mFinalBlock.getSize(absolute);
+		return 1 + mInitialBlock.getSize(absolute, true) + mFinalBlock.getSize(absolute, true);
 	}
 
 	public StoredBlock getInitialBlock()
@@ -166,7 +166,14 @@ public class BlockChangeRecord extends Record implements IRollbackable, ILocatio
 			if(mInitialBlock.getLocation().getWorld() == null)
 				return false;
 			
-			mInitialBlock.applyBlockInWorld();
+			try
+			{
+				mInitialBlock.applyBlockInWorld();
+			}
+			catch(RecordFormatException e)
+			{
+				return false;
+			}
 			mIsRolledBack = true;
 		}
 		
@@ -178,7 +185,14 @@ public class BlockChangeRecord extends Record implements IRollbackable, ILocatio
 		if(mFinalBlock.getLocation().getWorld() == null)
 		return false;
 		
-		mFinalBlock.applyBlockInWorld();
+		try
+		{
+			mFinalBlock.applyBlockInWorld();
+		}
+		catch(RecordFormatException e)
+		{
+			return false;
+		}
 		mIsRolledBack = false;
 		
 		return true;
@@ -187,5 +201,11 @@ public class BlockChangeRecord extends Record implements IRollbackable, ILocatio
 	public void setRollbackState( boolean state )
 	{
 		mIsRolledBack = state;
+	}
+	
+	@Override
+	public String toString()
+	{
+		return "BlockChange from: {" + mInitialBlock.toString() + "} to: {" + mFinalBlock.toString() + "} placed:" + mPlaced;
 	}
 }

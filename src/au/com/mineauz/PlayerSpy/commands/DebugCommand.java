@@ -1,5 +1,7 @@
 package au.com.mineauz.PlayerSpy.commands;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.TreeMap;
@@ -22,6 +24,10 @@ import au.com.mineauz.PlayerSpy.tracdata.RollbackIndex;
 import au.com.mineauz.PlayerSpy.tracdata.SessionEntry;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
+import au.com.mineauz.PlayerSpy.wrappers.nbt.NBTCompressedStreamTools;
+import au.com.mineauz.PlayerSpy.wrappers.nbt.NBTTagCompound;
+import au.com.mineauz.PlayerSpy.wrappers.nbt.NBTTagList;
+import au.com.mineauz.PlayerSpy.wrappers.nbt.NBTTagString;
 
 public class DebugCommand implements ICommand
 {
@@ -239,6 +245,27 @@ public class DebugCommand implements ICommand
 		}
 		else if(args[0].equalsIgnoreCase("test"))
 		{
+			NBTTagCompound root = new NBTTagCompound("");
+			root.set("type", new NBTTagString("","sign"));
+			
+			NBTTagList lines = new NBTTagList("");
+			lines.add(new NBTTagString("","line 1"));
+			lines.add(new NBTTagString("","line 2"));
+			lines.add(new NBTTagString("","line 3"));
+			lines.add(new NBTTagString("","line 4"));
+			
+			root.set("lines", lines);
+			
+			ByteArrayOutputStream output = new ByteArrayOutputStream();
+			NBTCompressedStreamTools.writeCompressed(root, output);
+			
+			ByteArrayInputStream input = new ByteArrayInputStream(output.toByteArray());
+			root = NBTCompressedStreamTools.readCompressed(input);
+			long remain = input.available();
+			if(remain == 0)
+				sender.sendMessage("Clean");
+			else
+				sender.sendMessage("" + remain + " Dirty bytes");
 		}
 		else
 			return false;

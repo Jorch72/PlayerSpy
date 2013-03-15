@@ -9,6 +9,7 @@ import au.com.mineauz.PlayerSpy.wrappers.WrapperClass;
 import au.com.mineauz.PlayerSpy.wrappers.WrapperConstructor;
 import au.com.mineauz.PlayerSpy.wrappers.WrapperField;
 import au.com.mineauz.PlayerSpy.wrappers.WrapperMethod;
+import au.com.mineauz.PlayerSpy.wrappers.nbt.NBTTagCompound;
 
 @WrapperClass("net.minecraft.server.*.ItemStack")
 public class ItemStack extends AutoWrapper
@@ -32,6 +33,14 @@ public class ItemStack extends AutoWrapper
 		instanciate(mConstructor, item, amount, data);
 	}
 	
+	@WrapperConstructor({int.class, int.class, int.class})
+	private static Constructor<?> mConstructor2;
+	public ItemStack(int type, int amount, int data)
+	{
+		super();
+		instanciate(mConstructor2, type, amount, data);
+	}
+	
 	@WrapperMethod(name="getItem", returnType=Item.class, parameterTypes={})
 	private static Method mGetItem;
 	
@@ -46,5 +55,19 @@ public class ItemStack extends AutoWrapper
 	public int getData()
 	{
 		return callMethod(mGetData);
+	}
+	
+	@WrapperMethod(name="c", returnType=void.class, parameterTypes=NBTTagCompound.class)
+	private static Method mReadFromNBT;
+	public void readFromNBT(NBTTagCompound root)
+	{
+		callMethod(mReadFromNBT,root);
+	}
+	
+	@WrapperMethod(name="save", returnType=NBTTagCompound.class, parameterTypes=NBTTagCompound.class)
+	private static Method mWriteToNBT;
+	public NBTTagCompound writeToNBT(NBTTagCompound root)
+	{
+		return callMethod(mWriteToNBT, root);
 	}
 }

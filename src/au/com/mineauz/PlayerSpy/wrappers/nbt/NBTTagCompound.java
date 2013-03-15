@@ -55,4 +55,32 @@ public class NBTTagCompound extends NBTBase
 	{
 		return callMethod(mGetListMethod, name);
 	}
+	
+	@WrapperMethod(name="getString", returnType=String.class, parameterTypes={String.class})
+	private static Method mGetStringMethod;
+	public String getString(String name)
+	{
+		return callMethod(mGetStringMethod, name);
+	}
+	
+	@WrapperMethod(name="getInt", returnType=int.class, parameterTypes={String.class})
+	private static Method mGetIntMethod;
+	public int getInt(String name)
+	{
+		return callMethod(mGetIntMethod, name);
+	}
+	
+	@WrapperMethod(name="getByte", returnType=byte.class, parameterTypes={String.class})
+	private static Method mGetByteMethod;
+	public byte getByte(String name)
+	{
+		return callMethod(mGetByteMethod, name);
+	}
+	
+	@WrapperMethod(name="hasKey", returnType=boolean.class, parameterTypes={String.class})
+	private static Method mHasKeyMethod;
+	public boolean hasKey(String name)
+	{
+		return callMethod(mHasKeyMethod, name);
+	}
 }

@@ -1,51 +1,222 @@
 package au.com.mineauz.PlayerSpy.storage;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.UTFDataFormatException;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.Note;
 import org.bukkit.SkullType;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
+import org.bukkit.block.BrewingStand;
+import org.bukkit.block.Chest;
 import org.bukkit.block.CreatureSpawner;
 import org.bukkit.block.Jukebox;
 import org.bukkit.block.NoteBlock;
 import org.bukkit.block.Sign;
 import org.bukkit.block.Skull;
-import org.bukkit.entity.EntityType;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
 
 import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.wrappers.nbt.*;
 
 public class StoredBlock 
 {
-	public enum BlockStateType
-	{
-		// No extra data
-		NormalBlock,
-		// String[]
-		Sign,
-		// Note
-		NoteBlock,
-		// Material (the disk material)
-		Jukebox,
-		// EntityType (the type of entity spawned)
-		Spawner,
-		// SkullData instance
-		Skull
-	}
-	
 	private Location mLocation;
 	private Material mType;
 	private byte mData;
-	private BlockStateType mStateType;
-	private Object mStateData;
+	private NBTTagCompound mStateData;
+	
+	private NBTTagCompound stateToTagCompound(BlockState state)
+	{
+		NBTTagCompound root = new NBTTagCompound("");
+		if(state instanceof Sign)
+		{
+			root.set("type", new NBTTagString("","sign"));
+			
+			NBTTagList lines = new NBTTagList("");
+			lines.add(new NBTTagString("",((Sign)state).getLine(0)));
+			lines.add(new NBTTagString("",((Sign)state).getLine(1)));
+			lines.add(new NBTTagString("",((Sign)state).getLine(2)));
+			lines.add(new NBTTagString("",((Sign)state).getLine(3)));
+			
+			root.set("lines", lines);
+		}
+		else if(state instanceof CreatureSpawner)
+		{
+			root.set("type", new NBTTagString("","spawner"));
+			
+			root.set("spawnType", new NBTTagString("", ((CreatureSpawner)state).getCreatureTypeName()));
+			root.set("delay", new NBTTagInt("", ((CreatureSpawner)state).getDelay()));
+		}
+		else if(state instanceof Jukebox)
+		{
+			root.set("type", new NBTTagString("","jukebox"));
+			
+			root.set("disc", new NBTTagInt("", ((Jukebox)state).getPlaying().getId()));
+		}
+		else if(state instanceof NoteBlock)
+		{
+			root.set("type", new NBTTagString("","noteblock"));
+			
+			root.set("note", new NBTTagByte("", ((NoteBlock)state).getRawNote()));
+		}
+		else if(state instanceof Skull)
+		{
+			root.set("type", new NBTTagString("","skull"));
+			
+			root.set("skullType", new NBTTagInt("",((Skull)state).getSkullType().ordinal()));
+			root.set("facing", new NBTTagInt("",((Skull)state).getRotation().ordinal()));
+			
+			if(((Skull)state).hasOwner())
+				root.set("owner", new NBTTagString("", ((Skull)state).getOwner()));
+		}
+		else if(state instanceof BrewingStand)
+		{
+			root.set("type", new NBTTagString("","brewingStand"));
+			
+			root.set("brewTime", new NBTTagInt("",((BrewingStand)state).getBrewingTime()));
+		}
+		else if(state instanceof InventoryHolder)
+		{
+			root.set("type", new NBTTagString("","inventory"));
+		}
+		else
+			return null;
+		
+		
+		if(state instanceof InventoryHolder)
+		{
+			Inventory inv = null;
+			if(state instanceof Chest)
+				inv = ((Chest)state).getBlockInventory();
+			else
+				inv = ((InventoryHolder)state).getInventory();
+			
+			NBTTagList items = new NBTTagList("");
+			
+			for(int i = 0; i < inv.getContents().length; ++i)
+			{
+				if(inv.getContents()[i] != null)
+				{
+					NBTTagCompound item = new NBTTagCompound("");
+					item.set("slot", new NBTTagInt("",i));
+					
+					au.com.mineauz.PlayerSpy.wrappers.minecraft.ItemStack nativeStack = Utility.convertToNative(inv.getContents()[i]);
+					nativeStack.writeToNBT(item);
+					items.add(item);
+				}
+			}
+			
+			root.set("inventory", items);
+		}
+		
+		return root;
+	}
+	
+	private void applyStoredState(BlockState state, NBTTagCompound data) throws RecordFormatException
+	{
+		if(data == null)
+			return;
+		
+		if(data.getString("type").equals("sign"))
+		{
+			if(!(state instanceof Sign))
+				throw new RecordFormatException("Incorrect BlockState type found. Expected: Sign Found: " + state.getClass().getSimpleName());
+			
+			NBTTagList lines = data.getList("lines");
+			if(lines.size() != 4)
+				throw new RecordFormatException("Expected 4 lines for sign text.");
+			
+			for(int i = 0; i < 4; ++i)
+				((Sign)state).setLine(i, ((NBTTagString)lines.get(i)).getData());
+		}
+		else if(data.getString("type").equals("spawner"))
+		{
+			if(!(state instanceof CreatureSpawner))
+				throw new RecordFormatException("Incorrect BlockState type found. Expected: CreatureSpawner Found: " + state.getClass().getSimpleName());
+			
+			((CreatureSpawner)state).setCreatureTypeByName(data.getString("spawnType"));
+			((CreatureSpawner)state).setDelay(data.getInt("delay"));
+		}
+		else if(data.getString("type").equals("jukebox"))
+		{
+			if(!(state instanceof Jukebox))
+				throw new RecordFormatException("Incorrect BlockState type found. Expected: Jukebox Found: " + state.getClass().getSimpleName());
+			
+			((Jukebox)state).setPlaying(Material.getMaterial(data.getInt("disc")));
+		}
+		else if(data.getString("type").equals("noteblock"))
+		{
+			if(!(state instanceof NoteBlock))
+				throw new RecordFormatException("Incorrect BlockState type found. Expected: NoteBlock Found: " + state.getClass().getSimpleName());
+			
+			((NoteBlock)state).setRawNote(data.getByte("note"));
+		}
+		else if(data.getString("type").equals("skull"))
+		{
+			if(!(state instanceof Skull))
+				throw new RecordFormatException("Incorrect BlockState type found. Expected: Skull Found: " + state.getClass().getSimpleName());
+			
+			((Skull)state).setSkullType(SkullType.values()[data.getInt("skullType")]);
+			((Skull)state).setRotation(BlockFace.values()[data.getInt("facing")]);
+			
+			
+			if(data.hasKey("owner"))
+				((Skull)state).setOwner(data.getString("owner"));
+		}
+		else if(data.getString("type").equals("brewingstand"))
+		{
+			if(!(state instanceof BrewingStand))
+				throw new RecordFormatException("Incorrect BlockState type found. Expected: BrewingStand Found: " + state.getClass().getSimpleName());
+			
+			((BrewingStand)state).setBrewingTime(data.getInt("brewTime"));
+		}
+		
+		if(data.hasKey("inventory"))
+		{
+			if(!(state instanceof InventoryHolder))
+				throw new RecordFormatException("Incorrect BlockState type found. Expected: InventoryHolder Found: " + state.getClass().getSimpleName());
+			
+			Inventory inv = null;
+			if(state instanceof Chest)
+				inv = ((Chest)state).getBlockInventory();
+			else
+				
+				inv = ((InventoryHolder)state).getInventory();
+			
+			NBTTagList items = data.getList("inventory");
+			
+			ItemStack[] stacks = new ItemStack[inv.getContents().length];
+			
+			for(int i = 0; i < items.size(); ++i)
+			{
+				NBTTagCompound item = (NBTTagCompound)items.get(i);
+
+				au.com.mineauz.PlayerSpy.wrappers.minecraft.ItemStack nativeStack = new au.com.mineauz.PlayerSpy.wrappers.minecraft.ItemStack(0, 0, 0);
+				nativeStack.readFromNBT(item);
+				
+				int slot = item.getInt("slot");
+				ItemStack stack = Utility.convertToBukkit(nativeStack);
+				
+				stacks[slot] = stack;
+			}
+			
+			inv.setContents(stacks);
+			
+			
+		}
+		
+	}
 	
 	private void initFromBlockState(BlockState block)
 	{
@@ -54,55 +225,14 @@ public class StoredBlock
 			mLocation = new Location(Bukkit.getWorlds().get(0), 0, 0, 0);
 			mType = Material.AIR;
 			mData = 0;
-			mStateType = BlockStateType.NormalBlock;
+			mStateData = null;
 			return;
 		}
 		mLocation = block.getLocation().clone();
 		mType = block.getType();
 		mData = block.getRawData();
 		
-		if(block instanceof Sign)
-		{
-			mStateType = BlockStateType.Sign;
-			mStateData = ((Sign)block).getLines();
-		}
-		else if(block instanceof NoteBlock)
-		{
-			mStateType = BlockStateType.NoteBlock;
-			mStateData = ((NoteBlock)block).getNote();
-		}
-		else if(block instanceof Jukebox)
-		{
-			mStateType = BlockStateType.Jukebox;
-			try
-			{
-				mStateData = ((Jukebox)block).getPlaying();
-			}
-			catch(NullPointerException e) // Workaround to Craftbukkit bug(it doesnt check if there is a record before getting its id)
-			{
-				mStateData = Material.AIR;
-			}
-		}
-		else if(block instanceof CreatureSpawner)
-		{
-			mStateType = BlockStateType.Spawner;
-			mStateData = ((CreatureSpawner)block).getSpawnedType();
-		}
-		else if(block instanceof Skull)
-		{
-			mStateType = BlockStateType.Skull;
-			SkullData data = new SkullData();
-			data.type = ((Skull)block).getSkullType();
-			
-			if(data.type == SkullType.PLAYER)
-				data.player = ((Skull)block).getOwner();
-			
-			data.facing = ((Skull)block).getRotation();
-			
-			mStateData = data;
-		}
-		else
-			mStateType = BlockStateType.NormalBlock;
+		mStateData = stateToTagCompound(block);
 	}
 	
 	public StoredBlock(Block block)
@@ -112,7 +242,7 @@ public class StoredBlock
 			mLocation = new Location(Bukkit.getWorlds().get(0), 0, 0, 0);
 			mType = Material.AIR;
 			mData = 0;
-			mStateType = BlockStateType.NormalBlock;
+			mStateData = null;
 			return;
 		}
 		initFromBlockState(block.getState());
@@ -122,11 +252,11 @@ public class StoredBlock
 		mLocation = location.clone();
 		mType = type;
 		mData = data;
-		mStateType = BlockStateType.NormalBlock;
+		mStateData = null;
 	}
 	public StoredBlock()
 	{
-		mStateType = BlockStateType.NormalBlock;
+		mStateData = null;
 	}
 	
 	public StoredBlock(BlockState block) 
@@ -138,7 +268,7 @@ public class StoredBlock
 		mLocation = location.clone();
 		mType = data.getItemType();
 		mData = data.getData();
-		mStateType = BlockStateType.NormalBlock;
+		mStateData = null;
 	}
 	public Location getLocation()
 	{
@@ -157,178 +287,72 @@ public class StoredBlock
 	{
 		return mData;
 	}
-	
-	public BlockStateType getStateType()
-	{
-		return mStateType;
-	}
-	
-	public Object getStateData()
-	{
-		return mStateData;
-	}
-	
-	public void applyBlockInWorld()
+
+	public void applyBlockInWorld() throws RecordFormatException
 	{
 		mLocation.getBlock().setTypeIdAndData(mType.getId(), mData, false);
 		
 		BlockState state = mLocation.getBlock().getState();
 		
-		switch(mStateType)
-		{
-		case Sign:
-			for(int i = 0; i < 4; i++)
-				((Sign)state).setLine(i, ((String[])mStateData)[i]);
-			break;
-		case Jukebox:
-			((Jukebox)state).setPlaying((Material)mStateData);
-			break;
-		case NoteBlock:
-			((NoteBlock)state).setNote((Note)mStateData);
-			break;
-		case Spawner:
-			((CreatureSpawner)state).setSpawnedType((EntityType)mStateData);
-			break;
-		case Skull:
-		{
-			SkullData data = (SkullData)mStateData;
-			((Skull)state).setSkullType(data.type);
-			((Skull)state).setRotation(data.facing);
-			((Skull)state).setOwner(data.player);
-			break;
-		}
-		case NormalBlock:
-			break;
-		}
+		applyStoredState(state, mStateData);
 		
 		state.update(true);
 	}
-	public void write(DataOutputStream stream, boolean absolute) throws IOException
+	public void write(DataOutputStream stream, boolean absolute, boolean full) throws IOException
 	{
 		stream.writeInt(getTypeId());
 		stream.writeByte(mData);
 		
 		new StoredLocation(mLocation).writeLocation(stream, absolute);
 		
-		stream.writeByte((byte)mStateType.ordinal());
-		switch(mStateType)
+		if(mStateData == null || !full)
+			stream.writeByte(0);
+		else
 		{
-		case Sign:
-			stream.writeUTF(((String[])mStateData)[0]);
-			stream.writeUTF(((String[])mStateData)[1]);
-			stream.writeUTF(((String[])mStateData)[2]);
-			stream.writeUTF(((String[])mStateData)[3]);
-			break;
-		case Jukebox:
-			stream.writeInt(((Material)mStateData).getId());
-			break;
-		case NoteBlock:
-			stream.writeByte(((Note)mStateData).getId());
-			break;
-		case Spawner:
-			stream.writeShort(((EntityType)mStateData).getTypeId());
-			break;
-		case Skull:
-			((SkullData)mStateData).write(stream);
-			break;
-		default:
-			break;
+			stream.writeByte(1);
+			
+			NBTCompressedStreamTools.writeCompressed(mStateData, stream);
 		}
 	}
 	
 	public void read(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
-		mType = Material.getMaterial(stream.readInt());
+		int typeId = stream.readInt();
+		mType = Material.getMaterial(typeId);
 		mData = stream.readByte();
 		
 		if(mType == null)
-			throw new RecordFormatException("Bad material type");
+			throw new RecordFormatException("Bad material type " + typeId);
 		
 		if(absolute)
 			mLocation = StoredLocation.readLocationFull(stream).getLocation();
 		else
 			mLocation = StoredLocation.readLocation(stream, currentWorld).getLocation();
 		
-		int stateTypeInt = stream.readByte();
-		if(stateTypeInt < 0 || stateTypeInt >= BlockStateType.values().length)
-			throw new RecordFormatException("Block state type out of range");
-		
-		try
+		if(stream.readByte() == 1)
 		{
-			mStateType = BlockStateType.values()[stateTypeInt];
-			switch(mStateType)
-			{
-			case Sign:
-				{
-					String[] data = new String[4];
-					data[0] = stream.readUTF();
-					data[1] = stream.readUTF();
-					data[2] = stream.readUTF();
-					data[3] = stream.readUTF();
-					mStateData = data;
-					break;
-				}
-			case Jukebox:
-				mStateData = Material.getMaterial(stream.readInt());
-				if(mStateData == null)
-					throw new RecordFormatException("Bad material type for jukebox disk");
-				break;
-			case NoteBlock:
-				int note = stream.readByte();
-				if(note < 0 || note > 24)
-					throw new RecordFormatException("Bad note " + note + " read");
-				mStateData = new Note(stream.readByte());
-				break;
-			case Spawner:
-				mStateData = EntityType.fromId(stream.readShort());
-				if(mStateData == null)
-					throw new RecordFormatException("Bad entity type for monster spawner");
-				break;
-			case Skull:
-				mStateData = new SkullData();
-				
-				((SkullData)mStateData).read(stream);
-				break;
-			default:
-				mStateData = null;
-				break;
-			}
-		}
-		catch(UTFDataFormatException e)
-		{
-			throw new RecordFormatException("Error reading UTF string. Malformed data.");
+			mStateData = NBTCompressedStreamTools.readCompressed(stream);
 		}
 	}
 	
-	public int getSize(boolean absolute)
+	public int getSize(boolean absolute, boolean full)
 	{
 		int size = 6 + new StoredLocation(mLocation).getSize(absolute);
+
+		if(mStateData == null || !full)
+			return size;
 		
-		switch(mStateType)
-		{
-		case Sign:
-			size += 8;
-			size += ((String[])mStateData)[0].length();
-			size += ((String[])mStateData)[1].length();
-			size += ((String[])mStateData)[2].length();
-			size += ((String[])mStateData)[3].length();
-			break;
-		case Jukebox:
-			size += 4;
-			break;
-		case NoteBlock:
-			size++;
-			break;
-		case Spawner:
-			size += 2;
-			break;
-		case Skull:
-			size += ((SkullData)mStateData).getSize();
-			break;
-		default:
-			break;
-		}
+		ByteArrayOutputStream temp = new ByteArrayOutputStream();
+		NBTCompressedStreamTools.writeCompressed(mStateData, temp);
 		
-		return size;
+		return size + temp.size();
 	}
+	
+	@Override
+	public String toString()
+	{
+		return "Block: " + mType.toString() + ":" + mData + " hasTag:" + (mStateData != null);
+	}
+	
+	
 }

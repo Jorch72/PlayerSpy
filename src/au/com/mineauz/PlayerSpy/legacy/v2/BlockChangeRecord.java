@@ -78,8 +78,8 @@ public class BlockChangeRecord extends Record implements IRollbackable, ILocatio
 	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
 		stream.writeBoolean(mPlaced);
-		mInitialBlock.write(stream, absolute);
-		mFinalBlock.write(stream, absolute);
+		mInitialBlock.write(stream, absolute, false);
+		mFinalBlock.write(stream, absolute, false);
 		stream.writeBoolean(mIsRolledBack);
 	}
 
@@ -99,7 +99,7 @@ public class BlockChangeRecord extends Record implements IRollbackable, ILocatio
 	@Override
 	protected int getContentSize(boolean absolute) 
 	{
-		return 2 + mInitialBlock.getSize(absolute) + mFinalBlock.getSize(absolute);
+		return 2 + mInitialBlock.getSize(absolute, false) + mFinalBlock.getSize(absolute, false);
 	}
 
 	public StoredBlock getInitialBlock()

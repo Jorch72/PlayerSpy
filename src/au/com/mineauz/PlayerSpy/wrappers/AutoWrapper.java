@@ -253,6 +253,10 @@ public abstract class AutoWrapper
 			
 			LogUtil.info(thisClass.getSimpleName() + " wrapper initialized");
 		}
+		catch(WrapperValidationException e)
+		{
+			throw e;
+		}
 		catch(Exception e)
 		{
 			throw new RuntimeException(e);
@@ -536,5 +540,14 @@ public abstract class AutoWrapper
 	public Object getNativeInstance()
 	{
 		return mInstance;
+	}
+	
+	@Override
+	public String toString()
+	{
+		if(mInstance != null)
+			return mInstance.toString();
+		
+		return super.toString();
 	}
 }

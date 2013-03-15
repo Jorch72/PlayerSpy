@@ -54,7 +54,7 @@ public abstract class Record
 		}
 		catch (RecordFormatException e)
 		{
-			Debug.info("Encoutered invalid record format for type %s. %s", mType.toString(), e.getMessage());
+			Debug.warning("Encoutered invalid record format for type %s. %s", mType.toString(), e.getMessage());
 			return false;
 		}
 	}

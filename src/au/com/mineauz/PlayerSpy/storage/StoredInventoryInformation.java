@@ -145,7 +145,7 @@ public class StoredInventoryInformation
 		switch(mType)
 		{
 		case Chest:
-			mBlock.write(stream, absolute);
+			mBlock.write(stream, absolute, false);
 			break;
 		case Enderchest:
 			stream.writeUTF(mPlayerName);
@@ -154,7 +154,7 @@ public class StoredInventoryInformation
 			else
 			{
 				stream.writeBoolean(true);
-				mBlock.write(stream, absolute);
+				mBlock.write(stream, absolute, false);
 			}
 			break;
 		case Entity:
@@ -217,12 +217,12 @@ public class StoredInventoryInformation
 		switch(mType)
 		{
 		case Chest:
-			size += mBlock.getSize(absolute);
+			size += mBlock.getSize(absolute, false);
 			break;
 		case Enderchest:
 			size += Utility.getUTFLength(mPlayerName) + 1;
 			if(mBlock != null)
-				size += mBlock.getSize(absolute);
+				size += mBlock.getSize(absolute, false);
 			break;
 		case Entity:
 			size += mEntity.getSize();

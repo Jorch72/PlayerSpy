@@ -48,6 +48,13 @@ public class Utility
 		
 		return CraftItemStack.asNMSCopy(item);
 	}
+	public static org.bukkit.inventory.ItemStack convertToBukkit(ItemStack item)
+	{
+		if(item == null)
+			return null;
+		
+		return CraftItemStack.asBukkitCopy(item);
+	}
 	
 	public static Packet5EntityEquipment makeEntityEquipmentPacket(int entity, int slot, org.bukkit.inventory.ItemStack item)
 	{

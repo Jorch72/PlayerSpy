@@ -22,4 +22,11 @@ public class CraftItemStack extends AutoWrapper
 	{
 		return callStaticMethod(mAsNMSCopy, item);
 	}
+	
+	@WrapperMethod(name="asBukkitCopy", returnType=org.bukkit.inventory.ItemStack.class, parameterTypes=ItemStack.class)
+	private static Method mAsBukkitCopy;
+	public static org.bukkit.inventory.ItemStack asBukkitCopy(ItemStack item)
+	{
+		return callStaticMethod(mAsBukkitCopy, item);
+	}
 }

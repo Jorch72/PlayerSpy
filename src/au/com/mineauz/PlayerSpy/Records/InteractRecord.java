@@ -76,7 +76,7 @@ public class InteractRecord extends Record implements ILocationAware
 		
 		stream.writeBoolean(hasBlock());
 		if(hasBlock())
-			mBlock.write(stream, absolute);
+			mBlock.write(stream, absolute, false);
 		
 		stream.writeBoolean(hasItem());
 		if(hasItem())
@@ -156,7 +156,7 @@ public class InteractRecord extends Record implements ILocationAware
 		int size = 4;
 		
 		if(hasBlock())
-			size += mBlock.getSize(absolute);
+			size += mBlock.getSize(absolute, false);
 		
 		if(hasItem())
 			size += mItem.getSize();

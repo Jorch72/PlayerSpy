@@ -23,7 +23,6 @@ import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
 
 import au.com.mineauz.PlayerSpy.*;
@@ -731,42 +730,6 @@ public class GlobalMonitor implements Listener
 		ShallowMonitor monitor = getMonitor(event.getPlayer());
 		if(monitor != null)
 		{
-			// Handle blocks with inventories
-			BlockState state = event.getBlock().getState();
-			if(state instanceof Chest)
-			{
-				// Record state of chest
-				for(ItemStack item : ((Chest)state).getBlockInventory().getContents())
-				{
-					if(item == null)
-						continue;
-					InventoryTransactionRecord r = InventoryTransactionRecord.newTakeFromInventory(item, ((Chest)state).getBlockInventory(), event.getBlock().getLocation());
-					monitor.logRecord(r);
-				}
-			}
-			else if(state instanceof Dispenser)
-			{
-				// Record state of dispenser
-				for(ItemStack item : ((Dispenser)state).getInventory().getContents())
-				{
-					if(item == null)
-						continue;
-					InventoryTransactionRecord r = InventoryTransactionRecord.newTakeFromInventory(item, ((Dispenser)state).getInventory(), event.getBlock().getLocation());
-					monitor.logRecord(r);
-				}
-			}
-			else if(state instanceof BrewingStand)
-			{
-				// Record state of dispenser
-				for(ItemStack item : ((BrewingStand)state).getInventory().getContents())
-				{
-					if(item == null)
-						continue;
-					InventoryTransactionRecord r = InventoryTransactionRecord.newTakeFromInventory(item, ((BrewingStand)state).getInventory(), event.getBlock().getLocation());
-					monitor.logRecord(r);
-				}
-			}
-			
 			monitor.onBlockBreak(event.getBlock());
 		}
 		
@@ -906,41 +869,6 @@ public class GlobalMonitor implements Listener
 			RecordList records = new RecordList();
 			for(Block block : event.blockList())
 			{
-				// Handle blocks with inventories
-				BlockState state = block.getState();
-				if(state instanceof Chest)
-				{
-					// Record state of chest
-					for(ItemStack item : ((Chest)state).getBlockInventory().getContents())
-					{
-						if(item == null)
-							continue;
-						InventoryTransactionRecord r = InventoryTransactionRecord.newTakeFromInventory(item, ((Chest)state).getBlockInventory(), block.getLocation());
-						records.add(r);
-					}
-				}
-				else if(state instanceof Dispenser)
-				{
-					// Record state of dispenser
-					for(ItemStack item : ((Dispenser)state).getInventory().getContents())
-					{
-						if(item == null)
-							continue;
-						InventoryTransactionRecord r = InventoryTransactionRecord.newTakeFromInventory(item, ((Dispenser)state).getInventory(), block.getLocation());
-						records.add(r);
-					}
-				}
-				else if(state instanceof BrewingStand)
-				{
-					// Record state of dispenser
-					for(ItemStack item : ((BrewingStand)state).getInventory().getContents())
-					{
-						if(item == null)
-							continue;
-						InventoryTransactionRecord r = InventoryTransactionRecord.newTakeFromInventory(item, ((BrewingStand)state).getInventory(), block.getLocation());
-						records.add(r);
-					}
-				}
 				BlockChangeRecord record = new BlockChangeRecord(block.getState(), null, false);
 				records.add(record);
 			}
@@ -973,41 +901,6 @@ public class GlobalMonitor implements Listener
 			RecordList records = new RecordList();
 			for(Block block : event.blockList())
 			{
-				// Handle blocks with inventories
-				BlockState state = block.getState();
-				if(state instanceof Chest)
-				{
-					// Record state of chest
-					for(ItemStack item : ((Chest)state).getBlockInventory().getContents())
-					{
-						if(item == null)
-							continue;
-						InventoryTransactionRecord r = InventoryTransactionRecord.newTakeFromInventory(item, ((Chest)state).getBlockInventory(), block.getLocation());
-						records.add(r);
-					}
-				}
-				else if(state instanceof Dispenser)
-				{
-					// Record state of dispenser
-					for(ItemStack item : ((Dispenser)state).getInventory().getContents())
-					{
-						if(item == null)
-							continue;
-						InventoryTransactionRecord r = InventoryTransactionRecord.newTakeFromInventory(item, ((Dispenser)state).getInventory(), block.getLocation());
-						records.add(r);
-					}
-				}
-				else if(state instanceof BrewingStand)
-				{
-					// Record state of dispenser
-					for(ItemStack item : ((BrewingStand)state).getInventory().getContents())
-					{
-						if(item == null)
-							continue;
-						InventoryTransactionRecord r = InventoryTransactionRecord.newTakeFromInventory(item, ((BrewingStand)state).getInventory(), block.getLocation());
-						records.add(r);
-					}
-				}
 				records.add(new BlockChangeRecord(block.getState(), null, false));
 			}
 
