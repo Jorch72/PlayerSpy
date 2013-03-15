@@ -13,6 +13,7 @@ import java.util.logging.StreamHandler;
 import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.LogUtil;
+import au.com.mineauz.PlayerSpy.SpyPlugin;
 
 public class Debug 
 {
@@ -78,6 +79,7 @@ public class Debug
 		if(mDebugLog == null)
 			return;
 		mDebugLog.log(Level.SEVERE, "Caught exception", e);
+		SpyPlugin.getInstance().getLogger().log(Level.SEVERE, "Caught exception", e);
 	}
 	
 	public static Logger getDebugLog()

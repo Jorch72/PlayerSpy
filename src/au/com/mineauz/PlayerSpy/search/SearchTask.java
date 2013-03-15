@@ -4,9 +4,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -172,6 +174,7 @@ public class SearchTask implements Task<SearchResults>
 		Debug.info("Beginning search");
 		
 		// Extract the time range from the constraints to speed up retrieval
+		Set<Constraint> toRemove = new HashSet<Constraint>();
 		for(Constraint constraint : mFilter.andConstraints)
 		{
 			if(constraint instanceof TimeConstraint)
@@ -181,9 +184,11 @@ public class SearchTask implements Task<SearchResults>
 				else
 					endTime = ((TimeConstraint)constraint).getTime();
 				
-				mFilter.andConstraints.remove(constraint);
+				toRemove.add(constraint);
 			}
 		}
+		
+		mFilter.andConstraints.removeAll(toRemove);
 		
 		results = new SearchResults();
 		results.causes = new HashMap<Integer, Cause>();

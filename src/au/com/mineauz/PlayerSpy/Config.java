@@ -50,6 +50,14 @@ public class Config extends AutoConfig
 	@ConfigField(comment = "The maximum number of changes (block or transactions etc) that will be done each tick.", category="rollback")
 	public int maxChangesPerTick = 10;
 	
+	@ConfigField(name="catchupTime", comment="The amount of time the catchup command looks back.\nThis should be in standard date-diff format.", category="general")
+	private String mCatchupTime = "10m";
+	
+	public long catchupTime;	
+	
+	@ConfigField(comment="The format that chat through the catchup command will show using. %name will be replaced with the player name. %message will be replaced with the contents of the message.")
+	public String chatFormat = "<%name> %message";
+	
 	public Config(File file)
 	{
 		super(file);
@@ -60,6 +68,8 @@ public class Config extends AutoConfig
 		//mTimeOffsetString = Util.dateDiffToString(timeoffset,true);
 		mLogTimeoutString = Util.dateDiffToString(logTimeout,true);
 		mTimezoneString = timezone.getID();
+		
+		mCatchupTime = Util.dateDiffToString(catchupTime, true);
 	}
 	protected void onPostLoad() throws InvalidConfigurationException
 	{
@@ -70,6 +80,8 @@ public class Config extends AutoConfig
 			throw new InvalidConfigurationException("Invalid language specified");
 		
 		logTimeout = Util.parseDateDiff(mLogTimeoutString);
+		
+		catchupTime = Util.parseDateDiff(mCatchupTime);
 	}
 	
 	

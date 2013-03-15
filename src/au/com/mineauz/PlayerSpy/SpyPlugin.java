@@ -56,6 +56,7 @@ public class SpyPlugin extends JavaPlugin
 		dispatch.registerCommand(new ReloadCommand());
 		dispatch.registerCommand(new RollbackCommand());
 		dispatch.registerCommand(new InventoryCommand());
+		dispatch.registerCommand(new CatchupCommand());
 		getCommand("playerspy").setExecutor(dispatch);
 		getCommand("playerspy").setTabCompleter(dispatch);
 		

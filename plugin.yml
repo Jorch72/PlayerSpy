@@ -22,6 +22,7 @@ permissions:
       playerspy.search: true
       playerspy.inventory: true
       playerspy.list: true
+      playerspy.catchup: true
       
   playerspy.normal:
     description: Provides all commands and abilities for normal admin use.
@@ -84,3 +85,6 @@ permissions:
     description: Allows a player to modify another players inventory
     children:
       playerspy.inventory: true
+  playerspy.catchup:
+    default: op
+    description: Allows a player to use the catchup command
