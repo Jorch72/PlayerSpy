@@ -21,6 +21,7 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.player.*;
+import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.material.MaterialData;
@@ -1250,6 +1251,24 @@ public class GlobalMonitor implements Listener
 				}
 			}
 		}
+	}
+	
+	@EventHandler
+	public void onStructureGrow(StructureGrowEvent event)
+	{
+		Cause c = Cause.globalCause(event.getWorld(), "#grow");
+		RecordList records = new RecordList();
+		
+		for(BlockState state : event.getBlocks())
+		{
+			BlockChangeRecord record = new BlockChangeRecord(state.getBlock().getState(), state, true);
+			records.add(record);
+		}
+		
+		if(event.getPlayer() != null)
+			c = Cause.playerCause(event.getPlayer(), (event.isFromBonemeal() ? "#bonemeal" : "#grow"));
+		
+		logRecords(records, c, null);
 	}
 
 	public ItemFlowTracker getItemFlowTracker()
