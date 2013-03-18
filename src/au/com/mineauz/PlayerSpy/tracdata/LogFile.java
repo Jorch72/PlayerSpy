@@ -7,14 +7,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 import java.io.*;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.World;
-import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 
 import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.RecordList;
@@ -28,12 +23,11 @@ import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.debugging.Profiler;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
+import au.com.mineauz.PlayerSpy.tracdata.HoleIndex.HoleData;
+import au.com.mineauz.PlayerSpy.tracdata.SessionIndex.SessionData;
 
 public class LogFile 
 {
-	//private static final ExecutorService mAsyncService = Executors.newSingleThreadExecutor(); 
-	private static int NextId = (int)(System.currentTimeMillis() / 1000);
-	
 	public LogFile()
 	{
 		mReferenceCount = 1;
@@ -521,10 +515,6 @@ public class LogFile
 	public Future<RecordList> loadRecordsAsync(long startDate, long endDate, String owner)
 	{
 		Debug.finer("Submitting loadRecords async task");
-//		synchronized (mAsyncService)
-//		{
-//			return mAsyncService.submit(new LoadRecordsAsyncTask(this, startDate, endDate, false, owner));
-//		}
 		return SpyPlugin.getExecutor().submit(new LoadRecordsAsyncTask(this, startDate, endDate, false, owner));
 	}
 	/**
@@ -575,11 +565,6 @@ public class LogFile
 	public Future<RecordList> loadRecordsAsync(long startDate, long endDate)
 	{
 		Debug.finer("Submitting loadRecords async task");
-//		synchronized (mAsyncService)
-//		{
-//			Debug.finer("Submitting loadRecords async task");
-//			return mAsyncService.submit(new LoadRecordsAsyncTask(this, startDate, endDate, false));
-//		}
 		return SpyPlugin.getExecutor().submit(new LoadRecordsAsyncTask(this, startDate, endDate, false));
 	}
 	
@@ -590,7 +575,7 @@ public class LogFile
 		
 		for(SessionEntry entry : mSessionIndex)
 		{
-			if(entry.StartTimestamp > date && getOwnerTag(entry) == null)
+			if(entry.StartTimestamp > date && entry.OwnerTagId == -1)
 			{
 				result = entry.StartTimestamp;
 				break;
@@ -609,7 +594,7 @@ public class LogFile
 		for(int i = mSessionIndex.getCount()-1; i >=0 ; --i)
 		{
 			SessionEntry entry = mSessionIndex.get(i);
-			if(entry.EndTimestamp > date && getOwnerTag(entry) == null)
+			if(entry.EndTimestamp > date && entry.OwnerTagId == -1)
 			{
 				result = entry.EndTimestamp;
 				break;
@@ -687,11 +672,6 @@ public class LogFile
 	public Future<RecordList> loadRecordChunksAsync(long startDate, long endDate, String owner)
 	{
 		Debug.finer("Submitting loadRecordChunks async task");
-//		synchronized (mAsyncService)
-//		{
-//			Debug.finer("Submitting loadRecordChunks async task");
-//			return mAsyncService.submit(new LoadRecordsAsyncTask(this, startDate, endDate, true, owner));
-//		}
 		return SpyPlugin.getExecutor().submit(new LoadRecordsAsyncTask(this, startDate, endDate, true, owner));
 	}
 	/**
@@ -720,7 +700,7 @@ public class LogFile
 			   (entry.StartTimestamp >= startDate && entry.StartTimestamp < endDate) ||
 			   (entry.EndTimestamp > startDate && entry.EndTimestamp < endDate))
 			{
-				if(getOwnerTag(entry) == null)
+				if(entry.Id == -1)
 					relevantEntries.add(entry);
 			}
 		}
@@ -750,323 +730,33 @@ public class LogFile
 	public Future<RecordList> loadRecordChunksAsync(long startDate, long endDate)
 	{
 		Debug.finer("Submitting loadRecordChunks async task");
-//		synchronized (mAsyncService)
-//		{
-//			Debug.finer("Submitting loadRecordChunks async task");
-//			return mAsyncService.submit(new LoadRecordsAsyncTask(this, startDate, endDate, true));
-//		}
 		return SpyPlugin.getExecutor().submit(new LoadRecordsAsyncTask(this, startDate, endDate, true));
 	}
 	public RecordList loadSession(SessionEntry session)
 	{
 		Debug.loggedAssert(mIsLoaded);
 		
-		RecordList records = null;
 		Profiler.beginTimingSection("loadSession");
-		
-		boolean isAbsolute = getOwnerTag(session) != null;
 		
 		// We will hold the write lock because accessing the file concurrently through the same object with have issues i think.
 		mLock.writeLock().lock();
 		
-		Debug.fine("Loading Session %d from %s", session.Id, mPlayerName);
-		
 		try
 		{
-			records = new RecordList();
-			
-			// Read the raw session data
-			mFile.seek(session.Location);
-
-			byte[] sessionRaw = new byte[(int)session.TotalSize];
-			mFile.read(sessionRaw);
-			
-			// make it available to use
-			ByteArrayInputStream istream = new ByteArrayInputStream(sessionRaw);
-			
-			DataInputStream stream = null;
-			
-			// get the input stream 
-			if(session.Compressed)
-			{
-				GZIPInputStream compressedInput = new GZIPInputStream(istream);
-				stream = new DataInputStream(compressedInput);
-			}
-			else
-				stream = new DataInputStream(istream);
-			
-			World lastWorld = null;
-			boolean hadInv = false;
-			// Load the records
-			for(int i = 0; i < session.RecordCount; i++)
-			{
-				Record record = Record.readRecord(stream, lastWorld, mHeader.VersionMajor, isAbsolute);
-				if(record == null)
-				{
-					if(i == 0)
-						Debug.severe("Record read fail at index 0");
-					else
-						Debug.severe("Record read fail at index %d after record type %s", i, records.get(records.size()-1).getClass().getName());
-					
-					break;
-				}
-				record.sourceFile = this; 
-				record.sourceEntry = session;
-				record.sourceIndex = (short)i;
-				
-				// update the last world
-				if(record instanceof IPlayerLocationAware && ((IPlayerLocationAware)record).isFullLocation())
-					lastWorld = ((IPlayerLocationAware)record).getLocation().getWorld();
-				else if(record instanceof WorldChangeRecord)
-					lastWorld = ((WorldChangeRecord)record).getWorld();
-				else if((lastWorld == null && record.getType() != RecordType.FullInventory && record.getType() != RecordType.EndOfSession) && !isAbsolute)
-				{
-					Debug.warning("Corruption in " + mPlayerName + ".tracdata session " + session.Id + " found. Attempting to fix");
-					lastWorld = Bukkit.getWorlds().get(0);
-					Record worldRecord = new WorldChangeRecord(lastWorld);
-					worldRecord.setTimestamp(record.getTimestamp());
-					records.add(worldRecord);
-					
-					// Ditch the first record since it is useless
-					continue;
-				}
-				
-				if(record.getType() == RecordType.FullInventory)
-					hadInv = true;
-				
-				if(lastWorld == null && i > 3 && !isAbsolute)
-				{
-					Debug.warning("Issue detected with " + mPlayerName + ".trackdata in session " + session.Id + ". No world has been set. Defaulting to main world");
-					lastWorld = Bukkit.getWorlds().get(0);
-					records.add(new WorldChangeRecord(lastWorld));
-				}
-				if(!hadInv && i > 3 && !isAbsolute)
-				{
-					Debug.warning("Issue detected with " + mPlayerName + ".trackdata in session " + session.Id + ". No inventory state has been set. ");
-					hadInv = true;
-				}
-				records.add(record);
-			}
-			
-			// Load the rollback state info in
-			short[] indices = getRolledBackRecords(session);
-			for(int i = 0; i < indices.length; ++i)
-			{
-				if(indices[i] < 0 || indices[i] >= records.size())
-					continue;
-				
-				Record record = records.get(indices[i]);
-				if(record instanceof IRollbackable)
-				{
-					IRollbackable r = (IRollbackable)record;
-					r.setRollbackState(true);
-				}
-			}
-			
+			SessionData data = mSessionIndex.getDataFor(session);
+			return data.read();
 		}
 		catch(IOException e)
 		{
 			Debug.logException(e);
-		}
-		mLock.writeLock().unlock();
-		
-		Profiler.endTimingSection();
-		
-		return records;
-	}
-	
-	/**
-	 * Appends the records to the specified session. If they dont all fit, the remaining will be returned
-	 * @param records The records to append
-	 * @param session The session to append them to
-	 * @return Null if there are no more records to add, otherwise a list of the remaining ones
-	 */
-	private RecordList appendRecords(RecordList records, SessionEntry session) throws IOException
-	{
-		Debug.info("Begining append of %d records to Session %d", records.size(), session.Id);
-		
-		// This will be populated if there are too many records to put into this session
-		RecordList splitSession = null;
-		boolean isAbsolute = getOwnerTag(session) != null;
-		
-		Profiler.beginTimingSection("appendRecordsInternal");
-		mLock.writeLock().lock();
-		
-		ArrayList<Short> rolledBackEntries = new ArrayList<Short>();
-		
-		try
-		{
-			// Calculate the amount of space there is availble to extend into
-			long availableSpace = session.Padding;
-			
-			HoleEntry hole = mHoleIndex.getHoleAfter(session.Location + session.TotalSize);
-			if(hole != null)
-				availableSpace += hole.Size;
-			
-			// Removed getting as much space as they like when at the end of the file. This was actually quite bad allowing single sessions to become extremely large 
-			
-			Debug.fine("*Avaiable Space: " + availableSpace);
-			
-			// Calculate the size of the records
-			long totalSize = 0;
-			int cutoffIndex = 0;
-			
-			if(!session.Compressed)
-			{
-				short index = 0;
-				for(Record record : records)
-				{
-					int size = record.getSize(isAbsolute);
-					
-					if(totalSize + size > availableSpace)
-					{
-						// Split
-						splitSession = records.splitRecords(cutoffIndex, true);
-						break;
-					}
-					totalSize += size;
-					cutoffIndex++;
-					
-					// Update deep mode
-					if(record instanceof SessionInfoRecord)
-					{
-						mDeepMode = ((SessionInfoRecord)record).isDeep();
-					}
-					
-					if(record instanceof IRollbackable)
-					{
-						if(((IRollbackable)record).wasRolledBack())
-							rolledBackEntries.add((Short)(short)(index + session.RecordCount));
-					}
-					
-					// Add any location to the location filter 
-					if(record instanceof ILocationAware && !(record instanceof IPlayerLocationAware))
-					{
-						session.LocationFilter.add(((ILocationAware)record).getLocation().hashCode());
-						SafeChunk chunk = new SafeChunk(((ILocationAware)record).getLocation());
-						session.ChunkLocationFilter.add(chunk.hashCode());
-					}
-					
-					++index;
-				}
-			}
-			else
-			{
-				Debug.warning("Attempting to write to compressed session. Moving to new session");
-				splitSession = records.splitRecords(cutoffIndex, true);
-			}
-			
-			Debug.fine("*Total size to write: " + totalSize);
-			if(splitSession != null)
-				Debug.fine("*Cutoff at: " + cutoffIndex);
-			
-			if(records.size() != 0)
-			{
-				totalSize = records.getDataSize(isAbsolute);
-				// Encode the records
-				ByteArrayOutputStream bstream = new ByteArrayOutputStream((int)totalSize);
-				DataOutputStream dstream = new DataOutputStream(bstream);
-				long lastSize = dstream.size();
-				for(int i = 0; i < records.size(); i++)
-				{
-					int expectedSize = records.get(i).getSize(isAbsolute);
-					records.get(i).write(dstream, isAbsolute);
-					
-					long actualSize = dstream.size() - lastSize;
-					
-					if(expectedSize != actualSize)
-					{
-						Debug.severe(records.get(i).getType().toString() + " is returning incorrect size. Expected: " + expectedSize + " got " + actualSize);
-					}
-					lastSize = dstream.size();
-				}
-		
-				// ensure i havent messed up the implementation of getSize()
-				Debug.loggedAssert(totalSize == bstream.size(), "Get size returned bad size");
-				
-				// Work out where to write from and how much padding will be left
-				long startLocation = session.Location + session.TotalSize - session.Padding;
-				long oldPadding = session.Padding;
-				
-				long temp = Math.min(session.Padding, totalSize);
-				session.Padding -= temp;
-				totalSize -= temp;
-				
-				// Consume the space before we write it
-				if(session.Padding == 0)
-				{
-					mSpaceLocator.consumeSpace(startLocation + oldPadding,totalSize);
-					session.TotalSize += totalSize;
-				}
-				
-				// Write it into the file
-				mFile.seek(startLocation);
-				Debug.finest("*Writing from %X -> %X", startLocation, startLocation + bstream.size()-1);
-				mFile.write(bstream.toByteArray());
-	
-				// Update the session info
-				session.EndTimestamp = records.getEndTimestamp();
-				session.RecordCount += records.size();
-				mSessionIndex.set(mSessionIndex.indexOf(session), session);
-
-				CrossReferenceIndex.instance.updateSession(this, session, records.getAllChunks());
-				Debug.info("Completed append to Session %d", session.Id);
-				
-				if(!rolledBackEntries.isEmpty())
-					setRollbackStateInternal(session, rolledBackEntries, true);
-			}
-			
-			if(splitSession != null && !session.Compressed)
-			{
-				// Finalize the old session by compressing it
-				Debug.info("Found more records to write in new session. Compressing session");
-				
-				byte[] sessionData = new byte[(int)(session.TotalSize - session.Padding)];
-				Debug.finest("Reading %X->%X", session.Location, session.Location + sessionData.length - 1);
-				mFile.seek(session.Location);
-				mFile.readFully(sessionData);
-				
-				ByteArrayOutputStream ostream = new ByteArrayOutputStream();
-				GZIPOutputStream compressor = new GZIPOutputStream(ostream);
-				
-				compressor.write(sessionData);
-				compressor.finish();
-				
-				if(ostream.size() < (session.TotalSize - session.Padding))
-				{
-					Debug.fine("Compressed to %d from %d. Reduction of %.1f%%", ostream.size(), (session.TotalSize - session.Padding), ((session.TotalSize - session.Padding)-ostream.size()) / (double)(session.TotalSize - session.Padding) * 100F);
-					
-					mFile.seek(session.Location);
-					mFile.write(ostream.toByteArray());
-					
-					long oldSize = session.TotalSize;
-					
-					session.TotalSize = ostream.size();
-					session.Compressed = true;
-					
-					mSessionIndex.set(mSessionIndex.indexOf(session), session);
-					
-					mSpaceLocator.releaseSpace(session.Location + ostream.size(), oldSize - ostream.size());
-
-					//pullData(session.Location + ostream.size());
-				}
-				else
-					Debug.fine("Compression cancelled as the result was larger than the original");
-				
-			}
-		}
-		catch (Exception e)
-		{
-			Debug.logException(e);
-			throw e;
 		}
 		finally
 		{
 			mLock.writeLock().unlock();
 			Profiler.endTimingSection();
 		}
-
-		return splitSession;
+		
+		return null;
 	}
 	
 	/**
@@ -1079,9 +769,14 @@ public class LogFile
 	public boolean appendRecords(RecordList records, String owner)
 	{
 		Debug.loggedAssert(mIsLoaded);
-		Debug.loggedAssert(mHeader.VersionMajor >= 2, "Owner tags are only suppored in version 2 and above");
+		Debug.loggedAssert(records != null);
+		Debug.loggedAssert(owner == null || mHeader.VersionMajor >= 2, "Owner tags are only suppored in version 2 and above");
 
-		boolean result;
+		if(owner == null && mHeader.RequiresOwnerTags && mHeader.VersionMajor >= 2)
+			throw new IllegalStateException("Owner tags are required. You can only append records through appendRecords(records, tag) and tag cannot be null");
+		
+		if(records.isEmpty())
+			return false;
 		
 		Profiler.beginTimingSection("appendRecords");
 		synchronized (CrossReferenceIndex.instance)
@@ -1094,98 +789,44 @@ public class LogFile
 				
 				Debug.info("Appending " + records.size() + " records to " + mPlayerName + ">" + owner);
 				
-				SessionEntry activeSession = mSessionIndex.getActiveSessionFor(owner);
-				if(activeSession == null)
+				RecordList recordsToWrite = records;
+				while (recordsToWrite != null && recordsToWrite.size() != 0)
 				{
-					Debug.info("No active session for %s>%s. Creating one", mPlayerName, owner);
+					// Get the session to place it
+					SessionEntry activeSession = mSessionIndex.getActiveSessionFor(owner);
+					SessionData data;
 					
-					int index = initialiseSession(records, true);
-					if(index != -1)
-					{
-						
-						mSessionIndex.setActiveSession(owner, mSessionIndex.get(index));
-	
-						SessionEntry session = mSessionIndex.get(index);
-						session.OwnerTagId = -1;
-						
-						// See if there is a tag we can reuse
-						for(OwnerMapEntry tag : mOwnerTagIndex)
-						{
-							if(tag.Owner.equalsIgnoreCase(owner))
-							{
-								session.OwnerTagId = tag.Id;
-								break;
-							}
-						}
-						
-						if(session.OwnerTagId == -1)
-						{
-							session.OwnerTagId = NextId++;
-							
-							// Add the tag
-							OwnerMapEntry ent = new OwnerMapEntry();
-							ent.Owner = owner;
-							ent.Id = session.OwnerTagId;
-							
-							mOwnerTagIndex.add(ent);
-						}
-	
-						mSessionIndex.set(index, session);
-						
-						result = true;
-					}
+					if(activeSession != null)
+						data = mSessionIndex.getDataFor(activeSession);
 					else
-						result = false;
-				}
-				else
-				{
+					{
+						Debug.info("No active session for %s>%s. Creating one", mPlayerName, owner);
+						data = mSessionIndex.addEmptySession();
+						activeSession = data.getIndexEntry();
+						mSessionIndex.setActiveSession(owner, activeSession);
+						
+						// Apply the ownertag
+						activeSession.OwnerTagId = mOwnerTagIndex.getOrCreateTag(owner);
+						
+						mSessionIndex.set(mSessionIndex.indexOf(activeSession), activeSession);
+					}
 					
-					RecordList splitSession = appendRecords(records, activeSession);
-		
-					if(splitSession != null && splitSession.size() > 0)
+					recordsToWrite = data.append(recordsToWrite);
+					
+					if (recordsToWrite != null)
 					{
-						int index = initialiseSession(splitSession, true);
-						if(index != -1)
-						{
-							mSessionIndex.setActiveSession(owner, mSessionIndex.get(index));
-		
-							SessionEntry session = mSessionIndex.get(index);
-							session.OwnerTagId = -1;
-							
-							// See if there is a tag we can reuse
-							for(OwnerMapEntry tag : mOwnerTagIndex)
-							{
-								if(tag.Owner.equalsIgnoreCase(owner))
-								{
-									session.OwnerTagId = tag.Id;
-									break;
-								}
-							}
-							
-							if(session.OwnerTagId == -1)
-							{
-								session.OwnerTagId = NextId++;
-								
-								// Add the tag
-								OwnerMapEntry ent = new OwnerMapEntry();
-								ent.Owner = owner;
-								ent.Id = session.OwnerTagId;
-								
-								mOwnerTagIndex.add(ent);
-							}
-		
-							mSessionIndex.set(index, session);
-							
-							result = true;
-						}
-						else
-							result = false;
+						// Finalize the existing
+						if(!activeSession.Compressed)
+							data.compress();
+						
+						// This session is nolonger able to be used
+						mSessionIndex.setActiveSession(owner, null);
 					}
-					else
-						result = true;
 				}
 				
 				mFile.commit();
+				
+				return true;
 			}
 			catch(Exception e)
 			{
@@ -1193,17 +834,14 @@ public class LogFile
 				mFile.rollback();
 				
 				readIndexes();
-				result = false;
+				return false;
 			}
 			finally
 			{
 				mLock.writeLock().unlock();
-				
+				Profiler.endTimingSection();
 			}
 		}
-		
-		Profiler.endTimingSection();
-		return result;
 	}
 	/**
 	 * Appends records onto the active session.
@@ -1214,90 +852,7 @@ public class LogFile
 	 */
 	public boolean appendRecords(RecordList records)
 	{
-		Debug.loggedAssert(mIsLoaded);
-		if(mHeader.RequiresOwnerTags && mHeader.VersionMajor >= 2)
-			throw new IllegalStateException("Owner tags are required. You can only append records through appendRecords(records, tag)");
-		
-		if(records.isEmpty())
-			return false;
-		
-		boolean result;
-		
-		Profiler.beginTimingSection("appendRecords");
-		synchronized(CrossReferenceIndex.instance)
-		{
-			Debug.info("Appending " + records.size() + " records to " + mPlayerName);
-			
-			mLock.writeLock().lock();
-			
-			try
-			{
-				mFile.beginTransaction();
-				
-				SessionEntry activeSession = mSessionIndex.getActiveSessionFor(null);
-				
-				if(activeSession == null)
-				{
-					Debug.finer("Tried to append records. No active session was found.");
-					int index = initialiseSession(records, false);
-					if(index != -1)
-					{
-						mSessionIndex.setActiveSession(null, mSessionIndex.get(index));
-						result = true;
-					}
-					else
-						result = false;
-				}
-				else
-				{
-					// This will be populated if there are too many records to put into this session
-					RecordList splitSession = appendRecords(records, activeSession);
-
-					// Ensure the consistant state
-					if(records.size() > 0)
-					{
-						Location lastLocation = records.getCurrentLocation(records.size()-1);
-						InventoryRecord lastInventory = records.getCurrentInventory(records.size()-1);
-						
-						if(lastLocation != null)
-							mLastLocation = lastLocation;
-						if(lastInventory != null)
-							mLastInventory = lastInventory;
-					}
-					// Make sure the remaining records are written
-					if(splitSession != null && splitSession.size() > 0)
-					{
-						int index = initialiseSession(splitSession, false);
-						if(index != -1)
-						{
-							mSessionIndex.setActiveSession(null, mSessionIndex.get(index));
-							result = true;
-						}
-						else
-							result = false;
-					}
-					else
-						result = true;
-				}
-				
-				mFile.commit();
-			}
-			catch(Exception e)
-			{
-				Debug.logException(e);
-				mFile.rollback();
-				
-				readIndexes();
-				result = false;
-			}
-			finally
-			{
-				mLock.writeLock().unlock();
-				
-			}
-		}
-		Profiler.endTimingSection();
-		return result;
+		return appendRecords(records, null);
 	}
 	
 	public Future<Boolean> appendRecordsAsync(RecordList records)
@@ -1307,11 +862,6 @@ public class LogFile
 		
 		Debug.finest("Submitting appendRecords async task");
 		return SpyPlugin.getExecutor().submit(new AppendRecordsTask(this, records));
-//		synchronized (mAsyncService)
-//		{
-//			Debug.finest("Submitting appendRecords async task");
-//			return mAsyncService.submit(new AppendRecordsTask(this, records));
-//		}
 	}
 	public Future<Boolean> appendRecordsAsync(RecordList records, String owner)
 	{
@@ -1319,153 +869,8 @@ public class LogFile
 		
 		Debug.finest("Submitting appendRecords async task");
 		return SpyPlugin.getExecutor().submit(new AppendRecordsTask(this, records, owner));
-//		synchronized (mAsyncService)
-//		{
-//			Debug.finest("Submitting appendRecords async task");
-//			
-//			return mAsyncService.submit(new AppendRecordsTask(this, records, owner));
-//		}
 	}
 	
-	private int initialiseSession(RecordList records, boolean absolute) throws IOException
-	{
-		Debug.loggedAssert(mIsLoaded);
-		Debug.loggedAssert(records.size() > 0);
-		
-		Debug.fine("Initializing New Session with " + records.size() + " records");
-		Profiler.beginTimingSection("initSession");
-		mLock.writeLock().lock();
-		
-		
-		try
-		{
-			if(!absolute)
-			{
-				// Add in stuff to make it consistant
-				SessionInfoRecord info = new SessionInfoRecord(mDeepMode);
-				info.setTimestamp(records.get(0).getTimestamp());
-				records.add(0, info);
-				
-				if(mLastInventory != null)
-				{
-					mLastInventory.setTimestamp(records.get(0).getTimestamp());
-					records.add(0,mLastInventory);
-				}
-				
-				if(mLastLocation != null)
-				{
-					TeleportRecord record = new TeleportRecord(mLastLocation, TeleportCause.UNKNOWN);
-					record.setTimestamp(records.get(0).getTimestamp());
-					records.add(0,record);
-				}
-			}
-			
-			SessionEntry session = new SessionEntry();
-			session.RecordCount = (short) records.size();
-	
-			// Calculate the expected size
-			int totalSize = 0;
-			for(Record record : records)
-				totalSize += record.getSize(absolute);
-			
-			Debug.finer(" Total size of records: " + totalSize);
-			Debug.finer(" Actual session size: " + Math.max(totalSize, DesiredMaximumSessionSize));
-			
-			// Write the records to memory
-			ByteArrayOutputStream bstream = new ByteArrayOutputStream(totalSize);
-			DataOutputStream stream = new DataOutputStream(bstream);
-			
-			long lastSize = stream.size();
-			for(Record record : records)
-			{
-				int expectedSize = record.getSize(absolute);
-				if(!record.write(stream, absolute))
-					return -1;
-				
-				long actualSize = stream.size() - lastSize;
-				
-				if(expectedSize != actualSize)
-				{
-					Debug.severe(record.getType().toString() + " is returning incorrect size. Expected: " + expectedSize + " got " + actualSize);
-				}
-				// Update deep mode
-				if(record instanceof SessionInfoRecord)
-				{
-					mDeepMode = ((SessionInfoRecord)record).isDeep();
-				}
-				lastSize = stream.size();
-
-				// Add any location to the location filter 
-				if(record instanceof ILocationAware && !(record instanceof IPlayerLocationAware))
-				{
-					session.LocationFilter.add(((ILocationAware)record).getLocation().hashCode());
-					SafeChunk chunk = new SafeChunk(((ILocationAware)record).getLocation());
-					session.ChunkLocationFilter.add(chunk.hashCode());
-				}
-			}
-			
-			// Ensure i didnt mess up the implementation of getSize()
-			Debug.loggedAssert( bstream.size() == totalSize);
-			
-			Debug.finest(" Produced byte stream");
-			// Calculate size and prepare index entry
-			session.Location = 0;
-			session.TotalSize = stream.size();
-			session.Compressed = false;
-			
-			session.StartTimestamp = records.get(0).getTimestamp();
-			session.EndTimestamp = records.get(records.size()-1).getTimestamp();
-			
-			session.Location = mSpaceLocator.findFreeSpace(Math.max(session.TotalSize,DesiredMaximumSessionSize));
-		
-			// Write the session
-			Debug.finest(" Writing session %d to %X -> %X", session.Id, session.Location, session.Location + bstream.size() - 1);
-			
-			mFile.seek(session.Location);
-			mFile.write(bstream.toByteArray());
-			Debug.finest(" adding padding");
-			// Keep some space for fast appends
-			session.Padding = Math.max(0, DesiredMaximumSessionSize - session.TotalSize);
-			session.TotalSize += session.Padding;
-			
-			if(session.Padding > 0)
-			{
-				// This is for incase this is at the end of the file 
-				mFile.seek(session.Location + session.TotalSize - 1);
-				mFile.writeByte(0);
-			}
-
-			mSpaceLocator.consumeSpace(session.Location, session.TotalSize);
-			
-			// Write the index entry
-			int id = mSessionIndex.add(session);
-			
-			if(!CrossReferenceIndex.instance.addSession(this, session, records.getAllChunks()))
-				Debug.warning("Failed to add session to xreference");
-			else
-				Debug.finer("Added session to cross reference");
-			
-			if(!absolute)
-			{
-				// Keep it consistant
-				Location lastLocation = records.getCurrentLocation(records.size()-1);
-				InventoryRecord lastInventory = records.getCurrentInventory(records.size()-1);
-				
-				if(lastLocation != null)
-					mLastLocation = lastLocation;
-				if(lastInventory != null)
-					mLastInventory = lastInventory;
-			}
-			
-			return id;
-		}
-		finally
-		{
-			mLock.writeLock().unlock();
-			Profiler.endTimingSection();
-		}
-	}
-
 	/**
 	 * Purges all records between the fromDate inclusive, and the toDate exclusive
 	 */
@@ -1667,7 +1072,7 @@ public class LogFile
 	}
 
 	
-	private void pullData(long location) throws IOException
+	void pullData(long location) throws IOException
 	{
 		Profiler.beginTimingSection("pullData");
 		// Grab what ever is next after this
@@ -1807,173 +1212,6 @@ public class LogFile
 		Profiler.endTimingSection();
 	}
 	
-	private short[] getRolledBackRecords(SessionEntry session) throws IOException
-	{
-		RollbackEntry entry = mRollbackIndex.getRollbackEntryById(session.Id);
-		if(entry == null)
-			return new short[0];
-		
-		mFile.seek(entry.detailLocation);
-		short[] data = new short[entry.count];
-		for(int i = 0; i < entry.count; ++i)
-			data[i] = mFile.readShort();
-		
-		return data;
-	}
-	
-	private void updateDetail(RollbackEntry entry, List<Short> newList) throws IOException
-	{
-		Debug.fine("Updaing rollback detail for %d", entry.sessionId);
-		
-		int diff = newList.size() - entry.count;
-		if(diff < 0)
-		{
-			Debug.finer("Losing %d entries", diff);
-			if(newList.size() == 0)
-			{
-				mSpaceLocator.releaseSpace(entry.detailLocation,entry.detailSize);
-				mRollbackIndex.remove(entry);
-			}
-			else
-			{
-				long newSize = newList.size() * 2;
-				long oldSize = entry.detailSize - entry.padding;
-				
-				// Update the entries
-				mFile.seek(entry.detailLocation);
-				for(Short index : newList)
-					mFile.writeShort(index);
-				
-				entry.padding += (oldSize - newSize);
-				Debug.finer("Adding %d bytes of padding", (oldSize - newSize));
-			}
-		}
-		else if(diff > 0)
-		{
-			Debug.finer("Gaining %d entries", diff);
-			long availableSpace = entry.padding;
-			availableSpace += mSpaceLocator.getFreeSpace(entry.detailLocation + entry.detailSize);
-			
-			Debug.finer("*Avaiable Space: " + availableSpace);
-			
-			long newSize = newList.size() * 2;
-			long oldSize = entry.detailSize - entry.padding;
-			
-			if(newSize <= availableSpace)
-			{
-				mFile.seek(entry.detailLocation);
-				for(Short index : newList)
-					mFile.writeShort(index);
-				
-				// Work out how much padding will be left
-				newSize -= oldSize;
-				long temp = Math.min(entry.padding, newSize);
-				entry.padding -= temp;
-				newSize -= temp;
-				
-				if(entry.padding == 0)
-				{
-					// There is a hole to consume
-					mSpaceLocator.consumeSpace(entry.detailLocation + entry.detailSize, newSize);
-				}
-				
-				entry.detailSize += newSize;
-				mRollbackIndex.set(mRollbackIndex.indexOf(entry), entry);
-				
-				Debug.finest("Rollback detail expanded to %X -> %X", entry.detailLocation, entry.detailLocation + entry.detailSize - 1);
-			}
-			else
-			{
-				// Relocate it
-				long oldLocation = entry.detailLocation;
-				oldSize = entry.detailSize;
-				
-				// Reset the padding
-				entry.padding = 8;
-				
-				entry.detailSize = newSize;
-				entry.detailLocation = mSpaceLocator.findFreeSpace(entry.detailSize);
-				
-				mFile.seek(entry.detailLocation);
-				for(Short index : newList)
-					mFile.writeShort(index);
-				
-				// Update rollback entry
-				mRollbackIndex.set(mRollbackIndex.indexOf(entry), entry);
-				
-				mSpaceLocator.consumeSpace(entry.detailLocation, entry.detailSize);
-				mSpaceLocator.releaseSpace(oldLocation, oldSize);
-				
-				Debug.finest("Rollback detail reloated to %X -> %X from %X -> %X", entry.detailLocation, entry.detailLocation + entry.detailSize - 1, oldLocation, oldLocation + oldSize - 1);
-			}
-		}
-	}
-	
-	private void setRollbackStateInternal(SessionEntry session, List<Short> indices, boolean state) throws IOException
-	{
-		Debug.loggedAssert(session != null);
-		
-		Profiler.beginTimingSection("setRollbackState");
-		mLock.writeLock().lock();
-		
-		Debug.info("Setting rollback state for %d records in session %d", indices.size(), session.Id);
-		try
-		{
-			RollbackEntry entry = mRollbackIndex.getRollbackEntryById(session.Id);
-			
-			if(entry == null)
-			{
-				entry = new RollbackEntry();
-				entry.sessionId = session.Id;
-				mRollbackIndex.add(entry);
-			}
-			
-			short[] existing = getRolledBackRecords(session);
-			
-			// Modify the detail
-			boolean[] add = new boolean[indices.size()];
-			boolean[] remove = new boolean[indices.size()];
-			
-			for(int ind = 0; ind < indices.size(); ++ind)
-			{
-				add[ind] = true;
-				remove[ind] = false;
-				for(int i = 0; i < existing.length; ++i)
-				{
-					if(existing[i] == (short)indices.get(ind))
-					{
-						add[ind] = false;
-						if(!state)
-						{
-							// Remove this item
-							remove[ind] = true;
-						}
-						break;
-					}
-				}
-			}
-			
-			ArrayList<Short> newList = new ArrayList<Short>(existing.length);
-			for(int i = 0; i < existing.length; ++i)
-				newList.add(existing[i]);
-			
-			for(int i = 0; i < indices.size(); ++i)
-			{
-				if(remove[i])
-					newList.remove(indices.get(i));
-				if(add[i])
-					newList.add(indices.get(i));
-			}
-			
-			updateDetail(entry, newList);
-		}
-		finally
-		{
-			Debug.info("Completed setting rollback state");
-			mLock.writeLock().unlock();
-			Profiler.endTimingSection();
-		}
-	}
 	public void setRollbackState(SessionEntry session, List<Short> indices, boolean state)
 	{
 		mLock.writeLock().lock();
@@ -1982,7 +1220,8 @@ public class LogFile
 		{
 			mFile.beginTransaction();
 			
-			setRollbackStateInternal(session, indices, state);
+			mRollbackIndex.setRollbackState(session, indices, state);
+			
 			mFile.commit();
 		}
 		catch(Exception e)
@@ -2127,14 +1366,6 @@ public class LogFile
 	private FileHeader mHeader;
 	private File mFilePath;
 	
-	// This stuff is used to keep consistant state at all time
-	private boolean mDeepMode;
-	private Location mLastLocation;
-	private InventoryRecord mLastInventory;
-	
-	/// The byte size that sessions should be cut down to. This may or may not be met depending on the size of the records. 
-	public static long DesiredMaximumSessionSize = 102400;
-
 	public static boolean sNoTimeoutOverride = false;
 	
 	// Task for closing the logfile when everything is executed

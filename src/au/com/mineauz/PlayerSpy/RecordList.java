@@ -1,5 +1,6 @@
 package au.com.mineauz.PlayerSpy;
 
+import java.io.DataOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -343,6 +344,39 @@ public class RecordList extends ArrayList<Record>
 		}
 		
 		return false;
+	}
+	
+	public Boolean getCurrentDepth(int index)
+	{
+		Debug.loggedAssert( index >= 0 && index < size());
+		
+		for(int i = index; i >= 0; i--)
+		{
+			if(get(i) instanceof SessionInfoRecord)
+			{
+				return ((SessionInfoRecord)get(i)).isDeep();
+			}
+		}
+		
+		return null;
+	}
+	
+	public void writeAll(DataOutputStream stream, boolean absolute)
+	{
+		long lastSize = stream.size();
+		for(int i = 0; i < size(); i++)
+		{
+			int expectedSize = get(i).getSize(absolute);
+			get(i).write(stream, absolute);
+			
+			long actualSize = stream.size() - lastSize;
+			
+			if(expectedSize != actualSize)
+			{
+				Debug.severe(get(i).getType().toString() + " is returning incorrect size. Expected: " + expectedSize + " got " + actualSize);
+			}
+			lastSize = stream.size();
+		}
 	}
 	
 	@Override

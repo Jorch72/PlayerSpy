@@ -16,7 +16,7 @@ public abstract class DataIndex<T extends IndexEntry, Y extends IMovableData<T>>
 	/**
 	 * Creates a new data element from an index entry
 	 */
-	protected abstract Y createNewDataElement(T entry);
+	protected abstract Y getDataFor(T entry);
 
 	public void relocateData(Y data, long toLocation) throws IOException
 	{
@@ -31,10 +31,5 @@ public abstract class DataIndex<T extends IndexEntry, Y extends IMovableData<T>>
 		// Update the location
 		data.setLocation(toLocation);
 		set(index, indexEntry);
-	}
-	
-	public Y getDataFor(T entry)
-	{
-		return createNewDataElement(entry);
 	}
 }

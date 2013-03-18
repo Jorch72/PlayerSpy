@@ -118,4 +118,27 @@ public class OwnerTagIndex extends Index<OwnerMapEntry>
 		
 		return null;
 	}
+	
+	public int getOrCreateTag(String owner) throws IOException
+	{
+		// See if there is a tag we can reuse
+		for(OwnerMapEntry tag : this)
+		{
+			if(tag.Owner.equalsIgnoreCase(owner))
+			{
+				return tag.Id;
+			}
+		}
+		
+		int id = SessionIndex.NextId++;
+			
+		// Add a new tag
+		OwnerMapEntry ent = new OwnerMapEntry();
+		ent.Owner = owner;
+		ent.Id = id;
+		
+		add(ent);
+		
+		return id;
+	}
 }

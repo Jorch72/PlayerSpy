@@ -5,7 +5,7 @@ import java.io.RandomAccessFile;
 
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 
-public class HoleIndex extends DataIndex<HoleEntry, HoleData>
+public class HoleIndex extends DataIndex<HoleEntry, IMovableData<HoleEntry>>
 {
 
 	public HoleIndex( LogFile log, FileHeader header, RandomAccessFile file, SpaceLocator locator )
@@ -284,8 +284,43 @@ public class HoleIndex extends DataIndex<HoleEntry, HoleData>
 	}
 
 	@Override
-	protected HoleData createNewDataElement( HoleEntry entry )
+	protected HoleData getDataFor( HoleEntry entry )
 	{
 		return new HoleData(entry);
 	}
+	
+	public class HoleData implements IMovableData<HoleEntry>
+	{
+		private final HoleEntry mHole;
+		
+		public HoleData(HoleEntry hole)
+		{
+			mHole = hole;
+		}
+		
+		@Override
+		public HoleEntry getIndexEntry()
+		{
+			return mHole;
+		}
+		
+		@Override
+		public long getLocation()
+		{
+			return mHole.Location;
+		}
+		@Override
+		public void setLocation( long newLocation )
+		{
+			mHole.Location = newLocation;
+		}
+
+		@Override
+		public long getSize()
+		{
+			return mHole.Size;
+		}
+
+	}
+
 }

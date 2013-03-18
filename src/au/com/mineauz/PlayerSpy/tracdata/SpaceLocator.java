@@ -25,7 +25,7 @@ public class SpaceLocator
 		{
 			if(hole.Location <= location && hole.Location + hole.Size > location)
 				return i;
-			else if(hole.Location + hole.Size > location)
+			else if(hole.Location > location)
 				return -1;
 			
 			i++;
