@@ -124,6 +124,11 @@ public class SessionIndex extends DataIndex<SessionEntry, SessionData>
 		
 		rebuildSessionMap();
 		
+		// Update the location filter for the file
+		mHeader.TotalLocationFilter.add(entry.ChunkLocationFilter);
+		mFile.seek(0);
+		mHeader.write(mFile);
+		
 		return index;
 	}
 	
@@ -140,6 +145,8 @@ public class SessionIndex extends DataIndex<SessionEntry, SessionData>
 		super.remove(index);
 		
 		rebuildSessionMap();
+		
+		rebuildChunkFilters();
 	}
 	
 	@Override
@@ -152,6 +159,28 @@ public class SessionIndex extends DataIndex<SessionEntry, SessionData>
 				break;
 		}
 		return insertIndex;
+	}
+	
+	@Override
+	public void set( int index, SessionEntry entry ) throws IOException
+	{
+		super.set(index, entry);
+		
+		// Update the location filter for the file
+		mHeader.TotalLocationFilter.add(entry.ChunkLocationFilter);
+		mFile.seek(0);
+		mHeader.write(mFile);
+	}
+	
+	public void rebuildChunkFilters() throws IOException
+	{
+		mHeader.TotalLocationFilter.clear();
+		
+		for(SessionEntry session : this)
+			mHeader.TotalLocationFilter.add(session.ChunkLocationFilter);
+		
+		mFile.seek(0);
+		mHeader.write(mFile);
 	}
 	
 	public SessionEntry getSessionFromId(int id)

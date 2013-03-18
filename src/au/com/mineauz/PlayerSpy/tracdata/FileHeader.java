@@ -3,6 +3,7 @@ package au.com.mineauz.PlayerSpy.tracdata;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
+import au.com.mineauz.PlayerSpy.Utilities.BloomFilter;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 
 public class FileHeader implements IData<IndexEntry>
@@ -24,7 +25,8 @@ public class FileHeader implements IData<IndexEntry>
 	public long RollbackIndexLocation;
 	public long RollbackIndexSize;
 	public int RollbackIndexCount;
-	public byte[] Reserved = new byte[4];
+	public BloomFilter TotalLocationFilter = new BloomFilter();
+	public byte[] Reserved = new byte[30];
 	
 	public void write(RandomAccessFile file) throws IOException
 	{
@@ -49,17 +51,18 @@ public class FileHeader implements IData<IndexEntry>
 			file.writeShort((short)OwnerMapCount);
 		}
 		
-		if(VersionMajor == 3 && VersionMinor >= 1)
+		if(VersionMajor == 3)
 		{
 			file.writeInt((int)RollbackIndexLocation);
 			file.writeInt((int)RollbackIndexSize);
 			file.writeShort((int)RollbackIndexCount);
 			
+			file.writeInt(TotalLocationFilter.hashCode());
+			
 			file.write(Reserved);
 		}
 		else if(VersionMajor != 1)
 			file.write(new byte[14]);
-		
 	}
 	
 	public void read(RandomAccessFile file) throws IOException
@@ -91,11 +94,14 @@ public class FileHeader implements IData<IndexEntry>
 			OwnerMapCount = file.readShort();
 		}
 		
-		if(VersionMajor == 3 && VersionMinor == 1)
+		if(VersionMajor == 3)
 		{
 			RollbackIndexLocation = file.readInt();
 			RollbackIndexSize = file.readInt();
 			RollbackIndexCount = file.readShort();
+			
+			TotalLocationFilter = new BloomFilter(file.readInt());
+			
 			file.readFully(Reserved);
 		}
 		else if(VersionMajor != 1)
@@ -106,8 +112,10 @@ public class FileHeader implements IData<IndexEntry>
 	{
 		if(VersionMajor == 1)
 			return 24 + Utility.getUTFLength(PlayerName);
-		else if(VersionMajor == 2 || VersionMajor == 3)
+		else if(VersionMajor == 2)
 			return 49 +  + Utility.getUTFLength(PlayerName);
+		else if(VersionMajor == 3)
+			return 79 + Utility.getUTFLength(PlayerName);
 		else
 			throw new IllegalArgumentException("Invalid Version " + VersionMajor);
 	}

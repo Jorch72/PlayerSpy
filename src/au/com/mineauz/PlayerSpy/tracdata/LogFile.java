@@ -938,6 +938,15 @@ public class LogFile
 						if(((IRollbackable)record).wasRolledBack())
 							rolledBackEntries.add((Short)(short)(index + session.RecordCount));
 					}
+					
+					// Add any location to the location filter 
+					if(record instanceof ILocationAware && !(record instanceof IPlayerLocationAware))
+					{
+						session.LocationFilter.add(((ILocationAware)record).getLocation().hashCode());
+						SafeChunk chunk = new SafeChunk(((ILocationAware)record).getLocation());
+						session.ChunkLocationFilter.add(chunk.hashCode());
+					}
+					
 					++index;
 				}
 			}
@@ -999,7 +1008,7 @@ public class LogFile
 				session.EndTimestamp = records.getEndTimestamp();
 				session.RecordCount += records.size();
 				mSessionIndex.set(mSessionIndex.indexOf(session), session);
-				
+
 				CrossReferenceIndex.instance.updateSession(this, session, records.getAllChunks());
 				Debug.info("Completed append to Session %d", session.Id);
 				
@@ -1385,6 +1394,14 @@ public class LogFile
 					mDeepMode = ((SessionInfoRecord)record).isDeep();
 				}
 				lastSize = stream.size();
+
+				// Add any location to the location filter 
+				if(record instanceof ILocationAware && !(record instanceof IPlayerLocationAware))
+				{
+					session.LocationFilter.add(((ILocationAware)record).getLocation().hashCode());
+					SafeChunk chunk = new SafeChunk(((ILocationAware)record).getLocation());
+					session.ChunkLocationFilter.add(chunk.hashCode());
+				}
 			}
 			
 			// Ensure i didnt mess up the implementation of getSize()
@@ -1562,6 +1579,9 @@ public class LogFile
 							for(Record record : sessionData)
 								totalSize += record.getSize(isAbsolute);
 							
+							entry.ChunkLocationFilter.clear();
+							entry.LocationFilter.clear();
+							
 							ByteArrayOutputStream bstream = new ByteArrayOutputStream(totalSize);
 							DataOutputStream stream = new DataOutputStream(bstream);
 							
@@ -1579,8 +1599,15 @@ public class LogFile
 									Debug.severe(record.getType().toString() + " is returning incorrect size. Expected: " + expectedSize + " got " + actualSize);
 								}
 								lastSize = stream.size();
+								
+								// Add any location to the location filter 
+								if(record instanceof ILocationAware && !(record instanceof IPlayerLocationAware))
+								{
+									entry.LocationFilter.add(((ILocationAware)record).getLocation().hashCode());
+									SafeChunk chunk = new SafeChunk(((ILocationAware)record).getLocation());
+									entry.ChunkLocationFilter.add(chunk.hashCode());
+								}
 							}
-							
 							
 							long oldSize = entry.TotalSize;
 							
@@ -1606,6 +1633,9 @@ public class LogFile
 						}
 					}
 				}
+				// Make sure the filters are accurate again
+				mSessionIndex.rebuildChunkFilters();
+				
 				result = true;
 				
 				mFile.commit();

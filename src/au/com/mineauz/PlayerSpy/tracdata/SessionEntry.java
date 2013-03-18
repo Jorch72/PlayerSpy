@@ -3,10 +3,12 @@ package au.com.mineauz.PlayerSpy.tracdata;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
+import au.com.mineauz.PlayerSpy.Utilities.BloomFilter;
+
 // Represents a session declaration
 public class SessionEntry extends IndexEntry
 {
-	public static final int[] cSize = new int[] {0, 27, 35, 39};
+	public static final int[] cSize = new int[] {0, 27, 35, 43};
 	public int version;
 	
 	public long StartTimestamp;
@@ -15,6 +17,9 @@ public class SessionEntry extends IndexEntry
 	public long Location;
 	public long TotalSize;
 	public long Padding;
+	
+	public BloomFilter LocationFilter = new BloomFilter();
+	public BloomFilter ChunkLocationFilter = new BloomFilter();
 	
 	public boolean Compressed;
 	public int Id;
@@ -27,12 +32,18 @@ public class SessionEntry extends IndexEntry
 		file.writeShort(RecordCount);
 		file.writeInt((int)Location);
 		file.writeInt((int)TotalSize);
-		file.writeInt((int)Padding);
 		file.writeByte(Compressed == true ? 1 : 0);
 		if(version == 2 || version == 3)
 		{
 			file.writeInt(Id);
 			file.writeInt(OwnerTagId);
+		}
+		
+		if(version == 3)
+		{
+			file.writeInt((int)Padding);
+			file.writeInt(LocationFilter.hashCode());
+			file.writeInt(ChunkLocationFilter.hashCode());
 		}
 	}
 	public void read(RandomAccessFile file) throws IOException
@@ -42,12 +53,19 @@ public class SessionEntry extends IndexEntry
 		RecordCount = file.readShort();
 		Location = (long)file.readInt();
 		TotalSize = (long)file.readInt();
-		Padding = (long)file.readInt();
 		Compressed = (file.readByte() == 0 ? false : true);
+		
 		if(version == 2 || version == 3)
 		{
 			Id = file.readInt();
 			OwnerTagId = file.readInt();
+		}
+		
+		if(version == 3)
+		{
+			Padding = (long)file.readInt();
+			LocationFilter = new BloomFilter(file.readInt());
+			ChunkLocationFilter = new BloomFilter(file.readInt());
 		}
 	}
 	

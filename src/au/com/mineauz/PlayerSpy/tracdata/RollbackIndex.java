@@ -86,15 +86,6 @@ public class RollbackIndex extends DataIndex<RollbackEntry, RollbackData>
 		if(mHeader.VersionMajor < 3)
 			throw new IllegalStateException("You cannot use the rollback index on a pre Version 3 tracdata file.");
 		
-		// Rollback indices are only present in Version 3.1 logs or higher
-		
-		if(mHeader.VersionMajor == 3 && mHeader.VersionMinor < 1)
-		{
-			mHeader.VersionMinor = 1;
-			mFile.seek(0);
-			mHeader.write(mFile);
-		}
-		
 		int index = super.add(entry);
 		
 		rebuildRollbackMap();
@@ -115,10 +106,6 @@ public class RollbackIndex extends DataIndex<RollbackEntry, RollbackData>
 	{
 		if(mHeader.VersionMajor < 3)
 			throw new IllegalStateException("You cannot use the rollback index on a pre Version 3 tracdata file.");
-		
-		if(mHeader.VersionMajor == 3 && mHeader.VersionMinor < 1)
-			// It is not present in version 3.0
-			return;
 		
 		super.read();
 		
