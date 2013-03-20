@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 
 import au.com.mineauz.PlayerSpy.Utilities.BloomFilter;
+import au.com.mineauz.PlayerSpy.structurefile.IndexEntry;
 
 // Represents a session declaration
 public class SessionEntry extends IndexEntry

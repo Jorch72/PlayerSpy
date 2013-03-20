@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy.tracdata;
+package au.com.mineauz.PlayerSpy.structurefile;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -8,9 +8,9 @@ import au.com.mineauz.PlayerSpy.debugging.Debug;
 
 public abstract class DataIndex<T extends IndexEntry, Y extends IMovableData<T>> extends Index<T>
 {
-	public DataIndex( LogFile log, FileHeader header, RandomAccessFile file, SpaceLocator locator )
+	public DataIndex( StructuredFile hostingFile, RandomAccessFile file, SpaceLocator locator )
 	{
-		super(log, header, file, locator);
+		super(hostingFile, file, locator);
 	}
 
 	/**

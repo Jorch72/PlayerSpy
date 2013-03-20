@@ -7,15 +7,20 @@ import java.util.HashMap;
 import java.util.List;
 
 import au.com.mineauz.PlayerSpy.debugging.Debug;
+import au.com.mineauz.PlayerSpy.structurefile.DataIndex;
+import au.com.mineauz.PlayerSpy.structurefile.IMovableData;
+import au.com.mineauz.PlayerSpy.structurefile.SpaceLocator;
 
 
 public class RollbackIndex extends DataIndex<RollbackEntry, IMovableData<RollbackEntry>>
 {
 	private HashMap<Integer,Integer> mRollbackMap = new HashMap<Integer, Integer>();
+	private FileHeader mHeader;
 	
 	public RollbackIndex( LogFile log, FileHeader header, RandomAccessFile file, SpaceLocator locator )
 	{
-		super(log, header, file, locator);
+		super(log, file, locator);
+		mHeader = header;
 	}
 
 	@Override
@@ -155,6 +160,13 @@ public class RollbackIndex extends DataIndex<RollbackEntry, IMovableData<Rollbac
 		return data.readState();
 	}
 	
+	@Override
+	protected void saveChanges() throws IOException
+	{
+		mFile.seek(0);
+		mHeader.write(mFile);
+	}
+	
 	public class RollbackData implements IMovableData<RollbackEntry>
 	{
 		private final RollbackEntry mRollbackEntry;
@@ -184,6 +196,12 @@ public class RollbackIndex extends DataIndex<RollbackEntry, IMovableData<Rollbac
 		public void setLocation( long newLocation )
 		{
 			mRollbackEntry.detailLocation = newLocation;
+		}
+		
+		@Override
+		public void saveChanges() throws IOException
+		{
+			set(indexOf(mRollbackEntry), mRollbackEntry);
 		}
 		
 		

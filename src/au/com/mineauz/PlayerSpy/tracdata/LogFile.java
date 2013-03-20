@@ -2,11 +2,9 @@ package au.com.mineauz.PlayerSpy.tracdata;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.io.*;
 
 import org.bukkit.Bukkit;
@@ -17,21 +15,22 @@ import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.LogTasks.*;
 import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
+import au.com.mineauz.PlayerSpy.Utilities.BloomFilter;
 import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
-import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.debugging.Profiler;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
-import au.com.mineauz.PlayerSpy.tracdata.HoleIndex.HoleData;
+import au.com.mineauz.PlayerSpy.structurefile.Index;
+import au.com.mineauz.PlayerSpy.structurefile.SpaceLocator;
+import au.com.mineauz.PlayerSpy.structurefile.StructuredFile;
 import au.com.mineauz.PlayerSpy.tracdata.SessionIndex.SessionData;
 
-public class LogFile 
+public class LogFile extends StructuredFile
 {
 	public LogFile()
 	{
 		mReferenceCount = 1;
-		mLock = new ReentrantReadWriteLock(true);
 		mReferenceLock = new ReentrantLock(true);
 	}
 
@@ -72,28 +71,38 @@ public class LogFile
 	 
 	public long getStartDate()
 	{
-		mLock.readLock().lock();
-		
+		lockRead();
 		
 		long result = 0;
 		if(mSessionIndex.getCount() > 0)
 			result = mSessionIndex.get(0).StartTimestamp;
-		mLock.readLock().unlock();
+		
+		unlockRead();
 		
 		return result;
 	}
 	
 	public long getEndDate()
 	{
-		mLock.readLock().lock();
+		lockRead();
 		
 		long result = 0;
 		if(mSessionIndex.getCount() > 0)
 			result = mSessionIndex.get(mSessionIndex.getCount()-1).EndTimestamp;
 		
-		mLock.readLock().unlock();
+		unlockRead();
 		
 		return result;
+	}
+	
+	public BloomFilter getChunkFilter()
+	{
+		return new BloomFilter(mHeader.TotalLocationFilter.hashCode());
+	}
+	
+	void pullDataExposed( long location ) throws IOException
+	{
+		super.pullData(location);
 	}
 	
 	/**
@@ -180,7 +189,7 @@ public class LogFile
 		log.mOwnerTagIndex = new OwnerTagIndex(log, header, file, log.mSpaceLocator);
 		log.mRollbackIndex = new RollbackIndex(log, header, file, log.mSpaceLocator);
 		
-		log.mIndexs = new Index[] {log.mHoleIndex, log.mSessionIndex, log.mOwnerTagIndex, log.mRollbackIndex};
+		log.load(file, log.mFilePath, new Index[] {log.mHoleIndex, log.mSessionIndex, log.mOwnerTagIndex, log.mRollbackIndex});
 		
 		log.mIsLoaded = true;
 		log.mFile = file;
@@ -228,7 +237,7 @@ public class LogFile
 		Debug.loggedAssert(!mIsLoaded);
 		
 		boolean ok = false;
-		mLock.writeLock().lock();
+		lockWrite();
 		ACIDRandomAccessFile file = null;
 		mIsCorrupt = false;
 		try
@@ -252,7 +261,7 @@ public class LogFile
 			mOwnerTagIndex = new OwnerTagIndex(this, mHeader, file, mSpaceLocator);
 			mRollbackIndex = new RollbackIndex(this, mHeader, file, mSpaceLocator);
 			
-			mIndexs = new Index[] {mHoleIndex, mSessionIndex, mOwnerTagIndex, mRollbackIndex};
+			load(file, mFilePath, new Index[] {mHoleIndex, mSessionIndex, mOwnerTagIndex, mRollbackIndex});
 			
 			// Read the indices
 			mHoleIndex.read();
@@ -315,7 +324,7 @@ public class LogFile
 			mIsCorrupt = true;
 		}
 		
-		mLock.writeLock().unlock();
+		unlockWrite();
 		
 		return ok;
 	}
@@ -445,7 +454,7 @@ public class LogFile
 		if(session.OwnerTagId == -1)
 			return null;
 		
-		mLock.readLock().lock();
+		lockRead();
 		
 		OwnerMapEntry entry = mOwnerTagIndex.getOwnerTagById(session.OwnerTagId);
 		
@@ -453,7 +462,7 @@ public class LogFile
 		if(entry != null)
 			result = entry.Owner;
 				
-		mLock.readLock().unlock();
+		unlockRead();
 		
 		return result;
 	}
@@ -571,7 +580,7 @@ public class LogFile
 	public long getNextAvailableDateAfter(long date)
 	{
 		long result = 0;
-		mLock.readLock().lock();
+		lockRead();
 		
 		for(SessionEntry entry : mSessionIndex)
 		{
@@ -581,14 +590,14 @@ public class LogFile
 				break;
 			}
 		}
-		mLock.readLock().unlock();
+		unlockRead();
 		
 		return result;
 	}
 	public long getNextAvailableDateBefore(long date)
 	{
 		long result = 0;
-		mLock.readLock().lock();
+		lockRead();
 		
 		
 		for(int i = mSessionIndex.getCount()-1; i >=0 ; --i)
@@ -600,7 +609,7 @@ public class LogFile
 				break;
 			}
 		}
-		mLock.readLock().unlock();
+		unlockRead();
 		
 		return result;
 	}
@@ -625,7 +634,7 @@ public class LogFile
 		Debug.fine("Loading records from " + Util.dateToString(startDate) + " to " + Util.dateToString(endDate));
 		
 		// We will hold the write lock because accessing the file concurrently through the same object with have issues i think.
-		mLock.writeLock().lock();
+		lockWrite();
 		
 				
 		// Find the relevant sessions
@@ -653,7 +662,7 @@ public class LogFile
 			allRecords.addAll(loadSession(session));
 		}
 		
-		mLock.writeLock().unlock();
+		unlockWrite();
 		Profiler.endTimingSection();
 		
 		Debug.finer("  " + allRecords.size() + " loaded records");
@@ -689,7 +698,7 @@ public class LogFile
 		ArrayList<SessionEntry> relevantEntries = new ArrayList<SessionEntry>();
 		
 		// We will hold the write lock because accessing the file concurrently through the same object with have issues i think.
-		mLock.writeLock().lock();
+		lockWrite();
 					
 		
 		// Find the relevant sessions
@@ -713,7 +722,7 @@ public class LogFile
 		}
 		Debug.fine("  " + allRecords.size() + " loaded records");
 		
-		mLock.writeLock().unlock();
+		unlockWrite();
 		Profiler.endTimingSection();
 		
 		// No need to trim it
@@ -739,7 +748,7 @@ public class LogFile
 		Profiler.beginTimingSection("loadSession");
 		
 		// We will hold the write lock because accessing the file concurrently through the same object with have issues i think.
-		mLock.writeLock().lock();
+		lockWrite();
 		
 		try
 		{
@@ -752,7 +761,7 @@ public class LogFile
 		}
 		finally
 		{
-			mLock.writeLock().unlock();
+			unlockWrite();
 			Profiler.endTimingSection();
 		}
 		
@@ -781,7 +790,7 @@ public class LogFile
 		Profiler.beginTimingSection("appendRecords");
 		synchronized (CrossReferenceIndex.instance)
 		{
-			mLock.writeLock().lock();
+			lockWrite();
 			
 			try
 			{
@@ -838,7 +847,7 @@ public class LogFile
 			}
 			finally
 			{
-				mLock.writeLock().unlock();
+				unlockWrite();
 				Profiler.endTimingSection();
 			}
 		}
@@ -882,7 +891,7 @@ public class LogFile
 		Profiler.beginTimingSection("purgeRecords");
 		synchronized(CrossReferenceIndex.instance)
 		{
-			mLock.writeLock().lock();
+			lockWrite();
 			
 			try
 			{
@@ -1063,7 +1072,7 @@ public class LogFile
 			}
 			finally
 			{
-				mLock.writeLock().unlock();
+				unlockWrite();
 				
 			}
 		}
@@ -1072,149 +1081,9 @@ public class LogFile
 	}
 
 	
-	void pullData(long location) throws IOException
-	{
-		Profiler.beginTimingSection("pullData");
-		// Grab what ever is next after this
-		long nextLocation;
-		long nextSize = 0;
-		HoleEntry holeData = mHoleIndex.getHoleAfter(location);
-		// TODO: Remove the recursion here
-		if(holeData != null)
-		{
-			// Find what data needs to be pulled
-			nextLocation = holeData.Location + holeData.Size;
-			int type = 0;
-			int index = 0;
-			
-			Debug.finest("Pulling data from %X to %X", nextLocation, holeData.Location);
-			
-			for(SessionEntry nextSession : mSessionIndex)
-			{
-				if(nextSession.Location == nextLocation)
-				{
-					nextSize = nextSession.TotalSize;
-					type = 0;
-					break;
-				}
-				index++;
-			}
-			
-			if(nextSize == 0)
-			{
-				if(mHeader.IndexLocation == nextLocation)
-				{
-					nextSize = mHeader.IndexSize;
-					type = 1;
-				}
-				else if(mHeader.HolesIndexLocation == nextLocation)
-				{
-					type = 2;
-					nextSize = mHeader.HolesIndexSize;
-				}
-				else if(mHeader.OwnerMapLocation == nextLocation)
-				{
-					nextSize = mHeader.OwnerMapSize;
-					type = 3;
-				}
-				else if(mHeader.RollbackIndexLocation == nextLocation)
-				{
-					nextSize = mHeader.RollbackIndexSize;
-					type = 4;
-				}
-				else
-				{
-					index = 0;
-					for(RollbackEntry nextEntry : mRollbackIndex)
-					{
-						if(nextEntry.detailLocation == nextLocation)
-						{
-							nextSize = nextEntry.detailSize;
-							type = 5;
-							break;
-						}
-						index++;
-					}
-				}
-			}
-			
-			
-			if(nextSize != 0)
-			{
-				Utility.shiftBytes(mFile, nextLocation, holeData.Location, nextSize);
-				
-				HoleEntry old = new HoleEntry();
-				old.Location = holeData.Location + nextSize;
-				old.Size = holeData.Size;
-				
-				// Update whatever
-				switch(type)
-				{
-				case 0: // session
-				{
-					SessionEntry nextSession = mSessionIndex.get(index);
-					Debug.finest("Shifted session %d from %X -> (%X-%X)", nextSession.Id, nextSession.Location, holeData.Location, holeData.Location + nextSize - 1);
-					nextSession.Location = holeData.Location;
-					mSessionIndex.set(index, nextSession);
-					break;
-				}
-				case 1: // Index
-					Debug.finest("Shifted index from %X -> (%X-%X)", mHeader.IndexLocation, holeData.Location, holeData.Location + nextSize - 1);
-					mHeader.IndexLocation = holeData.Location;
-					mFile.seek(0);
-					mHeader.write(mFile);
-					break;
-				case 2: // Hole Index
-					Debug.finest("Shifted hole index from %X -> (%X-%X)", mHeader.HolesIndexLocation, holeData.Location, holeData.Location + nextSize - 1);
-					mHeader.HolesIndexLocation = holeData.Location;
-					mFile.seek(0);
-					mHeader.write(mFile);
-					break;
-				case 3: // OwnerMap
-					Debug.finest("Shifted owner map from %X -> (%X-%X)", mHeader.OwnerMapLocation, holeData.Location, holeData.Location + nextSize - 1);
-					mHeader.OwnerMapLocation = holeData.Location;
-					mFile.seek(0);
-					mHeader.write(mFile);
-					break;
-				case 4: // Rollback Index
-					Debug.finest("Shifted rollback index from %X -> (%X-%X)", mHeader.RollbackIndexLocation, holeData.Location, holeData.Location + nextSize - 1);
-					mHeader.RollbackIndexLocation = holeData.Location;
-					mFile.seek(0);
-					mHeader.write(mFile);
-					break;
-				case 5: // Rollback Detail
-				{
-					RollbackEntry nextEntry = mRollbackIndex.get(index);
-					Debug.finest("Shifted rollback detail for %d from %X -> (%X-%X)", nextEntry.sessionId, nextEntry.detailLocation, holeData.Location, holeData.Location + nextSize - 1);
-					nextEntry.detailLocation = holeData.Location;
-					mRollbackIndex.set(index, nextEntry);
-					break;
-				}
-				}
-				
-				// Move the hole
-				mHoleIndex.remove(holeData);
-				
-				// Add in the new hole
-				mHoleIndex.add(old);
-				
-				// Attempt to compact further stuff
-				pullData(old.Location);
-			}
-			else
-			{
-				// Nothing to pull because there is no more data after us
-				mHoleIndex.remove(holeData);
-				// Trim the file
-				mFile.setLength(holeData.Location);
-			}
-		}
-		Profiler.endTimingSection();
-	}
-	
 	public void setRollbackState(SessionEntry session, List<Short> indices, boolean state)
 	{
-		mLock.writeLock().lock();
+		lockWrite();
 		
 		try
 		{
@@ -1232,72 +1101,10 @@ public class LogFile
 		}
 		finally
 		{
-			mLock.writeLock().unlock();
+			unlockWrite();
 		}
 	}
 
-	public List<IData<?>> getAllData()
-	{
-		TreeMap<Long, IData<?>> data = new TreeMap<Long, IData<?>>(); 
-		
-		data.put(0L, mHeader);
-		
-		for(Index<?> index : mIndexs)
-			data.put(index.getLocation(), index);
-		
-		for(SessionEntry entry : mSessionIndex)
-		{
-			IData<?> d = mSessionIndex.getDataFor(entry);
-			if(d.getSize() == 0)
-				continue;
-			data.put(d.getLocation(), d);
-		}
-		
-		for(HoleEntry entry : mHoleIndex)
-		{
-			IData<?> d = mHoleIndex.getDataFor(entry);
-			if(d.getSize() == 0)
-				continue;
-			data.put(d.getLocation(), d);
-		}
-		
-		for(RollbackEntry entry : mRollbackIndex)
-		{
-			IData<?> d = mRollbackIndex.getDataFor(entry);
-			if(d.getSize() == 0)
-				continue;
-			data.put(d.getLocation(), d);
-		}
-		
-		return new ArrayList<IData<?>>(data.values());
-	}
-	
-	/**
-	 * Debugging method used to check whether a space is really free, instead of believing what the hole index says
-	 */
-	public void checkSpaceStatus(long location, long size, boolean free)
-	{
-		List<IData<?>> data = getAllData();
-		
-		for(IData<?> item : data)
-		{
-			if(item instanceof HoleData)
-				continue;
-			
-			if((location >= item.getLocation() && location < item.getLocation() + item.getSize()) ||
-				(location + size > item.getLocation() && location + size < item.getLocation() + item.getSize()) ||
-				(location < item.getLocation() && location + size > item.getLocation() + item.getSize()))
-			{
-				if(free)
-					throw new RuntimeException(String.format("Holes indicate that this section is free. But absolute scan says othewise. Location: %X->%X. Space occupied by %s from %X->%X", location, location + size - 1, item.getClass().getSimpleName(), item.getLocation(), item.getLocation() + item.getSize()-1));
-				else
-					return;
-			}
-		}
-		
-		if(!free)
-			throw new RuntimeException(String.format("Holes indicate that this section is not free. But absolute scan says othewise. Location: %X->%X", location, location + size - 1));
-	}
 	
 	/**
 	 * Remember to call this any time the file is rolled back, otherwise the indexes and header which store stuff in ram too, will be in an inconsistent state
@@ -1333,17 +1140,9 @@ public class LogFile
 	{
 		return mPlayerName;
 	}
-	/**
-	 * Gets the file path of this log
-	 */
-	public File getFile()
-	{
-		return mFilePath;
-	}
 
 	private int mReferenceCount = 0;
 	
-	ReentrantReadWriteLock mLock;
 	private ReentrantLock mReferenceLock;
 	
 	private boolean mIsLoaded = false;
@@ -1352,8 +1151,6 @@ public class LogFile
 	private int mTimeoutId = -1;
 	private String mPlayerName;
 	
-	private Index<?>[] mIndexs;
-
 	SessionIndex mSessionIndex;
 	HoleIndex mHoleIndex;
 	OwnerTagIndex mOwnerTagIndex;

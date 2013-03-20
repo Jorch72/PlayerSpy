@@ -5,11 +5,13 @@ import java.io.RandomAccessFile;
 
 import au.com.mineauz.PlayerSpy.Utilities.BloomFilter;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.structurefile.IData;
+import au.com.mineauz.PlayerSpy.structurefile.IndexEntry;
 
 public class FileHeader implements IData<IndexEntry>
 {
 	public byte VersionMajor = 3;
-	public byte VersionMinor = 1;
+	public byte VersionMinor = 0;
 	public String PlayerName;
 	public long IndexLocation;
 	public long IndexSize;

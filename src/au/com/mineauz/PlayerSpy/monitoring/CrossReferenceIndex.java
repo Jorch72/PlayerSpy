@@ -38,18 +38,13 @@ public class CrossReferenceIndex
 	private PreparedStatement mAddSessionStatement;
 	private PreparedStatement mAddChunkStatement;
 	private PreparedStatement mUpdateSessionStatement;
-		private PreparedStatement mDeleteFileStatement;
+	private PreparedStatement mDeleteFileStatement;
 	private PreparedStatement mDeleteSessionStatement;
-	//private PreparedStatement mDeleteChunkStatement;
 	private PreparedStatement mSelectFileStatement;
 	private PreparedStatement mSelectFileByIDStatement;
-	//private PreparedStatement mSelectSessionByIDStatement;
-		private PreparedStatement mSelectSessionByChunkStatement;
+	private PreparedStatement mSelectSessionByChunkStatement;
 	private PreparedStatement mSelectSessionByChunkBetweenTimeStatement;
 	private PreparedStatement mSelectSessionBetweenTimeStatement;
-	//private PreparedStatement mSelectSessionEarlierThanTimeStatement;
-	//private PreparedStatement mSelectSessionLaterThanTimeStatement;
-	//private PreparedStatement mSelectSessionContainsTimeStatement;
 	private PreparedStatement mSelectChunksBySessionStatement;
 	
 	private HashMap<LogFile, Integer> mKnownFileIDs;
@@ -121,16 +116,12 @@ public class CrossReferenceIndex
 			mUpdateSessionStatement = mDatabaseConnection.prepareStatement("UPDATE SessionMap SET START_DATE = ?, END_DATE = ? WHERE SESSION_ID = ?;");
 			mDeleteFileStatement = mDatabaseConnection.prepareStatement("DELETE FROM FileMap WHERE FILE_ID = ?;");
 			mDeleteSessionStatement = mDatabaseConnection.prepareStatement("DELETE FROM SessionMap WHERE SESSION_ID = ?;");
-			//mDeleteChunkStatement = mDatabaseConnection.prepareStatement("DELETE FROM Chunks WHERE X = ? AND Z = ? AND WORLD = ? AND SESSION_ID = ?;");
 			
 			mSelectFileStatement = mDatabaseConnection.prepareStatement("SELECT * FROM FileMap WHERE PLAYER = ?;");
 			mSelectFileByIDStatement = mDatabaseConnection.prepareStatement("SELECT * FROM FileMap WHERE FILE_ID = ?;");
-			//mSelectSessionByIDStatement = mDatabaseConnection.prepareStatement("SELECT * FROM SessionMap WHERE SESSION_ID = ?;");
 			mSelectSessionByChunkStatement = mDatabaseConnection.prepareStatement("SELECT SessionMap.SESSION_ID, SessionMap.FILE_ID, SessionMap.START_DATE, SessionMap.END_DATE FROM Chunks JOIN SessionMap ON Chunks.SESSION_ID = SessionMap.SESSION_ID WHERE Chunks.X = ? AND Chunks.Z = ? AND Chunks.WORLD = ?;");
 			mSelectSessionByChunkBetweenTimeStatement = mDatabaseConnection.prepareStatement("SELECT SessionMap.SESSION_ID, SessionMap.FILE_ID, SessionMap.START_DATE, SessionMap.END_DATE FROM Chunks JOIN SessionMap ON Chunks.SESSION_ID = SessionMap.SESSION_ID WHERE Chunks.X = ? AND Chunks.Z = ? AND Chunks.WORLD = ? AND ((SessionMap.START_DATE >= ? AND SessionMap.START_DATE <= ?) OR (SessionMap.END_DATE >= ? AND SessionMap.END_DATE <= ?) OR (SessionMap.START_DATE < ? AND SessionMap.END_DATE > ?) OR (SessionMap.START_DATE < ? AND SessionMap.END_DATE > ?));");
 			mSelectSessionBetweenTimeStatement = mDatabaseConnection.prepareStatement("SELECT  SESSION_ID, FILE_ID, START_DATE, END_DATE FROM SessionMap WHERE (START_DATE >= ? AND START_DATE <= ?) OR (END_DATE >= ? AND END_DATE <= ?) OR (START_DATE < ? AND END_DATE > ?) OR (START_DATE < ? AND END_DATE > ?);");
-			//mSelectSessionLaterThanTimeStatement = mDatabaseConnection.prepareStatement("SELECT * FROM SessionMap WHERE END_DATE > ? ORDER BY END_DATE DESC;");
-			//mSelectSessionContainsTimeStatement = mDatabaseConnection.prepareStatement("SELECT * FROM SessionMap WHERE ? BETWEEN START_DATE AND END_DATE ORDER BY END_DATE DESC;");
 			mSelectChunksBySessionStatement = mDatabaseConnection.prepareStatement("SELECT * FROM Chunks WHERE SESSION_ID = ?");
 			
 			return true;

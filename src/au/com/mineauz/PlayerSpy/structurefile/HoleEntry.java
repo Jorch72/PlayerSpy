@@ -1,7 +1,8 @@
-package au.com.mineauz.PlayerSpy.tracdata;
+package au.com.mineauz.PlayerSpy.structurefile;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+
 
 // Represents an empty 
 public class HoleEntry extends IndexEntry

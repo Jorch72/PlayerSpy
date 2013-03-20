@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy.tracdata;
+package au.com.mineauz.PlayerSpy.structurefile;
 
 import java.io.IOException;
 
@@ -6,14 +6,14 @@ import au.com.mineauz.PlayerSpy.debugging.Debug;
 
 public class SpaceLocator
 {
-	private HoleIndex mIndex;
-	private LogFile mLog;
-	public SpaceLocator(LogFile log)
+	private AbstractHoleIndex mIndex;
+	private StructuredFile mHostingFile;
+	public SpaceLocator(StructuredFile structureFile)
 	{
-		mLog = log;
+		mHostingFile = structureFile;
 	}
 	
-	public void setHoleIndex(HoleIndex index)
+	public void setHoleIndex(AbstractHoleIndex index)
 	{
 		mIndex = index;
 	}
@@ -41,7 +41,7 @@ public class SpaceLocator
 		if(hole != -1)
 		{
 			HoleEntry entry = mIndex.get(hole);
-			mLog.checkSpaceStatus(entry.Location, entry.Size, true);
+			mHostingFile.checkSpaceStatus(entry.Location, entry.Size, true);
 			return entry.Size;
 		}
 		
@@ -61,7 +61,7 @@ public class SpaceLocator
 		{
 			if(hole.Size >= size)
 			{
-				mLog.checkSpaceStatus(hole.Location, hole.Size, true);
+				mHostingFile.checkSpaceStatus(hole.Location, hole.Size, true);
 				
 				Debug.finest("Found free space at %X->%X", hole.Location, hole.Location + hole.Size - 1);
 				return hole.Location;

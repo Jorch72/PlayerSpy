@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy.tracdata;
+package au.com.mineauz.PlayerSpy.structurefile;
 
 public interface IData<T extends IndexEntry>
 {

@@ -4,13 +4,18 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.HashMap;
 
+import au.com.mineauz.PlayerSpy.structurefile.Index;
+import au.com.mineauz.PlayerSpy.structurefile.SpaceLocator;
+
 public class OwnerTagIndex extends Index<OwnerMapEntry>
 {
 	private HashMap<Integer,Integer> mTagMap = new HashMap<Integer, Integer>();
+	private FileHeader mHeader;
 	
 	public OwnerTagIndex( LogFile log, FileHeader header, RandomAccessFile file, SpaceLocator locator )
 	{
-		super(log, header, file, locator);
+		super(log, file, locator);
+		mHeader = header;
 	}
 
 	@Override
@@ -140,5 +145,12 @@ public class OwnerTagIndex extends Index<OwnerMapEntry>
 		add(ent);
 		
 		return id;
+	}
+	
+	@Override
+	protected void saveChanges() throws IOException
+	{
+		mFile.seek(0);
+		mHeader.write(mFile);
 	}
 }

@@ -1,4 +1,4 @@
-package au.com.mineauz.PlayerSpy.tracdata;
+package au.com.mineauz.PlayerSpy.structurefile;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -14,16 +14,14 @@ import au.com.mineauz.PlayerSpy.debugging.Debug;
 
 public abstract class Index<T extends IndexEntry> implements Iterable<T>, IData<IndexEntry>
 {
-	protected final FileHeader mHeader;
 	protected final RandomAccessFile mFile;
 	protected final SpaceLocator mLocator;
 	protected final ArrayList<T> mElements = new ArrayList<T>();
-	protected final LogFile mLog;
+	protected final StructuredFile mHostingFile;
 	
-	public Index(LogFile log, FileHeader header, RandomAccessFile file, SpaceLocator locator)
+	public Index(StructuredFile hostingFile, RandomAccessFile file, SpaceLocator locator)
 	{
-		mLog = log;
-		mHeader = header;
+		mHostingFile = hostingFile;
 		mFile = file;
 		mLocator = locator;
 	}
@@ -75,6 +73,16 @@ public abstract class Index<T extends IndexEntry> implements Iterable<T>, IData<
 	 * Dont save it to disk
 	 */
 	protected abstract void updateLocation(long newLocation);
+	
+	/**
+	 * used by structured files to move indexes around.
+	 * @param newLocation
+	 */
+	final void setLocation(long newLocation) throws IOException
+	{
+		updateLocation(newLocation);
+		saveChanges();
+	}
 	
 	/**
 	 * Gets where in the list it will be inserted 
@@ -158,9 +166,7 @@ public abstract class Index<T extends IndexEntry> implements Iterable<T>, IData<
 			mLocator.releaseSpace(oldLocation, oldSize);
 		}
 		
-		// Save the header
-		mFile.seek(0);
-		mHeader.write(mFile);
+		saveChanges();
 		
 		return insertIndex;
 	}
@@ -196,9 +202,7 @@ public abstract class Index<T extends IndexEntry> implements Iterable<T>, IData<
 		
 		Debug.finer("Entry %d removed from %s", index, getIndexName());
 
-		// Write the file header
-		mFile.seek(0);
-		mHeader.write(mFile);
+		saveChanges();
 	}
 	
 	/**
@@ -239,8 +243,7 @@ public abstract class Index<T extends IndexEntry> implements Iterable<T>, IData<
 		Utility.shiftBytes(mFile, getLocation(), newLocation, getSize());
 		updateLocation(newLocation);
 		
-		mFile.seek(0);
-		mHeader.write(mFile);
+		saveChanges();
 	}
 	
 	@Override
@@ -279,4 +282,6 @@ public abstract class Index<T extends IndexEntry> implements Iterable<T>, IData<
 	{
 		return null;
 	}
+	
+	protected abstract void saveChanges() throws IOException;
 }

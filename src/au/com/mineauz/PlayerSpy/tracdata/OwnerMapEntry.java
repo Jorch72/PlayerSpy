@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 
+import au.com.mineauz.PlayerSpy.structurefile.IndexEntry;
+
 class OwnerMapEntry extends IndexEntry
 {
 	public static final int cMaxOwnerLength = 16;

@@ -30,6 +30,9 @@ import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.debugging.Profiler;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
+import au.com.mineauz.PlayerSpy.structurefile.DataIndex;
+import au.com.mineauz.PlayerSpy.structurefile.IMovableData;
+import au.com.mineauz.PlayerSpy.structurefile.SpaceLocator;
 
 public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEntry>>
 {
@@ -39,6 +42,8 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 	
 	private static long mInitialSessionSize = 102400;
 	
+	private FileHeader mHeader;
+	
 	/// These are used to maintain state between non ownertagged sessions
 	private InventoryRecord mLastInventory;
 	private Location mLastLocation;
@@ -46,7 +51,8 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 	
 	public SessionIndex( LogFile log, FileHeader header, RandomAccessFile file, SpaceLocator locator )
 	{
-		super(log, header, file, locator);
+		super(log, file, locator);
+		mHeader = header;
 	}
 
 	@Override
@@ -133,7 +139,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 			if(session.Compressed)
 				continue;
 			
-			String ownerTag = mLog.getOwnerTag(session);
+			String ownerTag = ((LogFile)mHostingFile).getOwnerTag(session);
 			if(mActiveSessions.containsKey(ownerTag))
 			{
 				SessionEntry other = getSessionFromId(mActiveSessions.get(ownerTag));
@@ -190,7 +196,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 		// Write the index entry
 		add(session);
 		
-		if(!CrossReferenceIndex.instance.addSession(mLog, session, new ArrayList<SafeChunk>()))
+		if(!CrossReferenceIndex.instance.addSession((LogFile)mHostingFile, session, new ArrayList<SafeChunk>()))
 			Debug.warning("Failed to add session to xreference");
 		else
 			Debug.finer("Added session to cross reference");
@@ -202,7 +208,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 	protected void onRemove( SessionEntry entry )
 	{
 		entry.version = mHeader.VersionMajor;
-		CrossReferenceIndex.instance.removeSession(mLog, entry);
+		CrossReferenceIndex.instance.removeSession((LogFile)mHostingFile, entry);
 	}
 	
 	@Override
@@ -279,6 +285,12 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 		return new SessionData(entry);
 	}
 	
+	@Override
+	protected void saveChanges() throws IOException
+	{
+		mFile.seek(0);
+		mHeader.write(mFile);
+	}
 	
 	public class SessionData implements IMovableData<SessionEntry>
 	{
@@ -305,7 +317,12 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 		{
 			mSession.Location = newLocation;
 		}
-		
+
+		@Override
+		public void saveChanges() throws IOException
+		{
+			set(indexOf(mSession),mSession);
+		}
 
 		@Override
 		public long getSize()
@@ -356,7 +373,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 					
 					break;
 				}
-				record.sourceFile = mLog; 
+				record.sourceFile = (LogFile)mHostingFile; 
 				record.sourceEntry = mSession;
 				record.sourceIndex = (short)i;
 				
@@ -367,7 +384,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 					lastWorld = ((WorldChangeRecord)record).getWorld();
 				else if((lastWorld == null && record.getType() != RecordType.FullInventory && record.getType() != RecordType.EndOfSession) && !isAbsolute)
 				{
-					Debug.warning("Corruption in " + mLog.getName() + ".tracdata session " + mSession.Id + " found. Attempting to fix");
+					Debug.warning("Corruption in " + ((LogFile)mHostingFile).getName() + ".tracdata session " + mSession.Id + " found. Attempting to fix");
 					lastWorld = Bukkit.getWorlds().get(0);
 					Record worldRecord = new WorldChangeRecord(lastWorld);
 					worldRecord.setTimestamp(record.getTimestamp());
@@ -382,20 +399,20 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 				
 				if(lastWorld == null && i > 3 && !isAbsolute)
 				{
-					Debug.warning("Issue detected with " + mLog.getName() + ".trackdata in session " + mSession.Id + ". No world has been set. Defaulting to main world");
+					Debug.warning("Issue detected with " + ((LogFile)mHostingFile).getName() + ".trackdata in session " + mSession.Id + ". No world has been set. Defaulting to main world");
 					lastWorld = Bukkit.getWorlds().get(0);
 					records.add(new WorldChangeRecord(lastWorld));
 				}
 				if(!hadInv && i > 3 && !isAbsolute)
 				{
-					Debug.warning("Issue detected with " + mLog.getName() + ".trackdata in session " + mSession.Id + ". No inventory state has been set. ");
+					Debug.warning("Issue detected with " + ((LogFile)mHostingFile).getName() + ".trackdata in session " + mSession.Id + ". No inventory state has been set. ");
 					hadInv = true;
 				}
 				records.add(record);
 			}
 			
 			// Load the rollback state info in
-			short[] indices = mLog.mRollbackIndex.getRolledBackRecords(mSession);
+			short[] indices = ((LogFile)mHostingFile).mRollbackIndex.getRolledBackRecords(mSession);
 			for(int i = 0; i < indices.length; ++i)
 			{
 				if(indices[i] < 0 || indices[i] >= records.size())
@@ -449,7 +466,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 				
 				mLocator.releaseSpace(mSession.Location + ostream.size(), oldSize - ostream.size());
 
-				mLog.pullData(mSession.Location + ostream.size());
+				((LogFile)mHostingFile).pullDataExposed(mSession.Location + ostream.size());
 			}
 			else
 				Debug.fine("Compression cancelled as the result was larger than the original");
@@ -549,11 +566,11 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 					mSession.RecordCount += records.size();
 					set(indexOf(mSession), mSession);
 
-					CrossReferenceIndex.instance.updateSession(mLog, mSession, records.getAllChunks());
+					CrossReferenceIndex.instance.updateSession(((LogFile)mHostingFile), mSession, records.getAllChunks());
 					Debug.info("Completed append to Session %d", mSession.Id);
 					
 					if(!rolledBackEntries.isEmpty())
-						mLog.mRollbackIndex.setRollbackState(mSession, rolledBackEntries, true);
+						((LogFile)mHostingFile).mRollbackIndex.setRollbackState(mSession, rolledBackEntries, true);
 				}
 				
 				// get data to keep records consistent
