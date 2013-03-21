@@ -72,9 +72,8 @@ public class SpyPlugin extends JavaPlugin
 		}, 1L, 1L);
 
 		LogFileRegistry.setLogFileDirectory(new File(getDataFolder(),"data"));
-		if(!CrossReferenceIndex.instance.initialize())
-			throw new RuntimeException("Failed to load database. Cannot start PlayerSpy");
-		
+
+		CrossReferenceIndex.initialize();
 		Upgrader.run();
 		
 		//addExistingMonitors();
@@ -90,7 +89,7 @@ public class SpyPlugin extends JavaPlugin
 		
 		GlobalMonitor.instance.shutdown();
 		LogFileRegistry.unloadAll();
-		CrossReferenceIndex.instance.close();
+		CrossReferenceIndex.getInstance().close();
 	}
 	
 	public synchronized List<String> getPlaybackTargets()

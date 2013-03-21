@@ -28,7 +28,6 @@ import au.com.mineauz.PlayerSpy.Records.InventoryTransactionRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
-import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
@@ -199,7 +198,7 @@ public class InspectBlockTask implements Task<Void>
 		}
 		
 		// Check stuff saved to disk
-		CrossReferenceIndex.Results allSessions = CrossReferenceIndex.instance.getSessionsFor(new SafeChunk(mLocation));
+		CrossReferenceIndex.Results allSessions = CrossReferenceIndex.getSessionsFor(mLocation);
 		for(SessionInFile fileSession : allSessions.foundSessions)
 		{
 			// Dont check ones that clearly have nothing of interest 

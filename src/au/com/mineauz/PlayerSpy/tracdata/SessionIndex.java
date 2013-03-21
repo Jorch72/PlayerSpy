@@ -196,7 +196,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 		// Write the index entry
 		add(session);
 		
-		if(!CrossReferenceIndex.instance.addSession((LogFile)mHostingFile, session, new ArrayList<SafeChunk>()))
+		if(!CrossReferenceIndex.addSession((LogFile)mHostingFile, session))
 			Debug.warning("Failed to add session to xreference");
 		else
 			Debug.finer("Added session to cross reference");
@@ -208,7 +208,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 	protected void onRemove( SessionEntry entry )
 	{
 		entry.version = mHeader.VersionMajor;
-		CrossReferenceIndex.instance.removeSession((LogFile)mHostingFile, entry);
+		CrossReferenceIndex.removeSession((LogFile)mHostingFile, entry);
 	}
 	
 	@Override
@@ -566,7 +566,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 					mSession.RecordCount += records.size();
 					set(indexOf(mSession), mSession);
 
-					CrossReferenceIndex.instance.updateSession(((LogFile)mHostingFile), mSession, records.getAllChunks());
+					CrossReferenceIndex.updateSession(((LogFile)mHostingFile), mSession);
 					Debug.info("Completed append to Session %d", mSession.Id);
 					
 					if(!rolledBackEntries.isEmpty())

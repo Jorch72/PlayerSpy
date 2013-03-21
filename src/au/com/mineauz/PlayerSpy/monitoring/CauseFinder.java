@@ -19,7 +19,6 @@ import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.LogTasks.Task;
 import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
-import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex.SessionInFile;
@@ -156,7 +155,7 @@ public class CauseFinder
 		{
 			Pair<Long, Cause> answer = null;
 			
-			CrossReferenceIndex.Results results = CrossReferenceIndex.instance.getSessionsFor(new SafeChunk(mSearchLocation));
+			CrossReferenceIndex.Results results = CrossReferenceIndex.getSessionsFor(mSearchLocation);
 			
 			for(SessionInFile result : results.foundSessions)
 			{

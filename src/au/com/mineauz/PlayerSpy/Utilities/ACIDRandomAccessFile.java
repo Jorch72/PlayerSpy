@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -14,6 +16,9 @@ public class ACIDRandomAccessFile extends RandomAccessFile
 {
 	private Journal mJournal;
 	ReentrantLock mJournalLock;
+	
+	private ACIDRandomAccessFile mMaster;
+	private List<ACIDRandomAccessFile> mChildren = new ArrayList<ACIDRandomAccessFile>();
 	
 	public ACIDRandomAccessFile( File file, String mode ) throws FileNotFoundException
 	{
@@ -54,8 +59,17 @@ public class ACIDRandomAccessFile extends RandomAccessFile
 		this(new File(filename), mode);
 	}
 
-	public void beginTransaction() throws IOException
+	public void beginTransaction(ACIDRandomAccessFile master) throws IOException
 	{
+		if(master != null)
+		{
+			if (!master.mJournalLock.isHeldByCurrentThread())
+				throw new IllegalStateException("Cannot begin joint transaction, this thread does not own the transaction.");
+			
+			if (!master.mJournal.isHot())
+				throw new IllegalStateException("Cannot begin joint transaction, the master has not begun yet.");
+		}
+		
 		try
 		{
 			if(!mJournalLock.tryLock(0, TimeUnit.SECONDS))
@@ -64,7 +78,15 @@ public class ACIDRandomAccessFile extends RandomAccessFile
 			if(mJournal.isHot())
 				throw new IllegalStateException("Cannot begin transaction, there is already one in progress.");
 		
-			mJournal.begin(length());
+			if(master == null)
+				mJournal.begin(length());
+			else
+				mJournal.begin(length(), master.mJournal);
+			
+			mMaster = master;
+			master.mChildren.add(this);
+			mChildren.clear();
+			
 			Debug.finest("Begun transaction");
 		}
 		catch ( InterruptedException e )
@@ -72,21 +94,45 @@ public class ACIDRandomAccessFile extends RandomAccessFile
 			e.printStackTrace();
 		}
 	}
+	public void beginTransaction() throws IOException
+	{
+		beginTransaction(null);
+	}
 	
 	public void commit() throws IOException
 	{
+		if(mMaster != null && mMaster.mJournal.isHot())
+			throw new IllegalStateException("Cannot commit this transaction as it is controlled by the master.");
+		
 		mJournalLock.unlock();
+			
 		mJournal.clear();
+		
 		Debug.finest("Committed transaction");
+		
+		for(ACIDRandomAccessFile child : mChildren)
+			child.commit();
+		
+		mChildren.clear();
+		mMaster = null;
 	}
 	
 	public void rollback()
 	{
+		if(mMaster != null && mMaster.mJournal.isHot())
+			throw new IllegalStateException("Cannot rollback this transaction as it is controlled by the master.");
+		
 		mJournalLock.unlock();
 		try
 		{
 			mJournal.rollback();
 			Debug.info("Transaction was rolled back");
+			
+			for(ACIDRandomAccessFile child : mChildren)
+				child.rollback();
+			
+			mChildren.clear();
+			mMaster = null;
 		}
 		catch(IOException e)
 		{

@@ -178,7 +178,6 @@ public class LogFile extends StructuredFile
 		// initialize the logfile instance
 		
 		LogFile log = new LogFile();
-		log.mFilePath = new File(filename);
 		log.mPlayerName = playerName;
 		
 		log.mSpaceLocator = new SpaceLocator(log);
@@ -189,7 +188,7 @@ public class LogFile extends StructuredFile
 		log.mOwnerTagIndex = new OwnerTagIndex(log, header, file, log.mSpaceLocator);
 		log.mRollbackIndex = new RollbackIndex(log, header, file, log.mSpaceLocator);
 		
-		log.load(file, log.mFilePath, new Index[] {log.mHoleIndex, log.mSessionIndex, log.mOwnerTagIndex, log.mRollbackIndex});
+		log.load(file, new File(filename), new Index[] {log.mHoleIndex, log.mSessionIndex, log.mOwnerTagIndex, log.mRollbackIndex});
 		
 		log.mIsLoaded = true;
 		log.mFile = file;
@@ -199,7 +198,6 @@ public class LogFile extends StructuredFile
 		
 		Debug.fine("Created a log file for '" + playerName + "'.");
 		
-		CrossReferenceIndex.instance.addLogFile(log);
 		return log;
 	}
 	
@@ -243,7 +241,6 @@ public class LogFile extends StructuredFile
 		try
 		{
 			Debug.info("Loading '" + filename + "'...");
-			mFilePath = new File(filename);
 			file = new ACIDRandomAccessFile(filename, "rw");
 			
 			// Read the file header
@@ -261,7 +258,7 @@ public class LogFile extends StructuredFile
 			mOwnerTagIndex = new OwnerTagIndex(this, mHeader, file, mSpaceLocator);
 			mRollbackIndex = new RollbackIndex(this, mHeader, file, mSpaceLocator);
 			
-			load(file, mFilePath, new Index[] {mHoleIndex, mSessionIndex, mOwnerTagIndex, mRollbackIndex});
+			load(file, new File(filename), new Index[] {mHoleIndex, mSessionIndex, mOwnerTagIndex, mRollbackIndex});
 			
 			// Read the indices
 			mHoleIndex.read();
@@ -788,13 +785,13 @@ public class LogFile extends StructuredFile
 			return false;
 		
 		Profiler.beginTimingSection("appendRecords");
-		synchronized (CrossReferenceIndex.instance)
+		synchronized (CrossReferenceIndex.getInstance())
 		{
 			lockWrite();
 			
 			try
 			{
-				mFile.beginTransaction();
+				StructuredFile.beginJointTransaction(CrossReferenceIndex.getInstance(), this);
 				
 				Debug.info("Appending " + records.size() + " records to " + mPlayerName + ">" + owner);
 				
@@ -833,14 +830,14 @@ public class LogFile extends StructuredFile
 					}
 				}
 				
-				mFile.commit();
+				StructuredFile.commitJointTransaction(CrossReferenceIndex.getInstance(), this);
 				
 				return true;
 			}
-			catch(Exception e)
+			catch(Throwable e)
 			{
 				Debug.logException(e);
-				mFile.rollback();
+				StructuredFile.rollbackJointTransaction(CrossReferenceIndex.getInstance(), this);
 				
 				readIndexes();
 				return false;
@@ -889,13 +886,13 @@ public class LogFile extends StructuredFile
 		
 		boolean result;
 		Profiler.beginTimingSection("purgeRecords");
-		synchronized(CrossReferenceIndex.instance)
+		synchronized(CrossReferenceIndex.getInstance())
 		{
 			lockWrite();
 			
 			try
 			{
-				mFile.beginTransaction();
+				StructuredFile.beginJointTransaction(CrossReferenceIndex.getInstance(), this);
 				
 				Debug.info("Purging records from " + Util.dateToString(fromDate) + " to " + Util.dateToString(toDate));
 				ArrayList<SessionEntry> relevantEntries = new ArrayList<SessionEntry>();
@@ -1037,7 +1034,7 @@ public class LogFile extends StructuredFile
 							entry.TotalSize = totalSize;
 							
 							mSessionIndex.set(sessionIndex,entry);
-							CrossReferenceIndex.instance.updateSession(this, entry, new ArrayList<SafeChunk>());
+							CrossReferenceIndex.updateSession(this, entry);
 							
 							mSpaceLocator.releaseSpace(entry.Location + entry.TotalSize, oldSize - entry.TotalSize);
 							
@@ -1052,28 +1049,19 @@ public class LogFile extends StructuredFile
 				
 				result = true;
 				
-				mFile.commit();
+				StructuredFile.commitJointTransaction(CrossReferenceIndex.getInstance(), this);
 			}
-			catch (IOException e)
+			catch (Throwable e)
 			{
 				Debug.logException(e);
 				result = false;
-				mFile.rollback();
-				
-				readIndexes();
-			}
-			catch(Exception e)
-			{
-				Debug.logException(e);
-				result = false;
-				mFile.rollback();
+				StructuredFile.rollbackJointTransaction(CrossReferenceIndex.getInstance(), this);
 				
 				readIndexes();
 			}
 			finally
 			{
 				unlockWrite();
-				
 			}
 		}
 		Profiler.endTimingSection();
@@ -1158,10 +1146,7 @@ public class LogFile extends StructuredFile
 	
 	private SpaceLocator mSpaceLocator;
 	
-	private ACIDRandomAccessFile mFile;
-	
 	private FileHeader mHeader;
-	private File mFilePath;
 	
 	public static boolean sNoTimeoutOverride = false;
 	

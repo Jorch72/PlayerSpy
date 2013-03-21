@@ -90,7 +90,7 @@ public class LogFileRegistry
 		try
 		{
 			Files.copy(file, backup);
-			CrossReferenceIndex.instance.removeLogFile(logName);
+			CrossReferenceIndex.removeLogFile(file);
 			
 			return LogFile.create(logName, file.getAbsolutePath());
 		}

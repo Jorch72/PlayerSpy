@@ -41,7 +41,7 @@ public class LogLoadTask implements Task<Boolean>
 				FileHeader header = LogFile.scrapeHeader(mFilename);
 				if (header != null)
 				{
-					CrossReferenceIndex.instance.removeLogFile(header.PlayerName);
+					CrossReferenceIndex.removeLogFile(new File(mFilename));
 					temp = LogFile.create(header.PlayerName, mFilename);
 				}
 				else
@@ -51,7 +51,7 @@ public class LogLoadTask implements Task<Boolean>
 					if (name.contains("."))
 						name = name.substring(0, name.indexOf("."));
 					
-					CrossReferenceIndex.instance.removeLogFile(name);
+					CrossReferenceIndex.removeLogFile(new File(mFilename));
 					temp = LogFile.create(name, mFilename);
 				}
 					

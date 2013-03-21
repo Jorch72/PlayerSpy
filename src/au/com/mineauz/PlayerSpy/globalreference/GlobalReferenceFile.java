@@ -17,6 +17,7 @@ import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.structurefile.Index;
 import au.com.mineauz.PlayerSpy.structurefile.SpaceLocator;
 import au.com.mineauz.PlayerSpy.structurefile.StructuredFile;
+import au.com.mineauz.PlayerSpy.tracdata.FileHeader;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 
 public class GlobalReferenceFile extends StructuredFile
@@ -198,7 +199,14 @@ public class GlobalReferenceFile extends StructuredFile
 	
 	public void close()
 	{
-		
+		try
+		{
+			mFile.close();
+		}
+		catch(IOException e)
+		{
+			Debug.logException(e);
+		}
 	}
 	
 	private UUID getFileID(LogFile log) throws IOException
@@ -221,60 +229,78 @@ public class GlobalReferenceFile extends StructuredFile
 		return entry.fileId;
 	}
 	
-	public void addSession(SessionEntry session, LogFile log) throws IOException
+	private UUID getFileID(String logName)
+	{
+		FileEntry entry = mFileIndex.get(logName);
+		if(entry == null)
+			return null;
+		
+		return entry.fileId;
+	}
+	
+	public String getFileName(UUID fileId)
+	{
+		FileEntry entry = mFileIndex.get(fileId);
+		if(entry == null)
+			return null;
+		
+		return entry.fileName;
+	}
+	
+	public void addSession(au.com.mineauz.PlayerSpy.tracdata.SessionEntry session, LogFile log) throws IOException
 	{
 		UUID fileId = getFileID(log);
 		
 		// Add a new session
 		SessionEntry entry = new SessionEntry();
 		entry.fileId = fileId;
-		entry.chunkFilter = session.chunkFilter;
-		entry.locationFilter = session.locationFilter;
+		entry.chunkFilter = session.ChunkLocationFilter;
+		entry.locationFilter = session.LocationFilter;
 		
-		entry.startTime = session.startTime;
-		entry.endTime = session.endTime;
+		entry.startTime = session.StartTimestamp;
+		entry.endTime = session.EndTimestamp;
 		
-		entry.sessionId = session.sessionId;
+		entry.sessionId = session.Id;
 		
 		mSessionIndex.add(entry);
 		
 		// Update the start and end dates
 		FileEntry fileEntry = mFileIndex.get(fileId);
-		fileEntry.timeBegin = Math.min(fileEntry.timeBegin, session.startTime);
-		fileEntry.timeEnd = Math.max(fileEntry.timeEnd, session.endTime);
+		fileEntry.timeBegin = Math.min(fileEntry.timeBegin, session.StartTimestamp);
+		fileEntry.timeEnd = Math.max(fileEntry.timeEnd, session.EndTimestamp);
 		fileEntry.chunkFilter = log.getChunkFilter();
 		
 		mFileIndex.set(fileId, fileEntry);
 	}
 	
-	public void updateSession(SessionEntry session, LogFile log) throws IOException
+	public void updateSession(au.com.mineauz.PlayerSpy.tracdata.SessionEntry session, LogFile log) throws IOException
 	{
 		UUID fileId = getFileID(log);
 		
-		SessionEntry entry = mSessionIndex.get(fileId, session.sessionId);
+		SessionEntry entry = mSessionIndex.get(fileId, session.Id);
 		
-		entry.chunkFilter = session.chunkFilter;
-		entry.locationFilter = session.locationFilter;
+		entry.chunkFilter = session.ChunkLocationFilter;
+		entry.locationFilter = session.LocationFilter;
 		
-		entry.startTime = session.startTime;
-		entry.endTime = session.endTime;
+		entry.startTime = session.StartTimestamp;
+		entry.endTime = session.EndTimestamp;
 		
 		mSessionIndex.set(mSessionIndex.indexOf(entry), entry);
 		
 		// Update the start and end dates for the file
 		FileEntry fileEntry = mFileIndex.get(fileId);
-		fileEntry.timeBegin = Math.min(fileEntry.timeBegin, session.startTime);
-		fileEntry.timeEnd = Math.max(fileEntry.timeEnd, session.endTime);
+		fileEntry.timeBegin = Math.min(fileEntry.timeBegin, session.StartTimestamp);
+		fileEntry.timeEnd = Math.max(fileEntry.timeEnd, session.EndTimestamp);
 		fileEntry.chunkFilter = log.getChunkFilter();
 		
 		mFileIndex.set(fileId, fileEntry);
 	}
 	
-	public void removeSession(SessionEntry session, LogFile log) throws IOException
+	public void removeSession(au.com.mineauz.PlayerSpy.tracdata.SessionEntry session, LogFile log) throws IOException
 	{
 		UUID fileId = getFileID(log);
 		
-		mSessionIndex.remove(fileId, session.sessionId);
+		mSessionIndex.remove(fileId, session.Id);
 		
 		if (mSessionIndex.getCount(fileId) == 0)
 			mFileIndex.remove(fileId);
@@ -301,6 +327,29 @@ public class GlobalReferenceFile extends StructuredFile
 		}
 	}
 	
+	public void removeLog(File logFile) throws IOException
+	{
+		// Attempt a scrape
+		FileHeader header = LogFile.scrapeHeader(logFile.getAbsolutePath());
+		
+		String name;
+		if(header == null)
+			// Attempt to extract the name out of the path
+			name = logFile.getName().substring(0, logFile.getName().lastIndexOf('.'));
+		else
+			name = header.PlayerName;
+		
+		UUID fileId = getFileID(name);
+		if(fileId == null)
+			throw new IllegalArgumentException("Unable to locate file in reference");
+		
+		// Remove all the sessions that belong to it
+		for(SessionEntry entry : mSessionIndex.subset(fileId))
+			mSessionIndex.remove(entry);
+		
+		// Remove the file
+		mFileIndex.remove(fileId);
+	}
 	public void removeLog(LogFile log) throws IOException
 	{
 		UUID fileId = getFileID(log);

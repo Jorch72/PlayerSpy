@@ -5,15 +5,17 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map.Entry;
-import java.sql.*;
+import java.util.UUID;
+import java.io.File;
+import java.io.IOException;
 
+import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.World;
+import org.bukkit.Location;
 
-import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
+import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
+import au.com.mineauz.PlayerSpy.globalreference.GlobalReferenceFile;
 import au.com.mineauz.PlayerSpy.tracdata.SessionEntry;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
@@ -26,300 +28,76 @@ import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
  */
 public class CrossReferenceIndex 
 {
-	public static final CrossReferenceIndex instance;
+	private static GlobalReferenceFile instance;
 	
-	static
+	public static GlobalReferenceFile getInstance()
 	{
-		instance = new CrossReferenceIndex();
-	}
-
-	private Connection mDatabaseConnection = null;
-	private PreparedStatement mAddFileStatement;
-	private PreparedStatement mAddSessionStatement;
-	private PreparedStatement mAddChunkStatement;
-	private PreparedStatement mUpdateSessionStatement;
-	private PreparedStatement mDeleteFileStatement;
-	private PreparedStatement mDeleteSessionStatement;
-	private PreparedStatement mSelectFileStatement;
-	private PreparedStatement mSelectFileByIDStatement;
-	private PreparedStatement mSelectSessionByChunkStatement;
-	private PreparedStatement mSelectSessionByChunkBetweenTimeStatement;
-	private PreparedStatement mSelectSessionBetweenTimeStatement;
-	private PreparedStatement mSelectChunksBySessionStatement;
-	
-	private HashMap<LogFile, Integer> mKnownFileIDs;
-	private CrossReferenceIndex()
-	{
-		mKnownFileIDs = new HashMap<LogFile, Integer>();
+		return instance;
 	}
 	
-	private void tryRollback()
+	public static void initialize()
 	{
+		instance = new GlobalReferenceFile();
+		if(!instance.load(new File(SpyPlugin.getInstance().getDataFolder(), "data/reference")))
+			throw new RuntimeException("Failed to start up global reference file.");
+	}
+	
+	public static boolean removeLogFile(File logFile)
+	{
+		Validate.notNull(instance, "Reference is not initialized");
+		
 		try
 		{
-			mDatabaseConnection.rollback();
+			instance.removeLog(logFile);
 		}
-		catch(SQLException e)
+		catch(IOException e)
 		{
-			e.printStackTrace();
-		}
-	}
-	
-	public void close()
-	{
-		try {
-			mAddFileStatement.close();
-			mAddSessionStatement.close();
-			mAddChunkStatement.close();
-			mUpdateSessionStatement.close();
-			mDeleteFileStatement.close();
-			mDeleteSessionStatement.close();
-			
-			mSelectFileStatement.close();
-			mSelectFileByIDStatement.close();
-			
-			mSelectSessionByChunkStatement.close();
-			mSelectSessionByChunkBetweenTimeStatement.close();
-			
-			mSelectSessionBetweenTimeStatement.close();
-			mSelectChunksBySessionStatement.close();
-			
-			mDatabaseConnection.commit();
-			mDatabaseConnection.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	public boolean initialize()
-	{
-		try
-		{
-			Class.forName("org.sqlite.JDBC");
-			mDatabaseConnection = DriverManager.getConnection("jdbc:sqlite:" + LogFileRegistry.getLogFileDirectory().getPath() + "/xlink.db");
-			mDatabaseConnection.setAutoCommit(false);
-			
-			// Begin building the sql statements to use
-			Statement create = mDatabaseConnection.createStatement();
-			create.executeUpdate("CREATE TABLE IF NOT EXISTS FileMap (FILE_ID INTEGER PRIMARY KEY ASC AUTOINCREMENT, PLAYER VARCHAR)");
-			create.executeUpdate("CREATE TABLE IF NOT EXISTS SessionMap (SESSION_ID INTEGER PRIMARY KEY, FILE_ID INTEGER REFERENCES FileMap(FILE_ID) ON DELETE CASCADE, START_DATE INTEGER, END_DATE INTEGER)");
-			create.executeUpdate("CREATE TABLE IF NOT EXISTS Chunks (X INTEGER, Z INTEGER, WORLD INTEGER, SESSION_ID INTEGER REFERENCES SessionMap(SESSION_ID) ON DELETE CASCADE)");
-
-			create.close();
-			mDatabaseConnection.commit();
-			
-			
-			mAddFileStatement = mDatabaseConnection.prepareStatement("INSERT INTO FileMap (PLAYER) VALUES (?);");
-			mAddSessionStatement = mDatabaseConnection.prepareStatement("INSERT INTO SessionMap (SESSION_ID, FILE_ID, START_DATE, END_DATE) VALUES (?,?,?,?);");
-			mAddChunkStatement = mDatabaseConnection.prepareStatement("INSERT INTO Chunks VALUES (?,?,?,?);");
-			
-			mUpdateSessionStatement = mDatabaseConnection.prepareStatement("UPDATE SessionMap SET START_DATE = ?, END_DATE = ? WHERE SESSION_ID = ?;");
-			mDeleteFileStatement = mDatabaseConnection.prepareStatement("DELETE FROM FileMap WHERE FILE_ID = ?;");
-			mDeleteSessionStatement = mDatabaseConnection.prepareStatement("DELETE FROM SessionMap WHERE SESSION_ID = ?;");
-			
-			mSelectFileStatement = mDatabaseConnection.prepareStatement("SELECT * FROM FileMap WHERE PLAYER = ?;");
-			mSelectFileByIDStatement = mDatabaseConnection.prepareStatement("SELECT * FROM FileMap WHERE FILE_ID = ?;");
-			mSelectSessionByChunkStatement = mDatabaseConnection.prepareStatement("SELECT SessionMap.SESSION_ID, SessionMap.FILE_ID, SessionMap.START_DATE, SessionMap.END_DATE FROM Chunks JOIN SessionMap ON Chunks.SESSION_ID = SessionMap.SESSION_ID WHERE Chunks.X = ? AND Chunks.Z = ? AND Chunks.WORLD = ?;");
-			mSelectSessionByChunkBetweenTimeStatement = mDatabaseConnection.prepareStatement("SELECT SessionMap.SESSION_ID, SessionMap.FILE_ID, SessionMap.START_DATE, SessionMap.END_DATE FROM Chunks JOIN SessionMap ON Chunks.SESSION_ID = SessionMap.SESSION_ID WHERE Chunks.X = ? AND Chunks.Z = ? AND Chunks.WORLD = ? AND ((SessionMap.START_DATE >= ? AND SessionMap.START_DATE <= ?) OR (SessionMap.END_DATE >= ? AND SessionMap.END_DATE <= ?) OR (SessionMap.START_DATE < ? AND SessionMap.END_DATE > ?) OR (SessionMap.START_DATE < ? AND SessionMap.END_DATE > ?));");
-			mSelectSessionBetweenTimeStatement = mDatabaseConnection.prepareStatement("SELECT  SESSION_ID, FILE_ID, START_DATE, END_DATE FROM SessionMap WHERE (START_DATE >= ? AND START_DATE <= ?) OR (END_DATE >= ? AND END_DATE <= ?) OR (START_DATE < ? AND END_DATE > ?) OR (START_DATE < ? AND END_DATE > ?);");
-			mSelectChunksBySessionStatement = mDatabaseConnection.prepareStatement("SELECT * FROM Chunks WHERE SESSION_ID = ?");
-			
-			return true;
-		}
-		catch(ClassNotFoundException e)
-		{
-			e.printStackTrace();
-			return false;
-		} 
-		catch (SQLException e) 
-		{
-			e.printStackTrace();
+			Debug.logException(e);
 			return false;
 		}
-	}
-	
-	/**
-	 * Registers a new log file in the database
-	 * @param log
-	 * @return
-	 */
-	public synchronized boolean addLogFile(LogFile log)
-	{
-		try
+		catch(IllegalArgumentException e)
 		{
-			mAddFileStatement.setString(1, log.getName());
-			mAddFileStatement.executeUpdate();
-			mDatabaseConnection.commit();
-			return true;
-		}
-		catch(SQLException e)
-		{
-			e.printStackTrace();
-			tryRollback();
+			Debug.logException(e);
 			return false;
 		}
+		return true;
 	}
-	private synchronized int getFileId(LogFile log)
+	
+	public static boolean removeLogFile(LogFile log)
 	{
-		if(mKnownFileIDs.containsKey(log))
-			return mKnownFileIDs.get(log);
+		Validate.notNull(instance, "Reference is not initialized");
 		
 		try
 		{
-			mSelectFileStatement.setString(1, log.getName());
-			ResultSet rs = mSelectFileStatement.executeQuery();
-			if(!rs.next())
-			{
-				rs.close();
-				return -1;
-			}
-			int fileId = rs.getInt(1);
-			mKnownFileIDs.put(log, fileId);
-			rs.close();
-			return fileId;
+			instance.removeLog(log);
 		}
-		catch(SQLException e)
+		catch(IOException e)
 		{
-			e.printStackTrace();
-			return -1;
+			Debug.logException(e);
+			return false;
 		}
-	}
-	private synchronized int getFileId(String logName)
-	{
-		for(Entry<LogFile, Integer> entry : mKnownFileIDs.entrySet())
-		{
-			if (entry.getKey().getName().equals(logName))
-				return entry.getValue();
-		}
-		
-		try
-		{
-			mSelectFileStatement.setString(1, logName);
-			ResultSet rs = mSelectFileStatement.executeQuery();
-			if(!rs.next())
-			{
-				rs.close();
-				return -1;
-			}
-			int fileId = rs.getInt(1);
-
-			rs.close();
-			return fileId;
-		}
-		catch(SQLException e)
-		{
-			e.printStackTrace();
-			return -1;
-		}
-	}
-	public synchronized boolean removeLogFile(String logName)
-	{
-		try
-		{
-			// Get the file id
-			int fileId = getFileId(logName);
-			if(fileId == -1)
-				return false;
-			
-			// Remove the file
-			mDeleteFileStatement.setInt(1, fileId);
-			mDeleteFileStatement.execute();
-			mDatabaseConnection.commit();
-			
-			for(Entry<LogFile, Integer> entry : mKnownFileIDs.entrySet())
-			{
-				if (entry.getKey().getName().equals(logName))
-				{
-					mKnownFileIDs.remove(entry.getKey());
-					break;
-				}
-			}
-			
-			return true;
-		}
-		catch(SQLException e)
-		{
-			e.printStackTrace();
-			tryRollback();
-		}
-		
-		return false;
-	}
-	public synchronized boolean removeLogFile(LogFile log)
-	{
-		try
-		{
-			// Get the file id
-			int fileId = getFileId(log);
-			if(fileId == -1)
-				return false;
-			
-			// Remove the file
-			mDeleteFileStatement.setInt(1, fileId);
-			mDeleteFileStatement.execute();
-			mDatabaseConnection.commit();
-			
-			mKnownFileIDs.remove(log);
-			
-			return true;
-		}
-		catch(SQLException e)
-		{
-			e.printStackTrace();
-			tryRollback();
-		}
-		
-		return false;
+		return true;
 	}
 	/**
 	 * Adds a session to the database
 	 * @param log The logfile the session is in
 	 * @param entry The session
-	 * @param chunks The chunks in the session
 	 * @return True if the session was added
 	 */
-	public synchronized boolean addSession(LogFile log, SessionEntry entry, List<SafeChunk> chunks)
+	public static boolean addSession(LogFile log, SessionEntry entry)
 	{
+		Validate.notNull(instance, "Reference is not initialized");
+		
 		try
 		{
-			// Get the file id
-			int fileId = getFileId(log);
-			if(fileId == -1)
-				return false;
-			
-			Debug.fine("Adding session %d to reference", entry.Id);
-			mAddSessionStatement.setInt(1, entry.Id);
-			mAddSessionStatement.setInt(2, fileId);
-			mAddSessionStatement.setLong(3, entry.StartTimestamp);
-			mAddSessionStatement.setLong(4, entry.EndTimestamp);
-			
-			mAddSessionStatement.executeUpdate();
-			
-			mAddChunkStatement.clearBatch();
-			int count = 0;
-			for(SafeChunk chunk : chunks)
-			{
-				if(chunk == null)
-					continue;
-				count++;
-				mAddChunkStatement.setInt(1, chunk.X);
-				mAddChunkStatement.setInt(2, chunk.Z);
-				mAddChunkStatement.setInt(3, chunk.WorldHash);
-				mAddChunkStatement.setInt(4, entry.Id);
-				mAddChunkStatement.addBatch();
-			}
-			Debug.finer("Adding " + count + " Chunks");
-			mAddChunkStatement.executeBatch();
-			
-			mDatabaseConnection.commit();
-			return true;
+			instance.addSession(entry, log);
 		}
-		catch(SQLException e)
+		catch(IOException e)
 		{
 			Debug.logException(e);
-			tryRollback();
+			return false;
 		}
-		return false;
+		return true;
 	}
 	/**
 	 * Removes a session from the database
@@ -327,26 +105,20 @@ public class CrossReferenceIndex
 	 * @param entry The session
 	 * @return True if the session as successfully removed
 	 */
-	public synchronized boolean removeSession(LogFile log, SessionEntry entry)
+	public static boolean removeSession(LogFile log, SessionEntry entry)
 	{
+		Validate.notNull(instance, "Reference is not initialized");
+		
 		try
 		{
-			int fileId = getFileId(log);
-			if(fileId == -1)
-				return false;
-			
-			mDeleteSessionStatement.setInt(1, entry.Id);
-			mDeleteSessionStatement.execute();
-			
-			mDatabaseConnection.commit();
-			return true;
+			instance.removeSession(entry, log);
 		}
-		catch(SQLException e)
+		catch(IOException e)
 		{
 			Debug.logException(e);
-			tryRollback();
 			return false;
 		}
+		return true;
 	}
 	/**
 	 * Updates the session information
@@ -354,324 +126,124 @@ public class CrossReferenceIndex
 	 * @param entry The session
 	 * @return True if the update was successful
 	 */
-	public synchronized boolean updateSession(LogFile log, SessionEntry entry, List<SafeChunk> chunks)
+	public static boolean updateSession(LogFile log, SessionEntry entry)
 	{
+		Validate.notNull(instance, "Reference is not initialized");
+		
 		try
 		{
-			Debug.finer("Updating Basic Session Info for session %d in %s", entry.Id, log.getName());
-			mUpdateSessionStatement.setLong(1, entry.StartTimestamp);
-			mUpdateSessionStatement.setLong(2, entry.EndTimestamp);
-			mUpdateSessionStatement.setInt(3, entry.Id);
-			
-			mUpdateSessionStatement.executeUpdate();
-			
-			// Find what chunks are new
-			Debug.finer("Finding New Chunks");
-			mSelectChunksBySessionStatement.setInt(1, entry.Id);
-			ResultSet existingChunks = mSelectChunksBySessionStatement.executeQuery();
-
-			while(existingChunks.next())
-			{
-				// Columns are: X, Z, WORLD, SESSION_ID
-				for(SafeChunk chunk : chunks)
-				{
-					if(chunk.X == existingChunks.getInt(1) && chunk.Z == existingChunks.getInt(2) && chunk.WorldHash == existingChunks.getInt(3))
-					{
-						chunks.remove(chunk);
-						break;
-					}
-				}
-				
-				if(chunks.isEmpty())
-					break;
-			}
-			existingChunks.close();
-			
-			// Add the chunks
-			mAddChunkStatement.clearBatch();
-			int count = 0;
-			for(SafeChunk chunk : chunks)
-			{
-				count++;
-				mAddChunkStatement.setInt(1, chunk.X);
-				mAddChunkStatement.setInt(2, chunk.Z);
-				mAddChunkStatement.setInt(3, chunk.WorldHash);
-				mAddChunkStatement.setInt(4, entry.Id);
-				mAddChunkStatement.addBatch();
-			}
-			Debug.finer("Adding " + count + " new chunks");
-			mAddChunkStatement.executeBatch();
-			
-			
-			mDatabaseConnection.commit();
-			return true;
+			instance.updateSession(entry, log);
 		}
-		catch(SQLException e)
+		catch(IOException e)
 		{
 			Debug.logException(e);
-			tryRollback();
-
 			return false;
 		}
+		return true;
 	}
 	/**
 	 * Gets all the sessions that contain that chunk
-	 * @param chunk The chunk to check for
+	 * @param location the location to retrieve records for
 	 * @return A list of SessionInFile objects that contain the session and the logfile. You should call releaseLastLogs() when you are done with the results
 	 */
-	public synchronized Results getSessionsFor(SafeChunk chunk)
+	public static Results getSessionsFor(Location location)
 	{
-		try
+		Validate.notNull(instance, "Reference is not initialized");
+		
+		List<au.com.mineauz.PlayerSpy.globalreference.SessionEntry> foundSessions = instance.getSessionsFor(location);
+		ArrayList<SessionInFile> results = new ArrayList<CrossReferenceIndex.SessionInFile>();
+		
+		HashMap<UUID, LogFile> openedLogs = new HashMap<UUID, LogFile>();
+		HashSet<String> failedLogs = new HashSet<String>();
+
+		for(au.com.mineauz.PlayerSpy.globalreference.SessionEntry session : foundSessions)
 		{
-			mSelectSessionByChunkStatement.setInt(1, chunk.X);
-			mSelectSessionByChunkStatement.setInt(2, chunk.Z);
-			mSelectSessionByChunkStatement.setInt(3, chunk.WorldHash);
-			
-			ResultSet rs = mSelectSessionByChunkStatement.executeQuery();
-			ArrayList<SessionInFile> results = new ArrayList<CrossReferenceIndex.SessionInFile>();
-			
-			HashMap<Integer, LogFile> openedLogs = new HashMap<Integer, LogFile>();
-			HashSet<String> failedLogs = new HashSet<String>();
-			
-			while(rs.next())
+			LogFile log = null;
+			if(openedLogs.containsKey(session.fileId))
 			{
-				// Columns are: SESSION_ID, FILE_ID, SESSION_INDEX, START_DATE, END_DATE
-				int fileId = rs.getInt(2);
-				LogFile log = null;
-				if(openedLogs.containsKey(fileId))
+				log = openedLogs.get(session.fileId);
+			}
+			else
+			{
+				// Load it
+				String name = instance.getFileName(session.fileId);
+				
+				if(!failedLogs.contains(name))
 				{
-					log = openedLogs.get(fileId);
-				}
-				else
-				{
-					// Load it
-					mSelectFileByIDStatement.setInt(1, fileId);
-					ResultSet fileRs = mSelectFileByIDStatement.executeQuery();
-					
-					if(!fileRs.next())
-					{
-						fileRs.close();
-						continue;
-					}
-					
-					String name = fileRs.getString(2);
-					
-					if(!failedLogs.contains(name))
-					{
-						if(name.startsWith(LogFileRegistry.cGlobalFilePrefix))
-						{
-							World world = Bukkit.getWorld(name.substring(LogFileRegistry.cGlobalFilePrefix.length()));
-							log = LogFileRegistry.getLogFile(world);
-						}
-						else
-						{
-							OfflinePlayer player = Bukkit.getOfflinePlayer(name);
-							log = LogFileRegistry.getLogFile(player);
-						}
-						
-						if(log == null)
-							failedLogs.add(name);
-					}
-					fileRs.close();
-					
+					log = LogFileRegistry.getLogFile(name);
+
 					if(log == null)
-						continue;
-					
-					openedLogs.put(fileId, log);
+						failedLogs.add(name);
+					else
+						openedLogs.put(session.fileId, log);
 				}
 				
-				SessionInFile res = new SessionInFile();
-				res.Log = log;
-				res.Session = log.getSessionById(rs.getInt(1));
-				if(res.Session != null)
-					results.add(res);
 			}
 			
-			rs.close();
+			if(log == null)
+				continue;
 			
-			return new Results(results, openedLogs.values());
+			SessionInFile res = new SessionInFile();
+			res.Log = log;
+			res.Session = log.getSessionById(session.sessionId);
+			if(res.Session != null)
+				results.add(res);
 		}
-		catch(SQLException e)
-		{
-			Debug.logException(e);
-			return new Results(new ArrayList<CrossReferenceIndex.SessionInFile>(), new ArrayList<LogFile>());
-		}
+		
+		return new Results(results, openedLogs.values());
 	}
-	/**
-	 * Gets all the session that contain that chunk and are within the time limit
-	 * @param chunk The chunk to check for
-	 * @param startTime The earilist date you wish to check for
-	 * @param endTime The latest date you with to check for
-	 * @return A list of SessionInFile objects that contain the session and the logfile. You should call releaseLastLogs() when you are done with the results 
-	 */
-	public synchronized Results getSessionsFor(SafeChunk chunk, long startTime, long endTime)
-	{
-		try
-		{
-			mSelectSessionByChunkBetweenTimeStatement.setInt(1, chunk.X);
-			mSelectSessionByChunkBetweenTimeStatement.setInt(2, chunk.Z);
-			mSelectSessionByChunkBetweenTimeStatement.setInt(3, chunk.WorldHash);
-			mSelectSessionByChunkBetweenTimeStatement.setLong(4, startTime);
-			mSelectSessionByChunkBetweenTimeStatement.setLong(5, endTime);
-			mSelectSessionByChunkBetweenTimeStatement.setLong(6, startTime);
-			mSelectSessionByChunkBetweenTimeStatement.setLong(7, endTime);
-			mSelectSessionByChunkBetweenTimeStatement.setLong(8, startTime);
-			mSelectSessionByChunkBetweenTimeStatement.setLong(9, startTime);
-			mSelectSessionByChunkBetweenTimeStatement.setLong(10, endTime);
-			mSelectSessionByChunkBetweenTimeStatement.setLong(11, endTime);
-			
-			ResultSet rs = mSelectSessionByChunkBetweenTimeStatement.executeQuery();
-			ArrayList<SessionInFile> results = new ArrayList<CrossReferenceIndex.SessionInFile>();
-			HashMap<Integer, LogFile> openedLogs = new HashMap<Integer, LogFile>();
-			HashSet<String> failedLogs = new HashSet<String>();
-			
-			while(rs.next())
-			{
-				// Columns are: SESSION_ID, FILE_ID, SESSION_INDEX, START_DATE, END_DATE
-				int fileId = rs.getInt(2);
-				LogFile log = null;
-				if(openedLogs.containsKey(fileId))
-				{
-					log = openedLogs.get(fileId);
-				}
-				else
-				{
-					// Load it
-					mSelectFileByIDStatement.setInt(1, fileId);
-					ResultSet fileRs = mSelectFileByIDStatement.executeQuery();
-					
-					if(!fileRs.next())
-					{
-						fileRs.close();
-						continue;
-					}
-					
-					String name = fileRs.getString(2);
-					if(!failedLogs.contains(name))
-					{
-						if(name.startsWith(LogFileRegistry.cGlobalFilePrefix))
-						{
-							World world = Bukkit.getWorld(name.substring(LogFileRegistry.cGlobalFilePrefix.length()));
-							log = LogFileRegistry.getLogFile(world);
-						}
-						else
-						{
-							OfflinePlayer player = Bukkit.getOfflinePlayer(name);
-							log = LogFileRegistry.getLogFile(player);
-						}
-						if(log == null)
-							failedLogs.add(name);
-					}
-					fileRs.close();
-					
-					if(log == null)
-						continue;
-					
-					openedLogs.put(fileId, log);
-				}
-				
-				SessionInFile res = new SessionInFile();
-				res.Log = log;
-				res.Session = log.getSessionById(rs.getInt(1));
-				if(res.Session != null)
-					results.add(res);
-			}
-			
-			rs.close();
-			
-			return new Results(results, openedLogs.values());
-		}
-		catch(SQLException e)
-		{
-			Debug.logException(e);
-			return new Results(new ArrayList<CrossReferenceIndex.SessionInFile>(), new ArrayList<LogFile>());
-		}
-	}
+
 	/**
 	 * Gets all the sessions that are in the time limits
 	 * @param startTime The earliest time to check for
 	 * @param endTime The latest date to check for
 	 * @return A list of SessionInFile objects that contain the session and the logfile. You should call releaseLastLogs() when you are done with the results
 	 */
-	public synchronized Results getSessionsFor(long startTime, long endTime)
+	public static Results getSessionsFor(long startTime, long endTime)
 	{
-		try
+		Validate.notNull(instance, "Reference is not initialized");
+		
+		List<au.com.mineauz.PlayerSpy.globalreference.SessionEntry> foundSessions = instance.getSessionsBetween(startTime, endTime);
+		ArrayList<SessionInFile> results = new ArrayList<CrossReferenceIndex.SessionInFile>();
+		
+		HashMap<UUID, LogFile> openedLogs = new HashMap<UUID, LogFile>();
+		HashSet<String> failedLogs = new HashSet<String>();
+
+		for(au.com.mineauz.PlayerSpy.globalreference.SessionEntry session : foundSessions)
 		{
-			mSelectSessionBetweenTimeStatement.setLong(1, startTime);
-			mSelectSessionBetweenTimeStatement.setLong(2, endTime);
-			mSelectSessionBetweenTimeStatement.setLong(3, startTime);
-			mSelectSessionBetweenTimeStatement.setLong(4, endTime);
-			mSelectSessionBetweenTimeStatement.setLong(5, startTime);
-			mSelectSessionBetweenTimeStatement.setLong(6, startTime);
-			mSelectSessionBetweenTimeStatement.setLong(7, endTime);
-			mSelectSessionBetweenTimeStatement.setLong(8, endTime);
-			
-			ResultSet rs = mSelectSessionBetweenTimeStatement.executeQuery();
-			ArrayList<SessionInFile> results = new ArrayList<CrossReferenceIndex.SessionInFile>();
-			HashMap<Integer, LogFile> openedLogs = new HashMap<Integer, LogFile>();
-			HashSet<String> failedLogs = new HashSet<String>();
-			
-			while(rs.next())
+			LogFile log = null;
+			if(openedLogs.containsKey(session.fileId))
 			{
-				// Columns are: SESSION_ID, FILE_ID, SESSION_INDEX, START_DATE, END_DATE
-				int fileId = rs.getInt(2);
-				LogFile log = null;
-				if(openedLogs.containsKey(fileId))
+				log = openedLogs.get(session.fileId);
+			}
+			else
+			{
+				// Load it
+				String name = instance.getFileName(session.fileId);
+				
+				if(!failedLogs.contains(name))
 				{
-					log = openedLogs.get(fileId);
-				}
-				else
-				{
-					// Load it
-					mSelectFileByIDStatement.setInt(1, fileId);
-					ResultSet fileRs = mSelectFileByIDStatement.executeQuery();
-					
-					if(!fileRs.next())
-					{
-						fileRs.close();
-						continue;
-					}
-					
-					String name = fileRs.getString(2);
-					if(!failedLogs.contains(name))
-					{
-						if(name.startsWith(LogFileRegistry.cGlobalFilePrefix))
-						{
-							World world = Bukkit.getWorld(name.substring(LogFileRegistry.cGlobalFilePrefix.length()));
-							log = LogFileRegistry.getLogFile(world);
-						}
-						else
-						{
-							OfflinePlayer player = Bukkit.getOfflinePlayer(name);
-							log = LogFileRegistry.getLogFile(player);
-						}
-						if(log == null)
-							failedLogs.add(name);
-					}
-					fileRs.close();
-					
+					log = LogFileRegistry.getLogFile(name);
+
 					if(log == null)
-						continue;
-					
-					openedLogs.put(fileId, log);
+						failedLogs.add(name);
+					else
+						openedLogs.put(session.fileId, log);
 				}
 				
-				SessionInFile res = new SessionInFile();
-				res.Log = log;
-				res.Session = log.getSessionById(rs.getInt(1));
-				if(res.Session != null)
-					results.add(res);
 			}
 			
-			rs.close();
+			if(log == null)
+				continue;
 			
-			return new Results(results, openedLogs.values());
+			SessionInFile res = new SessionInFile();
+			res.Log = log;
+			res.Session = log.getSessionById(session.sessionId);
+			if(res.Session != null)
+				results.add(res);
 		}
-		catch(SQLException e)
-		{
-			Debug.logException(e);
-			return new Results(new ArrayList<CrossReferenceIndex.SessionInFile>(), new ArrayList<LogFile>());
-		}
+		
+		return new Results(results, openedLogs.values());
 	}
 	
 	public static class SessionInFile

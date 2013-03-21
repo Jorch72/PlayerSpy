@@ -299,7 +299,7 @@ public class SearchTask implements Task<SearchResults>
 		}
 		
 		Debug.fine("*Searching index for possibles");
-		sessionsToSearch = CrossReferenceIndex.instance.getSessionsFor(startTime, endTime);
+		sessionsToSearch = CrossReferenceIndex.getSessionsFor(startTime, endTime);
 		Debug.finer("**%d possible sessions found", sessionsToSearch.foundSessions.size());
 		
 		for(SessionInFile fileSession : sessionsToSearch.foundSessions)

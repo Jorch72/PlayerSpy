@@ -20,7 +20,7 @@ public class StructuredFile
 	
 	private AbstractHoleIndex mHoleIndex;
 	
-	private ACIDRandomAccessFile mFile;
+	protected ACIDRandomAccessFile mFile;
 	
 	private File mFilePath;
 	
