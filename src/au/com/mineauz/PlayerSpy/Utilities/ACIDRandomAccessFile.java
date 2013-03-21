@@ -26,7 +26,19 @@ public class ACIDRandomAccessFile extends RandomAccessFile
 			
 			if(mJournal.isHot())
 			{
-				mJournal.rollback();
+				Journal journal = mJournal;
+				journal.findAndAttachChildren();
+				
+				while(journal.hasMaster())
+				{
+					Journal master = Journal.findAndCreateJournal(mJournal.getMasterFile());
+					master.attach(journal);
+					master.findAndAttachChildren();
+					journal = master;
+				}
+				
+				journal.rollback();
+				
 				seek(0);
 				Debug.info("File %s had an open journal on load. Rollback was issued", file.getName());
 			}

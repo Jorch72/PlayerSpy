@@ -49,6 +49,32 @@ public class StructuredFile
 		mLock.readLock().unlock();
 	}
 	
+	/**
+	 * Begins a transaction in both master and child files.
+	 * The order is: master then child
+	 */
+	protected static void beginJointTransaction(StructuredFile master, StructuredFile child)
+	{
+	}
+	
+	/**
+	 * Commits a transaction in both master and child files.
+	 * The order is: child then master
+	 */
+	protected static void commitJointTransaction(StructuredFile master, StructuredFile child)
+	{
+		
+	}
+	
+	/**
+	 * Rolls back a transaction in both master and child files.
+	 * The order is: child then master
+	 */
+	protected static void rollbackJointTransaction(StructuredFile master, StructuredFile child)
+	{
+		
+	}
+	
 	protected void load(ACIDRandomAccessFile file, File filePath, Index<?>... indexes)
 	{
 		mIndexes = indexes;

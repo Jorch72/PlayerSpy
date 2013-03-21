@@ -1,10 +1,13 @@
 package au.com.mineauz.PlayerSpy.Utilities;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.reflect.Array;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 
 import au.com.mineauz.PlayerSpy.debugging.Debug;
@@ -13,10 +16,19 @@ public class Journal
 {
 	private RandomAccessFile mJournalStream;
 	private RandomAccessFile mOwnerStream;
+	private File mOwnerPath;
+	
 	private File mJournalPath;
 	private int mRandomVal;
 	
+	private Journal mMaster;
+	private String mMasterPath;
+	
+	private List<Journal> mChildren;
+	
 	private HashSet<Integer> mWrittenSectors;
+	
+	private static HashMap<String, Journal> mActiveJournals = new HashMap<String, Journal>();
 	
 	public static final int cSectorSize = 4096;
 	
@@ -33,7 +45,46 @@ public class Journal
 		mIsRollingBack = false;
 		
 		if(mJournalPath.exists())
+		{
 			mJournalStream = new RandomAccessFile(mJournalPath, "rw");
+			JournalHeader header = new JournalHeader();
+			header.read(mJournalStream);
+			mJournalStream.seek(0);
+			
+			if(header.masterJournal.isEmpty())
+				mMasterPath = null;
+			else
+				mMasterPath = header.masterJournal;
+			
+			mActiveJournals.put(mJournalPath.getAbsolutePath(), this);
+		}
+	}
+	
+	/**
+	 * Creates a quick journal used for rolling back chains of journals
+	 */
+	private Journal(File filePath) throws IOException
+	{
+		mJournalPath = new File(filePath.getAbsolutePath() + ".journal");
+		mOwnerPath = filePath;
+		
+		mWrittenSectors = new HashSet<Integer>();
+		mIsRollingBack = false;
+		
+		if(mJournalPath.exists())
+		{
+			mJournalStream = new RandomAccessFile(mJournalPath, "rw");
+			JournalHeader header = new JournalHeader();
+			header.read(mJournalStream);
+			mJournalStream.seek(0);
+			
+			if(header.masterJournal.isEmpty())
+				mMasterPath = null;
+			else
+				mMasterPath = header.masterJournal;
+			
+			mActiveJournals.put(mJournalPath.getAbsolutePath(), this);
+		}
 	}
 	
 	public boolean isHot()
@@ -46,6 +97,34 @@ public class Journal
 		{
 			return false;
 		}
+	}
+	public boolean hasMaster()
+	{
+		return mMasterPath != null;
+	}
+	
+	public File getJournalFile()
+	{
+		return mJournalPath;
+	}
+	
+	public int getRandomKey()
+	{
+		return mRandomVal;
+	}
+	
+	public File getMasterFile()
+	{
+		if(!hasMaster())
+			return null;
+		
+		return new File(mMasterPath);
+	}
+	
+	void attach(Journal other)
+	{
+		mChildren.add(other);
+		other.mMaster = this;
 	}
 	
 	public void preWrite(long size) throws IOException
@@ -105,6 +184,13 @@ public class Journal
 		if(!isHot())
 			throw new IllegalStateException("Cannot rollback journal, journal is cold.");
 		
+		if(mMaster != null && mMaster.isHot())
+			throw new IllegalStateException("Cannot rollback journal, master journal is still hot.");
+		
+		RandomAccessFile stream = mOwnerStream;
+		if(mOwnerStream == null)
+			stream = new RandomAccessFile(mOwnerPath, "rw");
+		
 		mJournalStream.seek(0);
 		mIsRollingBack = true;
 		
@@ -141,13 +227,16 @@ public class Journal
 			
 			long location = header.sectorNumber * (long)cSectorSize;
 			
-			mOwnerStream.seek(location);
+			stream.seek(location);
 			
-			mOwnerStream.write(data);
+			stream.write(data);
 		}
 		// Restore the original file to its old file size
-		mOwnerStream.setLength(mainHeader.originalFileSize);
+		stream.setLength(mainHeader.originalFileSize);
 				
+		if(mOwnerStream == null)
+			stream.close();
+		
 		mIsRollingBack = false;
 		
 		// Now delete the journal
@@ -155,12 +244,24 @@ public class Journal
 		mJournalStream = null;
 		mJournalPath.delete();
 		mWrittenSectors = null;
+		
+		mActiveJournals.remove(mJournalPath.getAbsolutePath());
+		
+		for(Journal child : mChildren)
+			child.rollback();
+		
+		mChildren.clear();
+		mMaster = null;
+		mMasterPath = null;
 	}
 	
 	public void clear() throws IOException
 	{
 		if(!isHot())
 			throw new IllegalStateException("Cannot clear journal, journal is cold.");
+		
+		if(mMaster != null && mMaster.isHot())
+			throw new IllegalStateException("Cannot clear journal, master journal is still hot.");
 		
 		try
 		{
@@ -172,30 +273,127 @@ public class Journal
 			mJournalStream = null;
 			mJournalPath.delete();
 		}
+		
+		mActiveJournals.remove(mJournalPath.getAbsolutePath());
+		
+		for(Journal child : mChildren)
+			child.clear();
+		
+		mChildren.clear();
+		mMaster = null;
+		mMasterPath = null;
 	}
 	
-	public void begin(long fileSize) throws IOException
+	public void begin(long fileSize, Journal master) throws IOException
 	{
 		if(mJournalStream != null)
 			throw new IllegalStateException("Cannot begin journal, journal is hot.");
 		
+		if(mOwnerStream == null)
+			throw new IllegalStateException("You cannot begin this journal as this is a quick journal used for restores on load.");
+		
+		if(master != null && !master.isHot())
+			throw new IllegalStateException("Cannot join other journal. the master journal is cold.");
+		
 		try
 		{
 			mJournalStream = new RandomAccessFile(mJournalPath, "rw");
+			mMaster = master;
 			
 			JournalHeader mainHeader = new JournalHeader();
-			mainHeader.masterJournal = "";
-			mRandomVal = mainHeader.randomVal = new Random().nextInt();
+			if(master != null)
+			{
+				mMaster.attach(this);
+				mainHeader.masterJournal = master.getJournalFile().getAbsolutePath();
+				mRandomVal = mainHeader.randomVal = master.getRandomKey();
+				mMasterPath = mMaster.getJournalFile().getAbsolutePath();
+			}
+			else
+			{
+				mainHeader.masterJournal = "";
+				mRandomVal = mainHeader.randomVal = new Random().nextInt();
+				mMasterPath = null;
+			}
+			
+			
+			
 			mainHeader.originalFileSize = fileSize;
 			
 			mainHeader.write(mJournalStream);
 			
 			mWrittenSectors = new HashSet<Integer>();
+			mActiveJournals.put(mJournalPath.getAbsolutePath(), this);
 		}
 		catch(IOException e)
 		{
 			mJournalStream = null;
 			throw e;
+		}
+	}
+	
+	public void begin(long fileSize) throws IOException
+	{
+		begin(fileSize, null);
+	}
+	
+	public static Journal findAndCreateJournal(File journalFile) throws IOException
+	{
+		String path = journalFile.getAbsolutePath();
+		Journal journal = null;
+		
+		// Search active journals first
+		journal = mActiveJournals.get(path);
+		if(journal != null)
+			return journal;
+		
+		// Check if it exists at all
+		if(!journalFile.exists())
+			return null;
+		
+		// Create a quick journal
+		String hotfilePath = path.substring(0, path.length() - (".journal").length());
+		journal = new Journal(new File(hotfilePath));
+		
+		return journal;
+	}
+	
+	private static JournalHeader scrapeHeader(File journalFile) throws IOException
+	{
+		RandomAccessFile file = new RandomAccessFile(journalFile, "rw");
+		JournalHeader header = new JournalHeader();
+		header.read(file);
+		file.close();
+		
+		return header;
+	}
+
+	public void findAndAttachChildren() throws IOException
+	{
+		for (File journal : mJournalPath.getParentFile().listFiles(new JournalFileFilter()))
+		{
+			JournalHeader header = scrapeHeader(journal);
+			
+			if(header.masterJournal.equals(mJournalPath.getAbsolutePath()))
+			{
+				boolean found = false;
+				for(Journal child : mChildren)
+				{
+					if(child.getJournalFile().equals(journal))
+					{
+						found = true;
+						break;
+					}
+				}
+				
+				if(found)
+					continue;
+				
+				// Load up a quick journal
+				String hotfilePath = journal.getAbsolutePath().substring(0, journal.getAbsolutePath().length() - (".journal").length());
+				Journal quickJournal = new Journal(new File(hotfilePath));
+				
+				attach(quickJournal);
+			}
 		}
 	}
 }
@@ -251,4 +449,15 @@ class SectionHeader
 		sectorNumber = file.readInt();
 		checksum = file.readInt();
 	}
+}
+
+class JournalFileFilter implements FilenameFilter
+{
+	
+	@Override
+	public boolean accept( File dir, String name )
+	{
+		return name.endsWith(".journal");
+	}
+	
 }
