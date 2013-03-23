@@ -126,6 +126,9 @@ public class OwnerTagIndex extends Index<OwnerMapEntry>
 	
 	public int getOrCreateTag(String owner) throws IOException
 	{
+		if(owner == null)
+			return -1;
+		
 		// See if there is a tag we can reuse
 		for(OwnerMapEntry tag : this)
 		{

@@ -13,6 +13,7 @@ import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
 import au.com.mineauz.PlayerSpy.Utilities.BloomFilter;
 import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.structurefile.Index;
 import au.com.mineauz.PlayerSpy.structurefile.SpaceLocator;
@@ -364,8 +365,8 @@ public class GlobalReferenceFile extends StructuredFile
 	
 	public List<SessionEntry> getSessionsFor(Location location)
 	{
-		int locationHash = location.hashCode();
-		int chunkHash = new SafeChunk(location).hashCode();
+		long locationHash = Utility.hashLocation(location);
+		long chunkHash = Utility.hashChunk(new SafeChunk(location));
 		
 		ArrayList<SessionEntry> sessions = new ArrayList<SessionEntry>();
 		

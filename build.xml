@@ -1,9 +1,8 @@
 <project name="PlayerSpy Build" basedir="." default="main">
 	<!-- Properties -->
-    <property file="build.properties"/>
-    
 	<property name="bin.dir" value="bin"/>
     <property name="classes.dir" value="classes"/>
+	<property name="jar.dir" value="dist"/>
     
     <target name="clean">
 		<delete dir="${classes.dir}"/>
@@ -11,7 +10,9 @@
     
     <target name="copyAll" depends="clean">
         <copy todir="${classes.dir}">
-            <fileset dir="${bin.dir}"/>
+            <fileset dir="${bin.dir}">
+            	<exclude name="**/test/**"/>
+            </fileset>
             <fileset file="plugin.yml"/>
         </copy>
     </target>

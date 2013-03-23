@@ -2,32 +2,37 @@ package au.com.mineauz.PlayerSpy.Utilities;
 
 public class BloomFilter
 {
-	private int mFilter = 0;
+	private long mFilter = 0;
 
 	public BloomFilter()
 	{
 		
 	}
 	
-	public BloomFilter(int filter)
+	public BloomFilter(long filter)
 	{
 		mFilter = filter;
+	}
+	
+	public BloomFilter(BloomFilter other)
+	{
+		mFilter = other.mFilter;
 	}
 	
 	@Override
 	public int hashCode()
 	{
-		return mFilter;
+		return (int)(mFilter ^ (mFilter >>> 32));
 	}
 	
-	public void add(int hash)
+	public void add(long hash)
 	{
 		mFilter |= hash;
 	}
 	
 	public void add(BloomFilter other)
 	{
-		mFilter |= other.hashCode();
+		mFilter |= other.getValue();
 	}
 	
 	public void clear()
@@ -35,9 +40,14 @@ public class BloomFilter
 		mFilter = 0;
 	}
 	
-	public boolean isPresent(int hash)
+	public boolean isPresent(long hash)
 	{
 		return ((mFilter & hash) == hash);
+	}
+	
+	public long getValue()
+	{
+		return mFilter;
 	}
 	
 	@Override

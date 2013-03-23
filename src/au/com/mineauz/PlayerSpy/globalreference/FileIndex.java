@@ -21,6 +21,9 @@ public class FileIndex extends Index<FileEntry>
 	{
 		super(hostingFile, file, locator);
 		mHeader = header;
+		
+		mNameMap = new HashMap<String, Integer>();
+		mIdMap = new HashMap<UUID, Integer>(); 
 	}
 
 	@Override

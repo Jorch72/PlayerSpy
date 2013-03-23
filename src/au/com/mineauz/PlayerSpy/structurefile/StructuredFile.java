@@ -53,17 +53,19 @@ public class StructuredFile
 	 * Begins a transaction in both master and child files.
 	 * The order is: master then child
 	 */
-	protected static void beginJointTransaction(StructuredFile master, StructuredFile child)
+	protected static void beginJointTransaction(StructuredFile master, StructuredFile child) throws IOException
 	{
+		master.mFile.beginTransaction();
+		child.mFile.beginTransaction(master.mFile);
 	}
 	
 	/**
 	 * Commits a transaction in both master and child files.
 	 * The order is: child then master
 	 */
-	protected static void commitJointTransaction(StructuredFile master, StructuredFile child)
+	protected static void commitJointTransaction(StructuredFile master, StructuredFile child) throws IOException
 	{
-		
+		master.mFile.commit();
 	}
 	
 	/**
@@ -72,7 +74,7 @@ public class StructuredFile
 	 */
 	protected static void rollbackJointTransaction(StructuredFile master, StructuredFile child)
 	{
-		
+		master.mFile.rollback();
 	}
 	
 	protected void load(ACIDRandomAccessFile file, File filePath, Index<?>... indexes)

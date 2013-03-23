@@ -10,7 +10,7 @@ import au.com.mineauz.PlayerSpy.structurefile.IndexEntry;
 
 public class FileEntry extends IndexEntry
 {
-	public static final int cSize = 60;
+	public static final int cSize = 64;
 	public static final int cMaxFileNameLength = 32;
 	
 	public UUID fileId;
@@ -35,7 +35,7 @@ public class FileEntry extends IndexEntry
 		if(fileName.indexOf(0) != -1)
 			fileName = fileName.substring(0, fileName.indexOf(0));
 		
-		chunkFilter = new BloomFilter(file.readInt());
+		chunkFilter = new BloomFilter(file.readLong());
 		
 		timeBegin = file.readLong();
 		timeEnd = file.readLong();
@@ -54,7 +54,7 @@ public class FileEntry extends IndexEntry
 		
 		file.write(nameData);
 		
-		file.writeInt(chunkFilter.hashCode());
+		file.writeLong(chunkFilter.getValue());
 		
 		file.writeLong(timeBegin);
 		file.writeLong(timeEnd);

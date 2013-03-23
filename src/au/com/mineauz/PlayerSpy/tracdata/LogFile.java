@@ -18,6 +18,7 @@ import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
 import au.com.mineauz.PlayerSpy.Utilities.BloomFilter;
 import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.debugging.Profiler;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
@@ -97,7 +98,7 @@ public class LogFile extends StructuredFile
 	
 	public BloomFilter getChunkFilter()
 	{
-		return new BloomFilter(mHeader.TotalLocationFilter.hashCode());
+		return new BloomFilter(mHeader.TotalLocationFilter);
 	}
 	
 	void pullDataExposed( long location ) throws IOException
@@ -1014,9 +1015,9 @@ public class LogFile extends StructuredFile
 								// Add any location to the location filter 
 								if(record instanceof ILocationAware && !(record instanceof IPlayerLocationAware))
 								{
-									entry.LocationFilter.add(((ILocationAware)record).getLocation().hashCode());
+									entry.LocationFilter.add(Utility.hashLocation(((ILocationAware)record).getLocation()));
 									SafeChunk chunk = new SafeChunk(((ILocationAware)record).getLocation());
-									entry.ChunkLocationFilter.add(chunk.hashCode());
+									entry.ChunkLocationFilter.add(Utility.hashChunk(chunk));
 								}
 							}
 							

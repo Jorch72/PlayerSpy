@@ -27,6 +27,7 @@ import au.com.mineauz.PlayerSpy.Records.SessionInfoRecord;
 import au.com.mineauz.PlayerSpy.Records.TeleportRecord;
 import au.com.mineauz.PlayerSpy.Records.WorldChangeRecord;
 import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.debugging.Profiler;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
@@ -526,9 +527,9 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 					// Add any location to the location filter 
 					if(record instanceof ILocationAware && !(record instanceof IPlayerLocationAware))
 					{
-						mSession.LocationFilter.add(((ILocationAware)record).getLocation().hashCode());
+						mSession.LocationFilter.add(Utility.hashLocation(((ILocationAware)record).getLocation()));
 						SafeChunk chunk = new SafeChunk(((ILocationAware)record).getLocation());
-						mSession.ChunkLocationFilter.add(chunk.hashCode());
+						mSession.ChunkLocationFilter.add(Utility.hashChunk(chunk));
 					}
 					
 					++index;

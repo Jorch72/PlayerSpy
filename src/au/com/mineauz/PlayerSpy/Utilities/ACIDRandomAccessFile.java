@@ -81,10 +81,12 @@ public class ACIDRandomAccessFile extends RandomAccessFile
 			if(master == null)
 				mJournal.begin(length());
 			else
+			{
 				mJournal.begin(length(), master.mJournal);
+				master.mChildren.add(this);
+			}
 			
 			mMaster = master;
-			master.mChildren.add(this);
 			mChildren.clear();
 			
 			Debug.finest("Begun transaction");
@@ -105,8 +107,10 @@ public class ACIDRandomAccessFile extends RandomAccessFile
 			throw new IllegalStateException("Cannot commit this transaction as it is controlled by the master.");
 		
 		mJournalLock.unlock();
-			
-		mJournal.clear();
+		
+		// The journals handle the chain.
+		if(mMaster == null)
+			mJournal.clear();
 		
 		Debug.finest("Committed transaction");
 		
@@ -125,7 +129,9 @@ public class ACIDRandomAccessFile extends RandomAccessFile
 		mJournalLock.unlock();
 		try
 		{
-			mJournal.rollback();
+			// The journals handle the chain.
+			if(mMaster == null)
+				mJournal.rollback();
 			Debug.info("Transaction was rolled back");
 			
 			for(ACIDRandomAccessFile child : mChildren)

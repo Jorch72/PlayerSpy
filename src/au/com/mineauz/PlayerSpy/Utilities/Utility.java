@@ -516,4 +516,84 @@ public class Utility
 			return false;
 		}
 	}
+	
+	
+	public static long getUnsignedInt(int x) {
+	    return x & 0x00000000ffffffffL;
+	}
+	
+	private static long xorHash(long hash)
+	{
+		long lower = getUnsignedInt((int)hash);
+		long upper = getUnsignedInt((int)(hash >>> 32));
+		
+		long diff = lower & upper;
+		
+		lower -= diff;
+		upper -= diff;
+		
+		hash = lower | (upper << 32);
+		
+		return hash;
+	}
+	/**
+	 * Approximately uniform hash for a double value
+	 */
+	private static long hashDouble(double value)
+	{
+		
+		long hash = 0;
+		
+		if(value < 0)
+			value *= -1;
+		
+		while (value != 0)
+		{
+			long val = (long)value;
+			value -= val;
+			hash += val;
+			
+			if(value != 0)
+			{
+				value *= 10;
+				hash *= 10;
+			}
+		}
+		
+		hash = (hash * 39) ^ hash;
+		
+		int bits = Long.numberOfLeadingZeros(hash); 
+		if (bits < 16)
+			hash = (hash * hash) ^ hash;
+		else if (bits < 32)
+			hash = (hash * hash * hash) ^ (hash * hash);
+		else if (bits < 48)
+			hash = (hash * hash * hash * hash) ^ (hash * hash * hash);
+		else
+			hash = (hash * hash * hash * hash * hash) ^ (hash * hash * hash * hash);
+		
+		return xorHash(hash);
+	}
+	
+	public static long hashLocation(Location location)
+	{
+		long hash;
+		
+		hash = hashDouble(location.getX());
+		hash |= hashDouble(location.getY());
+		hash |= hashDouble(location.getZ());
+
+		return xorHash(hash);
+	}
+	
+	public static long hashChunk(SafeChunk chunk)
+	{
+		long hash;
+		
+		hash = (39 * chunk.X) >>> 5;
+		hash |= (39 * chunk.Z) >>> 5;
+		
+		return hash;
+	}
+	
 }

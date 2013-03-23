@@ -9,7 +9,7 @@ import au.com.mineauz.PlayerSpy.structurefile.IndexEntry;
 
 public class SessionEntry extends IndexEntry
 {
-	public static final int cSize = 44;
+	public static final int cSize = 52;
 	
 	public int sessionId;
 	public UUID fileId;
@@ -29,8 +29,8 @@ public class SessionEntry extends IndexEntry
 		startTime = file.readLong();
 		endTime = file.readLong();
 		
-		chunkFilter = new BloomFilter(file.readInt());
-		locationFilter = new BloomFilter(file.readInt());
+		chunkFilter = new BloomFilter(file.readLong());
+		locationFilter = new BloomFilter(file.readLong());
 	}
 
 	@Override
@@ -44,8 +44,8 @@ public class SessionEntry extends IndexEntry
 		file.writeLong(startTime);
 		file.writeLong(endTime);
 		
-		file.writeInt(chunkFilter.hashCode());
-		file.writeInt(locationFilter.hashCode());
+		file.writeLong(chunkFilter.getValue());
+		file.writeLong(locationFilter.getValue());
 
 	}
 

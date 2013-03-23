@@ -9,7 +9,7 @@ import au.com.mineauz.PlayerSpy.structurefile.IndexEntry;
 // Represents a session declaration
 public class SessionEntry extends IndexEntry
 {
-	public static final int[] cSize = new int[] {0, 27, 35, 43};
+	public static final int[] cSize = new int[] {0, 27, 35, 51};
 	public int version;
 	
 	public long StartTimestamp;
@@ -43,8 +43,8 @@ public class SessionEntry extends IndexEntry
 		if(version == 3)
 		{
 			file.writeInt((int)Padding);
-			file.writeInt(LocationFilter.hashCode());
-			file.writeInt(ChunkLocationFilter.hashCode());
+			file.writeLong(LocationFilter.getValue());
+			file.writeLong(ChunkLocationFilter.getValue());
 		}
 	}
 	public void read(RandomAccessFile file) throws IOException
@@ -65,8 +65,8 @@ public class SessionEntry extends IndexEntry
 		if(version == 3)
 		{
 			Padding = (long)file.readInt();
-			LocationFilter = new BloomFilter(file.readInt());
-			ChunkLocationFilter = new BloomFilter(file.readInt());
+			LocationFilter = new BloomFilter(file.readLong());
+			ChunkLocationFilter = new BloomFilter(file.readLong());
 		}
 	}
 	

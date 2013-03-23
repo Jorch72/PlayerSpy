@@ -5,6 +5,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -24,7 +25,7 @@ public class Journal
 	private Journal mMaster;
 	private String mMasterPath;
 	
-	private List<Journal> mChildren;
+	private List<Journal> mChildren = new ArrayList<Journal>();
 	
 	private HashSet<Integer> mWrittenSectors;
 	

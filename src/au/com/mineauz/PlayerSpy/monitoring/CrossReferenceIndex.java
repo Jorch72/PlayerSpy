@@ -38,7 +38,15 @@ public class CrossReferenceIndex
 	public static void initialize()
 	{
 		instance = new GlobalReferenceFile();
-		if(!instance.load(new File(SpyPlugin.getInstance().getDataFolder(), "data/reference")))
+		File path = new File(SpyPlugin.getInstance().getDataFolder(), "data/reference");
+		
+		if(!path.exists())
+		{
+			instance = GlobalReferenceFile.create(path);
+			if(instance == null)
+				throw new RuntimeException("Failed to start up global reference file.");
+		}
+		else if(!instance.load(path))
 			throw new RuntimeException("Failed to start up global reference file.");
 	}
 	

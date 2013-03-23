@@ -59,7 +59,7 @@ public class FileHeader implements IData<IndexEntry>
 			file.writeInt((int)RollbackIndexSize);
 			file.writeShort((int)RollbackIndexCount);
 			
-			file.writeInt(TotalLocationFilter.hashCode());
+			file.writeLong(TotalLocationFilter.getValue());
 			
 			file.write(Reserved);
 		}
@@ -102,7 +102,7 @@ public class FileHeader implements IData<IndexEntry>
 			RollbackIndexSize = file.readInt();
 			RollbackIndexCount = file.readShort();
 			
-			TotalLocationFilter = new BloomFilter(file.readInt());
+			TotalLocationFilter = new BloomFilter(file.readLong());
 			
 			file.readFully(Reserved);
 		}
@@ -117,7 +117,7 @@ public class FileHeader implements IData<IndexEntry>
 		else if(VersionMajor == 2)
 			return 49 +  + Utility.getUTFLength(PlayerName);
 		else if(VersionMajor == 3)
-			return 79 + Utility.getUTFLength(PlayerName);
+			return 83 + Utility.getUTFLength(PlayerName);
 		else
 			throw new IllegalArgumentException("Invalid Version " + VersionMajor);
 	}
