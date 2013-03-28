@@ -868,14 +868,13 @@ public class GlobalMonitor implements Listener
 				records.add(record);
 			}
 			// TODO: Fix causefinder
-			//Cause cause = mCauseFinder.getCauseFor(event.getLocation());
-			//Cause defaultCause = Cause.globalCause(event.getLocation().getWorld(),"#tnt");
-			Cause cause = Cause.globalCause(event.getLocation().getWorld(), "#tnt");
+			Cause cause = null;
 			
-			if(cause.isPlayer() && cause.getExtraCause() == null)
-				cause.update(Cause.playerCause(cause.getCausingPlayer(), "#tnt"));
+			if(((TNTPrimed)event.getEntity()).getSource() instanceof Player)
+				cause = Cause.playerCause((Player)((TNTPrimed)event.getEntity()).getSource(), "#tnt");
+			else
+				cause = Cause.globalCause(event.getLocation().getWorld(), "#tnt");
 			
-			//logRecords(records,cause,defaultCause);
 			logRecords(records,cause,null);
 		}
 		else
@@ -1062,7 +1061,7 @@ public class GlobalMonitor implements Listener
 	private void onBlockIgite(BlockIgniteEvent event)
 	{
 		// Flint and steal is already covered by the block place event
-		if(event.getCause() == IgniteCause.FLINT_AND_STEEL)
+		if(event.getCause() == IgniteCause.FLINT_AND_STEEL && event.getPlayer() != null)
 			return;
 		
 		BlockState after = event.getBlock().getState();
@@ -1079,6 +1078,12 @@ public class GlobalMonitor implements Listener
 			break;
 		case LIGHTNING:
 			extraCause = "#lightning";
+			break;
+		case FLINT_AND_STEEL:
+			if(event.getIgnitingBlock() != null && event.getIgnitingBlock().getType() == Material.DISPENSER)
+				extraCause = "#dispenser";
+			else
+				return;
 			break;
 		default:
 			break;
@@ -1245,4 +1250,14 @@ public class GlobalMonitor implements Listener
 		}
 	}
 
+	@EventHandler
+	public void onPlayerConsumeItem(PlayerItemConsumeEvent event)
+	{
+		ShallowMonitor mon = getMonitor(event.getPlayer());
+		if(mon != null)
+		{
+			mon.onConsume(event.getItem());
+			mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
+		}
+	}
 }

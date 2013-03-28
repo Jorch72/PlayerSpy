@@ -3,15 +3,15 @@ package au.com.mineauz.PlayerSpy;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
-import net.minecraft.server.v1_4_R1.*;
+import net.minecraft.server.v1_5_R2.*;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.World;
-import org.bukkit.craftbukkit.v1_4_R1.CraftSound;
-import org.bukkit.craftbukkit.v1_4_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_4_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_5_R2.CraftSound;
+import org.bukkit.craftbukkit.v1_5_R2.CraftWorld;
+import org.bukkit.craftbukkit.v1_5_R2.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -439,8 +439,8 @@ public class PlaybackDisplay implements Listener
 		if(ent instanceof EntityShadowPlayer && !mShadowPlayers.contains(ent))
 			addShadowPlayer((EntityShadowPlayer)ent);
 		
-		Packet32EntityLook look = new Packet32EntityLook(ent.id, (byte)(ent.az * 256D / 360D), (byte)(ent.bb * 256D / 360D));
-		Packet35EntityHeadRotation head = new Packet35EntityHeadRotation(ent.id, (byte)(ent.az * 256D / 360D));
+		Packet32EntityLook look = new Packet32EntityLook(ent.id, (byte)(ent.aA * 256D / 360D), (byte)(ent.bc * 256D / 360D));
+		Packet35EntityHeadRotation head = new Packet35EntityHeadRotation(ent.id, (byte)(ent.aA * 256D / 360D));
 		
 		sendPacket(look, ent.world.getWorld());
 		sendPacket(head, ent.world.getWorld());

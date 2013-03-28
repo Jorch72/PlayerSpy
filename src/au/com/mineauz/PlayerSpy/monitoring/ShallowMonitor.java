@@ -259,7 +259,7 @@ public class ShallowMonitor
 	
 	public void onPlayerGameModeChange(PlayerGameModeChangeEvent event)
 	{
-		logRecord(new GameModeRecord(event.getNewGameMode().ordinal()));
+		logRecord(new GameModeRecord(event.getNewGameMode().getValue()));
 	}
 	
 	public void onPlayerInteract(PlayerInteractEvent event)
@@ -358,5 +358,11 @@ public class ShallowMonitor
 			logRecord(new PaintingChangeRecord(((Painting)event.getEntity()), false));
 		else if(event.getEntity() instanceof ItemFrame)
 			logRecord(new ItemFrameChangeRecord(((ItemFrame)event.getEntity()), false));
+	}
+	
+	public void onConsume(ItemStack item)
+	{
+		logRecord(new RightClickActionRecord(au.com.mineauz.PlayerSpy.Records.RightClickActionRecord.Action.Eat, item, null));
+		
 	}
 }
