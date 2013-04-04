@@ -73,7 +73,7 @@ public class SpreadTracker
 				// Remove the scheduled delete
 				Long key = mCheckMap.remove(data.getKey());
 				if(key != null)
-					mCheckPriority.remove(data.getKey());
+					mCheckPriority.remove(key);
 				
 				it.remove();
 			}

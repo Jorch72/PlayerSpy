@@ -1117,7 +1117,7 @@ public class GlobalMonitor implements Listener
 		if(cause == null)
 			return;
 		// Handle keeping track of the fire
-		if(event.getCause() != IgniteCause.SPREAD & SpyPlugin.getSettings().recordFireSpread)
+		if(event.getCause() != IgniteCause.SPREAD && SpyPlugin.getSettings().recordFireSpread)
 		{
 			mSpreadTracker.addSource(event.getBlock().getLocation(), cause);
 		}

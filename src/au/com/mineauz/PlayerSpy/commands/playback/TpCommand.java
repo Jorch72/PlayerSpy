@@ -22,7 +22,7 @@ public class TpCommand extends Command
 		else
 		{
 			sender.sendMessage(ChatColor.RED + "Unable to tp. Either nothing is loaded yet, or the world was deleted");
-			Debug.info("Tp request failed. location: %s world: %s", (location != null ? Utility.locationToStringShort(location) : "null"), location.getWorld() != null ? location.getWorld().getName() : "null");
+			Debug.info("Tp request failed. location: %s world: %s", (location != null ? Utility.locationToStringShort(location) : "null"), (location != null ? location.getWorld() != null ? location.getWorld().getName() : "null" : ""));
 		}
 		
 		return true;
