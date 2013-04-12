@@ -1,8 +1,8 @@
 package au.com.mineauz.PlayerSpy.Utilities;
 
-import net.minecraft.server.v1_4_R1.ChunkCoordinates;
-import net.minecraft.server.v1_4_R1.EntityHuman;
-import net.minecraft.server.v1_4_R1.World;
+import net.minecraft.server.v1_5_R2.ChunkCoordinates;
+import net.minecraft.server.v1_5_R2.EntityHuman;
+import net.minecraft.server.v1_5_R2.World;
 
 // TODO: Make this class dynamic
 public class EntityShadowPlayer extends EntityHuman

@@ -12,13 +12,13 @@ public class EntityLiving extends Entity
 		initialize(EntityLiving.class);
 	}
 	
-	@WrapperField(name="aA", type=Float.class)
+	@WrapperField(name="aB", type=Float.class)
 	public FieldWrapper<Float> lastCamYaw;
-	@WrapperField(name="az", type=Float.class)
+	@WrapperField(name="aA", type=Float.class)
 	public FieldWrapper<Float> camYaw;
 	
-	@WrapperField(name="ba", type=Float.class)
-	public FieldWrapper<Float> lastCamPitch;
 	@WrapperField(name="bb", type=Float.class)
+	public FieldWrapper<Float> lastCamPitch;
+	@WrapperField(name="bc", type=Float.class)
 	public FieldWrapper<Float> camPitch;
 }

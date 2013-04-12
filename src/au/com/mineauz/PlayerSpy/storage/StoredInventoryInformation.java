@@ -11,7 +11,7 @@ import org.bukkit.World;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
 import org.bukkit.block.DoubleChest;
-import org.bukkit.craftbukkit.v1_4_R1.inventory.CraftInventory;
+import org.bukkit.craftbukkit.v1_5_R2.inventory.CraftInventory;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.HumanEntity;
@@ -24,6 +24,7 @@ import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 
 
+@SuppressWarnings( "deprecation" )
 public class StoredInventoryInformation 
 {
 	public enum InventoryType

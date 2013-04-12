@@ -14,7 +14,7 @@ public class ItemPotion extends Item
 		initialize(ItemPotion.class);
 	}
 	
-	@WrapperMethod(name="g", returnType=Boolean.class, parameterTypes=Integer.class)
+	@WrapperMethod(name="f", returnType=Boolean.class, parameterTypes=Integer.class)
 	private static Method mIsSplash;
 	
 	public static boolean isSplash(int id)

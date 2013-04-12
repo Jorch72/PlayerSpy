@@ -43,7 +43,7 @@ public class Item extends AutoWrapper
 		return callMethod(mGetName);
 	}
 	
-	@WrapperMethod(name="l", returnType=boolean.class, parameterTypes={})
+	@WrapperMethod(name="m", returnType=boolean.class, parameterTypes={})
 	private static Method mHasSubtypes;
 	
 	public boolean hasSubtypes()
