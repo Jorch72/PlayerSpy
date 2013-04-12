@@ -33,8 +33,8 @@ public class SafeChunk
 		long hash = 3;
 
         hash = 19 * hash + WorldHash;
-        hash = 19 * hash + (long) (X ^ (X * 23) >>> 32);
-        hash = 19 * hash + (long) (Z ^ (Z * 23) >>> 32);
+        hash = 19 * hash + (long) (X ^ (X * 23L) >>> 32);
+        hash = 19 * hash + (long) (Z ^ (Z * 23L) >>> 32);
         
         return (int)hash;
 	}

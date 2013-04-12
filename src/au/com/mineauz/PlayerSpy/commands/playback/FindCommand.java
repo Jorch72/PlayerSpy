@@ -277,7 +277,7 @@ public class FindCommand extends Command
 			}
 			else
 			{
-				if(!playback.seekToDamage(type, attack, playerName, 0, false));
+				if(!playback.seekToDamage(type, attack, playerName, 0, false))
 				{
 					sender.sendMessage( failMessage);
 					return false;

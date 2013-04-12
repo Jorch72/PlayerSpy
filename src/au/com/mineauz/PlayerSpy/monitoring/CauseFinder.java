@@ -186,7 +186,7 @@ public class CauseFinder
 					if(!((BlockChangeRecord)record).wasPlaced())
 						continue;
 					
-					if(((BlockChangeRecord)record).getLocation().equals(mSearchLocation));
+					if(((BlockChangeRecord)record).getLocation().equals(mSearchLocation))
 					{
 						Cause cause = null;
 						if(result.Log.getName().startsWith(LogFileRegistry.cGlobalFilePrefix))
