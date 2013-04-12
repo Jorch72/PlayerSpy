@@ -30,12 +30,12 @@ public class SafeChunk
 	@Override
 	public int hashCode()
 	{
-		int hash = 3;
+		long hash = 3;
 
         hash = 19 * hash + WorldHash;
-        hash = 19 * hash + (int) (X ^ (X * 23) >>> 32);
-        hash = 19 * hash + (int) (Z ^ (Z * 23) >>> 32);
+        hash = 19 * hash + (long) (X ^ (X * 23) >>> 32);
+        hash = 19 * hash + (long) (Z ^ (Z * 23) >>> 32);
         
-        return hash;
+        return (int)hash;
 	}
 }

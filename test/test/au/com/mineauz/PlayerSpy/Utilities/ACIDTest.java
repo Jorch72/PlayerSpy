@@ -20,7 +20,7 @@ public class ACIDTest
 	@Test(expected = IllegalStateException.class)
 	public void writeNoTransaction() throws IOException
 	{
-		File acidFile = folder.newFile("writeNoTra.tmp");
+		File acidFile = folder.newFile();
 		ACIDRandomAccessFile testFile = new ACIDRandomAccessFile(acidFile, "rw");
 		
 		// Should throw IllegalStateException because we are not in a transaction
@@ -32,7 +32,7 @@ public class ACIDTest
 	@Test
 	public void successfullTransaction() throws IOException
 	{
-		File acidFile = folder.newFile("successTest.tmp");
+		File acidFile = folder.newFile();
 		ACIDRandomAccessFile testFile = new ACIDRandomAccessFile(acidFile, "rw");
 		
 		testFile.beginTransaction();
@@ -56,7 +56,7 @@ public class ACIDTest
 	@Test(expected = EOFException.class)
 	public void rolledBackTransaction() throws IOException
 	{
-		File acidFile = folder.newFile("rollbackTest.tmp");
+		File acidFile = folder.newFile();
 		ACIDRandomAccessFile testFile = new ACIDRandomAccessFile(acidFile, "rw");
 		
 		testFile.beginTransaction();
@@ -80,7 +80,7 @@ public class ACIDTest
 	@Test(expected = IllegalStateException.class)
 	public void closeWithTransaction() throws IOException
 	{
-		File acidFile = folder.newFile("rollbackTest.tmp");
+		File acidFile = folder.newFile();
 		ACIDRandomAccessFile testFile = new ACIDRandomAccessFile(acidFile, "rw");
 		
 		testFile.beginTransaction();
@@ -97,7 +97,7 @@ public class ACIDTest
 	@Test(expected=EOFException.class)
 	public void hangingTransactionCleanup() throws IOException
 	{
-		File acidFile = folder.newFile("hangTest.tmp");
+		File acidFile = folder.newFile();
 		ACIDRandomAccessFile testFile = new ACIDRandomAccessFile(acidFile, "rw");
 		
 		testFile.beginTransaction();
@@ -126,8 +126,8 @@ public class ACIDTest
 	@Test
 	public void jointNormal() throws IOException
 	{
-		File masterFile = folder.newFile("jnMaster.tmp");
-		File childFile = folder.newFile("jnChild.tmp");
+		File masterFile = folder.newFile();
+		File childFile = folder.newFile();
 		
 		ACIDRandomAccessFile master = new ACIDRandomAccessFile(masterFile, "rw");
 		ACIDRandomAccessFile child = new ACIDRandomAccessFile(childFile, "rw");
@@ -160,8 +160,8 @@ public class ACIDTest
 	@Test
 	public void jointRollback() throws IOException
 	{
-		File masterFile = folder.newFile("jrMaster.tmp");
-		File childFile = folder.newFile("jrChild.tmp");
+		File masterFile = folder.newFile();
+		File childFile = folder.newFile();
 		
 		ACIDRandomAccessFile master = new ACIDRandomAccessFile(masterFile, "rw");
 		ACIDRandomAccessFile child = new ACIDRandomAccessFile(childFile, "rw");
@@ -209,8 +209,8 @@ public class ACIDTest
 	@Test(expected = IllegalStateException.class)
 	public void jointWrongCommit() throws IOException
 	{
-		File masterFile = folder.newFile("wcMaster.tmp");
-		File childFile = folder.newFile("wcChild.tmp");
+		File masterFile = folder.newFile();
+		File childFile = folder.newFile();
 		
 		ACIDRandomAccessFile master = new ACIDRandomAccessFile(masterFile, "rw");
 		ACIDRandomAccessFile child = new ACIDRandomAccessFile(childFile, "rw");
@@ -233,8 +233,8 @@ public class ACIDTest
 	@Test(expected = IllegalStateException.class)
 	public void jointWrongRollback() throws IOException
 	{
-		File masterFile = folder.newFile("wrMaster.tmp");
-		File childFile = folder.newFile("wrChild.tmp");
+		File masterFile = folder.newFile();
+		File childFile = folder.newFile();
 		
 		ACIDRandomAccessFile master = new ACIDRandomAccessFile(masterFile, "rw");
 		ACIDRandomAccessFile child = new ACIDRandomAccessFile(childFile, "rw");
@@ -258,8 +258,8 @@ public class ACIDTest
 	@Test
 	public void jointHangingTransaction() throws IOException
 	{
-		File masterFile = folder.newFile("jhtMaster.tmp");
-		File childFile = folder.newFile("jhtChild.tmp");
+		File masterFile = folder.newFile();
+		File childFile = folder.newFile();
 		
 		ACIDRandomAccessFile master = new ACIDRandomAccessFile(masterFile, "rw");
 		ACIDRandomAccessFile child = new ACIDRandomAccessFile(childFile, "rw");
@@ -313,8 +313,8 @@ public class ACIDTest
 	@Test(expected = IllegalStateException.class)
 	public void jointWrongOrder() throws IOException
 	{
-		File masterFile = folder.newFile("jwoMaster.tmp");
-		File childFile = folder.newFile("jwoChild.tmp");
+		File masterFile = folder.newFile();
+		File childFile = folder.newFile();
 		
 		ACIDRandomAccessFile master = new ACIDRandomAccessFile(masterFile, "rw");
 		ACIDRandomAccessFile child = new ACIDRandomAccessFile(childFile, "rw");

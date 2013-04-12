@@ -84,6 +84,12 @@ public class SessionEntry extends IndexEntry
 	}
 	
 	@Override
+	public int hashCode()
+	{
+		return Id ^ OwnerTagId;
+	}
+	
+	@Override
 	public long getLocation()
 	{
 		return Location;

@@ -31,7 +31,7 @@ public class FilterConstraint extends Constraint
 			}
 		}
 		
-		pattern.replaceAll("\\.", ".+?");
+		pattern = pattern.replaceAll("\\.", ".+?");
 		
 		mPattern = Pattern.compile(pattern);
 	}

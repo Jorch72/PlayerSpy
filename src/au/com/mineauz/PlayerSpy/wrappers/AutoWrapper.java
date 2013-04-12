@@ -6,6 +6,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -386,7 +387,7 @@ public abstract class AutoWrapper
 		}
 		catch(Exception e)
 		{
-			throw new WrapperValidationException("Wrapper integrity validation failed: constructor " + argTypes.toString() + " expected in " + clazz.getName() + " is not available.");
+			throw new WrapperValidationException("Wrapper integrity validation failed: constructor " + Arrays.toString(argTypes) + " expected in " + clazz.getName() + " is not available.");
 		}
 	}
 	
