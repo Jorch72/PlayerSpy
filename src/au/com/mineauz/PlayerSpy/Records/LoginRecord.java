@@ -54,4 +54,13 @@ public class LoginRecord extends Record implements IPlayerLocationAware
 	{
 		return "%s logged on";
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof LoginRecord))
+			return false;
+		
+		return mLocation.equals(((LoginRecord)obj).mLocation);
+	}
 }

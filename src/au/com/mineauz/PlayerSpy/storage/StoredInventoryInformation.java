@@ -264,4 +264,29 @@ public class StoredInventoryInformation
 		
 		return result + " }";
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof StoredInventoryInformation))
+			return false;
+		
+		StoredInventoryInformation inv = (StoredInventoryInformation)obj;
+		
+		if(mType != inv.mType)
+			return false;
+		
+		switch(mType)
+		{
+		case Chest:
+			return mBlock.equals(inv.mBlock);
+		case Enderchest:
+		case Player:
+			return mPlayerName.equals(inv.mPlayerName);
+		case Entity:
+			return mEntity.equals(inv.mEntity);
+		default:
+			return true;
+		}
+	}
 }

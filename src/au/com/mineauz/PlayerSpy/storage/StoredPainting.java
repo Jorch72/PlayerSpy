@@ -72,6 +72,18 @@ public class StoredPainting
 	{
 		return 8 + mLocation.getSize(absolute);
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof StoredPainting))
+			return false;
+		
+		StoredPainting painting = (StoredPainting)obj;
+		
+		return mArt == painting.mArt && mFace == painting.mFace && mLocation.equals(painting.mLocation);
+	}
+	
 	private int mArt;
 	private int mFace;
 	private StoredLocation mLocation;

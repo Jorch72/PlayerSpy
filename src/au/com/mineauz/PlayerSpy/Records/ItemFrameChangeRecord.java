@@ -127,4 +127,16 @@ public class ItemFrameChangeRecord extends Record implements IRollbackable, ILoc
 	{
 		return mFrame.getLocation();
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof ItemFrameChangeRecord))
+			return false;
+		
+		ItemFrameChangeRecord record = (ItemFrameChangeRecord)obj;
+		
+		return (mPlaced == record.mPlaced && mFrame.equals(record.mFrame));
+		
+	}
 }

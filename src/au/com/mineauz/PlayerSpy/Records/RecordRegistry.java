@@ -52,10 +52,10 @@ public class RecordRegistry
 	 * @param type The type id of the record
 	 * @return Either an instance of Record, or null if that type has no match
 	 */
-	public static Record makeRecord(int version, int type)
+	public static Record makeRecord(int version, int type) throws RecordFormatException
 	{
 		if(mMap == null)
-			return null;
+			throw new IllegalStateException("Not Initialized");
 		
 		HashMap<Integer, Class<? extends Record>> recordMap = null;
 		if(mMap.containsKey(version))
@@ -69,7 +69,7 @@ public class RecordRegistry
 				version = ent.getKey();
 			}
 			else
-				return null;
+				throw new IllegalArgumentException("Illegal version " + version);
 		}
 
 		// Try to match the record type and version
@@ -80,20 +80,15 @@ public class RecordRegistry
 			{
 				try
 				{
-					// Has it been removed in this version?
-					if(recordMap.get(type) == null)
-						return null;
-					
-					//LogUtil.finest("Load Record. Type: " + recordMap.get(type).getSimpleName());
 					return recordMap.get(type).newInstance();
 				}
 				catch(IllegalAccessException e)
 				{
-					e.printStackTrace();
+					throw (RecordFormatException)new RecordFormatException("Unable to access the default constructor for " + recordMap.get(type).getName()).initCause(e);
 				}
 				catch(InstantiationException e)
 				{
-					e.printStackTrace();
+					throw (RecordFormatException)new RecordFormatException("Error while instanciating type " + recordMap.get(type).getName()).initCause(e);
 				}
 			}
 			
@@ -106,7 +101,7 @@ public class RecordRegistry
 			}
 			else
 				// No record type was found
-				return null;
+				throw new RecordFormatException("Unknown record type " + type);
 		}
 	}
 	

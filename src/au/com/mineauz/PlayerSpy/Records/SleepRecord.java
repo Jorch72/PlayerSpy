@@ -74,4 +74,15 @@ public class SleepRecord extends Record implements IPlayerLocationAware
 	{
 		return false;
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof SleepRecord))
+			return false;
+		
+		SleepRecord record = (SleepRecord)obj;
+		
+		return (mIsSleeping == record.mIsSleeping && mLocation.equals(record.mLocation));
+	}
 }

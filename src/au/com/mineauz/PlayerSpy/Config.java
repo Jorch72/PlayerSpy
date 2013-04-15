@@ -12,14 +12,14 @@ import au.com.mineauz.PlayerSpy.Utilities.Util;
 
 public class Config extends AutoConfig 
 {
-	@ConfigField(comment = "DISABLED FOR NOW. When set to true, records fluid flow as block changes, and traces the flow to find the cause.", category="tracing")
+	@ConfigField(comment = "When set to true, records fluid flow as block changes, and traces the flow to find the cause.", category="tracing")
 	public boolean recordFluidFlow = false;
-	@ConfigField(comment = "DISABLED FOR NOW. When set to true, records mushroom spread as block changes, and traces the spread to find the cause.", category="tracing")
+	@ConfigField(comment = "When set to true, records mushroom spread as block changes, and traces the spread to find the cause.", category="tracing")
 	public boolean recordMushroomSpread = false;
-	@ConfigField(comment = "DISABLED FOR NOW. When set to true, records grass and mycel spread as block changes, and traces the spread to find the cause.", category="tracing")
+	@ConfigField(comment = "When set to true, records grass and mycel spread as block changes, and traces the spread to find the cause.", category="tracing")
 	public boolean recordGrassSpread = false;
-	@ConfigField(comment = "DISABLED FOR NOW. When set to true, records fire spread as block changes, and traces the spread to find the cause.", category="tracing")
-	public boolean recordFireSpread = false;
+	@ConfigField(comment = "When set to true, records fire spread as block changes, and traces the spread to find the cause.", category="tracing")
+	public boolean recordFireSpread = true;
 	
 	@ConfigField(name="timezone", comment = "Allows you to specify a timezone to display records with because java has a bug that means that sometimes, it may incorrectly get the timezone infomation from the system.", category="time")
 	private String mTimezoneString = "UTC+10:00";

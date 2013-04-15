@@ -47,4 +47,13 @@ public class GameModeRecord extends Record
 	{
 		return "Gamemode changed to " + GameMode.values()[mGameMode].toString() + " for %s";
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof GameModeRecord))
+			return false;
+		
+		return mGameMode == ((GameModeRecord)obj).mGameMode;
+	}
 }

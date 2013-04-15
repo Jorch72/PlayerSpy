@@ -3,6 +3,7 @@ package au.com.mineauz.PlayerSpy.Records;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.bukkit.World;
 import org.bukkit.inventory.ItemStack;
@@ -148,4 +149,24 @@ public class InventoryRecord extends Record
 		return null;
 	}
 	
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof InventoryRecord))
+			return false;
+		
+		InventoryRecord record = (InventoryRecord)obj;
+		
+		if(mSlot != record.mSlot)
+			return false;
+		
+		if(!Arrays.equals(mItems, record.mItems))
+			return false;
+		
+		if(!Arrays.equals(mArmour, record.mArmour))
+			return false;
+		
+		return true;
+	}
 }

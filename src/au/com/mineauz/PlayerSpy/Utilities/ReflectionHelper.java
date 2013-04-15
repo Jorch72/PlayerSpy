@@ -3,6 +3,7 @@ package au.com.mineauz.PlayerSpy.Utilities;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -84,6 +85,21 @@ public class ReflectionHelper
 		catch ( IOException e )
 		{
 			throw new ClassNotFoundException("Cannot find class " + path);
+		}
+	}
+	
+	public static Object readField(Class<?> clazz, String fieldname, Object instance)
+	{
+		try
+		{
+			Field field = clazz.getDeclaredField(fieldname);
+			field.setAccessible(true);
+			return field.get(instance);
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+			return null;
 		}
 	}
 	

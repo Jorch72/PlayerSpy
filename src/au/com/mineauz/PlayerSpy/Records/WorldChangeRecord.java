@@ -65,4 +65,19 @@ public class WorldChangeRecord extends Record {
 	{
 		return "%s changed to " + ChatColor.DARK_AQUA + mWorldString + ChatColor.RESET;
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof WorldChangeRecord))
+			return false;
+		
+		return mWorldString.equals(((WorldChangeRecord)obj).mWorldString);
+	}
+	
+	@Override
+	public String toString()
+	{
+		return "WorldChangeRecord { world:" + mWorldString + " }";
+	}
 }

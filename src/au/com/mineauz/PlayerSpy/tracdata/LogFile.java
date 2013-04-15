@@ -753,6 +753,10 @@ public class LogFile extends StructuredFile
 			SessionData data = mSessionIndex.getDataFor(session);
 			return data.read();
 		}
+		catch(RecordFormatException e)
+		{
+			Debug.logException(e);
+		}
 		catch(IOException e)
 		{
 			Debug.logException(e);
@@ -786,7 +790,11 @@ public class LogFile extends StructuredFile
 			return false;
 		
 		Profiler.beginTimingSection("appendRecords");
-		synchronized (CrossReferenceIndex.getInstance())
+		Object synchObject = CrossReferenceIndex.getInstance();
+		if(testOverride)
+			synchObject = this;
+		
+		synchronized (synchObject)
 		{
 			lockWrite();
 			
@@ -1114,7 +1122,7 @@ public class LogFile extends StructuredFile
 			// So that active sessions are mapped correctly
 			mSessionIndex.read();
 			
-			if(mHeader.VersionMajor >= 3 && mHeader.VersionMinor >= 1)
+			if(mHeader.VersionMajor >= 3)
 				mRollbackIndex.read();
 		}
 		catch(IOException e)
@@ -1150,6 +1158,9 @@ public class LogFile extends StructuredFile
 	private FileHeader mHeader;
 	
 	public static boolean sNoTimeoutOverride = false;
+	
+	/** Used for testing so that the file is used in isolation */
+	public boolean testOverride = false;
 	
 	// Task for closing the logfile when everything is executed
 	private class CloseTask implements Task<Void> 

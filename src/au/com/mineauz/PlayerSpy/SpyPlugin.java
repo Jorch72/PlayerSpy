@@ -57,6 +57,18 @@ public class SpyPlugin extends JavaPlugin
 		dispatch.registerCommand(new RollbackCommand());
 		dispatch.registerCommand(new InventoryCommand());
 		dispatch.registerCommand(new CatchupCommand());
+		
+		// Attempt to load the test package if present
+		try
+		{
+			Class.forName("test.au.com.mineauz.PlayerSpy.runtime.TestCommand");
+			dispatch.registerCommand(new test.au.com.mineauz.PlayerSpy.runtime.TestCommand());
+		}
+		catch(ClassNotFoundException e)
+		{
+			
+		}
+		
 		getCommand("playerspy").setExecutor(dispatch);
 		getCommand("playerspy").setTabCompleter(dispatch);
 		

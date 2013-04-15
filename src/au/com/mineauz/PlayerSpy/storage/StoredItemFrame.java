@@ -91,6 +91,21 @@ public class StoredItemFrame
 	{
 		return 2 + mLocation.getSize(absolute) + new StoredItemStack(mItem).getSize();
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof StoredItemFrame))
+			return false;
+		
+		StoredItemFrame frame = (StoredItemFrame)obj;
+		
+		if((mItem != null && !mItem.equals(frame.mItem)) || (mItem == null && frame.mItem != null))
+			return false;
+		
+		return mFacing == frame.mFacing && mRotation == frame.mRotation && mLocation.equals(frame.mLocation); 
+	}
+	
 	private ItemStack mItem;
 	private Rotation mRotation;
 	private BlockFace mFacing;

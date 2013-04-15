@@ -202,7 +202,17 @@ public class BlockChangeRecord extends Record implements IRollbackable, ILocatio
 	{
 		mIsRolledBack = state;
 	}
-	
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof BlockChangeRecord))
+			return false;
+		
+		BlockChangeRecord record = (BlockChangeRecord)obj;
+		
+		return (mInitialBlock.equals(record.mInitialBlock) && mFinalBlock.equals(record.mFinalBlock) && mPlaced == record.mPlaced);
+	}
 	@Override
 	public String toString()
 	{

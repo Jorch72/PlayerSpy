@@ -354,5 +354,20 @@ public class StoredBlock
 		return "Block: " + mType.toString() + ":" + mData + " hasTag:" + (mStateData != null);
 	}
 	
-	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof StoredBlock))
+			return false;
+		
+		StoredBlock block = (StoredBlock)obj;
+		
+		if(mType != block.mType || mData != block.mData)
+			return false;
+		
+		if(!mLocation.equals(block.mLocation))
+			return false;
+		
+		return mStateData.equals(block.mStateData);
+	}
 }

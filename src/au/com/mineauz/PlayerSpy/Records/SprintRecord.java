@@ -47,5 +47,14 @@ public class SprintRecord extends Record
 	{
 		return null;
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof SprintRecord))
+			return false;
+		
+		return mEnabled == ((SprintRecord)obj).mEnabled;
+	}
 
 }

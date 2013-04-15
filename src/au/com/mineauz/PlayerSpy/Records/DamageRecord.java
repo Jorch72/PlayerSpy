@@ -91,4 +91,15 @@ public class DamageRecord extends Record implements ILocationAware
 		else
 			return null;
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof DamageRecord))
+			return false;
+		
+		DamageRecord record = (DamageRecord)obj;
+		
+		return ((mDamager == null && record.mDamager == null) || (mDamager != null && mDamager.equals(record.mDamager))) && mAmount == record.mAmount;
+	}
 }

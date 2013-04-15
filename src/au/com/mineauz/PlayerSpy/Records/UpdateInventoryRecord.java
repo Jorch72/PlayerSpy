@@ -74,4 +74,20 @@ public class UpdateInventoryRecord extends Record
 		return null;
 	}
 
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof UpdateInventoryRecord))
+			return false;
+		
+		UpdateInventoryRecord record = (UpdateInventoryRecord)obj;
+		
+		return Slots.equals(record.Slots);
+	}
+	
+	@Override
+	public String toString()
+	{
+		return "UpdateInventoryRecord { Slots: " + Slots.toString() + " }";
+	}
 }

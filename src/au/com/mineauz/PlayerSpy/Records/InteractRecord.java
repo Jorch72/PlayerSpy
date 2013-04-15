@@ -190,4 +190,29 @@ public class InteractRecord extends Record implements ILocationAware
 			return mEntity.getLocation();
 		return null;
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof InteractRecord))
+			return false;
+		
+		InteractRecord record = (InteractRecord)obj;
+		
+		if(mType != record.mType)
+			return false;
+		
+		if(mBlock != null && !mBlock.equals(record.mBlock))
+			return false;
+		
+		if(mEntity != null && !mEntity.equals(record.mEntity))
+			return false;
+		
+		if(mItem != null && !mItem.equals(record.mItem))
+			return false;
+		
+		return true;
+	}
+	
+	
 }

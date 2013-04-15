@@ -52,4 +52,13 @@ public class RespawnRecord extends Record implements IPlayerLocationAware
 	{
 		return "%s respawned at " + Utility.locationToStringShort(mLocation.getLocation());
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof RespawnRecord))
+			return false;
+		
+		return mLocation.equals(((RespawnRecord)obj).mLocation);
+	}
 }

@@ -60,4 +60,13 @@ public class ChatCommandRecord extends Record
 	{
 		return "%s: " + (mPrevented ? ChatColor.STRIKETHROUGH : "") + mMessage + (mPrevented ? ChatColor.RESET : "");
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof ChatCommandRecord))
+			return false;
+		
+		return (mMessage.equals(((ChatCommandRecord)obj).mMessage) && mPrevented == ((ChatCommandRecord)obj).mPrevented);
+	}
 }

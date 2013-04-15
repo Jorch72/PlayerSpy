@@ -47,4 +47,13 @@ public class SneakRecord extends Record
 	{
 		return null;
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof SneakRecord))
+			return false;
+		
+		return mEnabled == ((SneakRecord)obj).mEnabled;
+	}
 }

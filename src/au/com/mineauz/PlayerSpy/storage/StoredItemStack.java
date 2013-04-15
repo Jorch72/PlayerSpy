@@ -67,5 +67,16 @@ public class StoredItemStack
 		return 7 + meta.getSize();
 	}
 	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof StoredItemStack))
+			return false;
+		
+		StoredItemStack stack = (StoredItemStack)obj;
+		
+		return mItem.equals(stack.mItem);
+	}
+	
 	private ItemStack mItem;
 }

@@ -47,5 +47,14 @@ public class HeldItemChangeRecord extends Record
 	{
 		return "%s changed held item to slot " + mSlot;
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof HeldItemChangeRecord))
+			return false;
+		
+		return (mSlot == ((HeldItemChangeRecord)obj).mSlot);
+	}
 
 }

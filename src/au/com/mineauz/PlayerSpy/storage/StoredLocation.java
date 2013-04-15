@@ -97,5 +97,20 @@ public class StoredLocation
 		return 14 + (full ? Utility.getUTFLength(mLocation.getWorld().getName()) : 0);
 	}
 	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof StoredLocation))
+			return false;
+		
+		return mLocation.equals(((StoredLocation)obj).mLocation);
+	}
+	
+	@Override
+	public String toString()
+	{
+		return mLocation.toString();
+	}
+	
 	private Location mLocation;
 }

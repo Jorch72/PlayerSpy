@@ -44,4 +44,22 @@ public class InventorySlot
 	{
 		return 2 + new StoredItemStack(Item).getSize();
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof InventorySlot))
+			return false;
+		
+		InventorySlot slot = (InventorySlot)obj;
+		
+		if(Slot != slot.Slot)
+			return false;
+		
+		if(Item != null)
+			return Item.equals(slot.Item);
+		else
+			return slot.Item == null;
+
+	}
 }

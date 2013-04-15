@@ -89,4 +89,25 @@ public class AttackRecord extends Record implements ILocationAware
 	{
 		return mDamagee.getLocation();
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof AttackRecord))
+			return false;
+		
+		if(mAmount != ((AttackRecord)obj).mAmount)
+			return false;
+		
+		if(!mDamagee.equals(((AttackRecord)obj).mDamagee))
+			return false;
+		
+		return true;
+	}
+	
+	@Override
+	public String toString()
+	{
+		return "AttackRecord {target: " + mDamagee.toString() + " damage: " + mAmount + "}";
+	}
 }

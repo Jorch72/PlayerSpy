@@ -72,5 +72,17 @@ public class DeathRecord extends Record implements IPlayerLocationAware
 	{
 		return "%s Died '" + mReason + "'";
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof DeathRecord))
+			return false;
+		
+		DeathRecord record = (DeathRecord)obj;
+		
+		return (mLocation.equals(record.mLocation) && mReason.equals(record.mReason));
+		
+	}
 
 }

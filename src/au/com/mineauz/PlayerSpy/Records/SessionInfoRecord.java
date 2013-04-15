@@ -44,4 +44,13 @@ public class SessionInfoRecord extends Record
 		return null;
 	}
 	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof SessionInfoRecord))
+			return false;
+		
+		return mDeep == ((SessionInfoRecord)obj).mDeep;
+	}
+	
 }

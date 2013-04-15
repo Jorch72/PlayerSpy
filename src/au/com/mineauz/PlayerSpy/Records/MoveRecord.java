@@ -78,4 +78,15 @@ public class MoveRecord extends Record implements IPlayerLocationAware
 	{
 		return null;
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof MoveRecord))
+			return false;
+		
+		MoveRecord record = (MoveRecord)obj;
+		
+		return (mLocation.equals(record.mLocation) && mHeadLocation.equals(record.mHeadLocation));
+	}
 }

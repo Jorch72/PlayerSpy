@@ -544,6 +544,24 @@ public abstract class AutoWrapper
 	}
 	
 	@Override
+	public boolean equals( Object obj )
+	{
+		if(mInstance != null)
+			return mInstance.equals(unwrapObjects(obj));
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		if(mInstance != null)
+			return mInstance.hashCode();
+		else
+			return 0;
+	}
+	
+	@Override
 	public String toString()
 	{
 		if(mInstance != null)

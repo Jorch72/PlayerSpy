@@ -91,7 +91,8 @@ public class PurgeTask  implements Task<Boolean>
 					mCaller.sendMessage(ChatColor.RED + "  Purge failed on " + log.getName());
 				else
 				{
-					CrossReferenceIndex.removeLogFile(log);
+					if(!log.testOverride)
+						CrossReferenceIndex.removeLogFile(log);
 				}
 			}
 		}

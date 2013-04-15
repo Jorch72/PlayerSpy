@@ -81,4 +81,15 @@ public class LogoffRecord extends Record
 		else
 			return "%s logged off";
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof LogoffRecord))
+			return false;
+		
+		LogoffRecord record = (LogoffRecord)obj;
+		
+		return (mLogoffType == record.mLogoffType && (mLogoffType == LogoffType.Quit || mReason.equals(record.mReason)));
+	}
 }

@@ -63,4 +63,21 @@ public class TeleportRecord extends Record implements IPlayerLocationAware
 			return "%s was teleported to " + Utility.locationToStringShort(mLocation.getLocation());
 		return null;
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof TeleportRecord))
+			return false;
+		
+		TeleportRecord record = (TeleportRecord)obj;
+		
+		return mCause == record.mCause && mLocation.equals(record.mLocation);
+	}
+	
+	@Override
+	public String toString()
+	{
+		return "TeleportRecord { cause: " + TeleportCause.values()[mCause] + " to: " + mLocation + " }";
+	}
 }

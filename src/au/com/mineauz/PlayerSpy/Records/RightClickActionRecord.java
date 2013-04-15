@@ -138,4 +138,26 @@ public class RightClickActionRecord extends Record implements ILocationAware
 			return mEntity.getLocation();
 		return null;
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof RightClickActionRecord))
+			return false;
+		
+		RightClickActionRecord record = (RightClickActionRecord)obj;
+		
+		if(mAction != record.mAction)
+			return false;
+		
+		if(!mItem.equals(record.mItem))
+			return false;
+		
+		if(mEntity != null)
+		{
+			return mEntity.equals(record.mEntity);
+		}
+		else
+			return record.mEntity == null;
+	}
 }

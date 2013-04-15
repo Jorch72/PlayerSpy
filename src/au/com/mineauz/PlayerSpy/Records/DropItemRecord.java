@@ -65,4 +65,13 @@ public class DropItemRecord extends Record
 	{
 		return mStack.getItem().getAmount() + "x " + ChatColor.DARK_AQUA + Utility.formatItemName(mStack.getItem()) + ChatColor.RESET + " dropped by %s";
 	}
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof DropItemRecord))
+			return false;
+		
+		return mStack.equals(((DropItemRecord)obj).mStack);
+	}
 }

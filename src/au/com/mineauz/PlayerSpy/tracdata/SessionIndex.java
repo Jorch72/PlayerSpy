@@ -22,6 +22,7 @@ import au.com.mineauz.PlayerSpy.Records.IPlayerLocationAware;
 import au.com.mineauz.PlayerSpy.Records.IRollbackable;
 import au.com.mineauz.PlayerSpy.Records.InventoryRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Records.SessionInfoRecord;
 import au.com.mineauz.PlayerSpy.Records.TeleportRecord;
@@ -197,11 +198,13 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 		// Write the index entry
 		add(session);
 		
-		if(!CrossReferenceIndex.addSession((LogFile)mHostingFile, session))
-			Debug.warning("Failed to add session to xreference");
-		else
-			Debug.finer("Added session to cross reference");
-
+		if(!((LogFile)mHostingFile).testOverride)
+		{
+			if(!CrossReferenceIndex.addSession((LogFile)mHostingFile, session))
+				Debug.warning("Failed to add session to xreference");
+			else
+				Debug.finer("Added session to cross reference");
+		}
 		return getDataFor(session);
 	}
 	
@@ -209,7 +212,8 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 	protected void onRemove( SessionEntry entry )
 	{
 		entry.version = mHeader.VersionMajor;
-		CrossReferenceIndex.removeSession((LogFile)mHostingFile, entry);
+		if(!((LogFile)mHostingFile).testOverride)
+			CrossReferenceIndex.removeSession((LogFile)mHostingFile, entry);
 	}
 	
 	@Override
@@ -331,14 +335,8 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 			return mSession.TotalSize;
 		}
 
-		public RecordList read() throws IOException
+		private DataInputStream getRawStream() throws IOException
 		{
-			boolean isAbsolute = mSession.OwnerTagId != -1;
-			
-			Debug.finer("Loading Session %d", mSession.Id);
-			
-			RecordList records = new RecordList();
-			
 			// Read the raw session data
 			mFile.seek(mSession.Location);
 
@@ -359,57 +357,73 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 			else
 				stream = new DataInputStream(istream);
 			
+			return stream;
+		}
+		
+		public RecordList read() throws IOException, RecordFormatException
+		{
+			
+			Debug.finer("Loading Session %d", mSession.Id);
+			
+			RecordList records = new RecordList();
 			World lastWorld = null;
 			boolean hadInv = false;
+			boolean isAbsolute = mSession.OwnerTagId != -1;
+			
+			DataInputStream stream = getRawStream();
+			
 			// Load the records
-			for(int i = 0; i < mSession.RecordCount; i++)
+			try
 			{
-				Record record = Record.readRecord(stream, lastWorld, mHeader.VersionMajor, isAbsolute);
-				if(record == null)
+				for(short i = 0; i < mSession.RecordCount; i++)
 				{
-					if(i == 0)
-						Debug.severe("Record read fail at index 0");
-					else
-						Debug.severe("Record read fail at index %d after record type %s", i, records.get(records.size()-1).getClass().getName());
+					Record record = Record.readRecord(stream, lastWorld, mHeader.VersionMajor, isAbsolute);
 					
-					break;
-				}
-				record.sourceFile = (LogFile)mHostingFile; 
-				record.sourceEntry = mSession;
-				record.sourceIndex = (short)i;
-				
-				// update the last world
-				if(record instanceof IPlayerLocationAware && ((IPlayerLocationAware)record).isFullLocation())
-					lastWorld = ((IPlayerLocationAware)record).getLocation().getWorld();
-				else if(record instanceof WorldChangeRecord)
-					lastWorld = ((WorldChangeRecord)record).getWorld();
-				else if((lastWorld == null && record.getType() != RecordType.FullInventory && record.getType() != RecordType.EndOfSession) && !isAbsolute)
-				{
-					Debug.warning("Corruption in " + ((LogFile)mHostingFile).getName() + ".tracdata session " + mSession.Id + " found. Attempting to fix");
-					lastWorld = Bukkit.getWorlds().get(0);
-					Record worldRecord = new WorldChangeRecord(lastWorld);
-					worldRecord.setTimestamp(record.getTimestamp());
-					records.add(worldRecord);
+					record.sourceFile = (LogFile)mHostingFile; 
+					record.sourceEntry = mSession;
+					record.sourceIndex = i;
 					
-					// Ditch the first record since it is useless
-					continue;
+					if(!isAbsolute)
+					{
+						// update the last world
+						if(record instanceof IPlayerLocationAware && ((IPlayerLocationAware)record).isFullLocation())
+							lastWorld = ((IPlayerLocationAware)record).getLocation().getWorld();
+						else if(record instanceof WorldChangeRecord)
+							lastWorld = ((WorldChangeRecord)record).getWorld();
+						else if((lastWorld == null && record.getType() != RecordType.FullInventory && record.getType() != RecordType.EndOfSession))
+						{
+							Debug.warning("Corruption in " + ((LogFile)mHostingFile).getName() + ".tracdata session " + mSession.Id + " found. Attempting to fix");
+							lastWorld = Bukkit.getWorlds().get(0);
+							Record worldRecord = new WorldChangeRecord(lastWorld);
+							worldRecord.setTimestamp(record.getTimestamp());
+							records.add(worldRecord);
+							
+							// Ditch the first record since it is useless
+							continue;
+						}
+						
+						if(record.getType() == RecordType.FullInventory)
+							hadInv = true;
+						
+						if(lastWorld == null && i > 3)
+						{
+							Debug.warning("Issue detected with " + ((LogFile)mHostingFile).getName() + ".trackdata in session " + mSession.Id + ". No world has been set. Defaulting to main world");
+							lastWorld = Bukkit.getWorlds().get(0);
+							records.add(new WorldChangeRecord(lastWorld));
+						}
+						if(!hadInv && i > 3)
+						{
+							Debug.warning("Issue detected with " + ((LogFile)mHostingFile).getName() + ".trackdata in session " + mSession.Id + ". No inventory state has been set. ");
+							hadInv = true;
+						}
+					}
+					records.add(record);
 				}
-				
-				if(record.getType() == RecordType.FullInventory)
-					hadInv = true;
-				
-				if(lastWorld == null && i > 3 && !isAbsolute)
-				{
-					Debug.warning("Issue detected with " + ((LogFile)mHostingFile).getName() + ".trackdata in session " + mSession.Id + ". No world has been set. Defaulting to main world");
-					lastWorld = Bukkit.getWorlds().get(0);
-					records.add(new WorldChangeRecord(lastWorld));
-				}
-				if(!hadInv && i > 3 && !isAbsolute)
-				{
-					Debug.warning("Issue detected with " + ((LogFile)mHostingFile).getName() + ".trackdata in session " + mSession.Id + ". No inventory state has been set. ");
-					hadInv = true;
-				}
-				records.add(record);
+			}
+			catch(RecordFormatException e)
+			{
+				e.setHistory(records);
+				throw e;
 			}
 			
 			// Load the rollback state info in
@@ -527,9 +541,14 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 					// Add any location to the location filter 
 					if(record instanceof ILocationAware && !(record instanceof IPlayerLocationAware))
 					{
-						mSession.LocationFilter.add(Utility.hashLocation(((ILocationAware)record).getLocation()));
-						SafeChunk chunk = new SafeChunk(((ILocationAware)record).getLocation());
-						mSession.ChunkLocationFilter.add(Utility.hashChunk(chunk));
+						Location location = ((ILocationAware)record).getLocation();
+						
+						if(location != null)
+						{
+							mSession.LocationFilter.add(Utility.hashLocation(location));
+							SafeChunk chunk = new SafeChunk(((ILocationAware)record).getLocation());
+							mSession.ChunkLocationFilter.add(Utility.hashChunk(chunk));
+						}
 					}
 					
 					++index;
@@ -567,7 +586,8 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 					mSession.RecordCount += records.size();
 					set(indexOf(mSession), mSession);
 
-					CrossReferenceIndex.updateSession(((LogFile)mHostingFile), mSession);
+					if(!((LogFile)mHostingFile).testOverride)
+						CrossReferenceIndex.updateSession(((LogFile)mHostingFile), mSession);
 					Debug.info("Completed append to Session %d", mSession.Id);
 					
 					if(!rolledBackEntries.isEmpty())
@@ -575,7 +595,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 				}
 				
 				// get data to keep records consistent
-				if(!isAbsolute)
+				if(!isAbsolute && records.size() > 0)
 				{
 					// Apply info to keep it consistent
 					Boolean newDepth = records.getCurrentDepth(records.size()-1);

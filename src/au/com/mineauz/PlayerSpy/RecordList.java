@@ -348,7 +348,7 @@ public class RecordList extends ArrayList<Record>
 	
 	public Boolean getCurrentDepth(int index)
 	{
-		Debug.loggedAssert( index >= 0 && index < size());
+		Debug.loggedAssert( index >= 0 && index < size(), "Index " + index + " was out of range");
 		
 		for(int i = index; i >= 0; i--)
 		{

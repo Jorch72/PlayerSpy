@@ -235,5 +235,13 @@ public class StoredItemMeta
 	}
 	
 	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof StoredItemMeta))
+			return false;
+		
+		return mMeta.equals(((StoredItemMeta)obj).mMeta);
+	}
 	
 }

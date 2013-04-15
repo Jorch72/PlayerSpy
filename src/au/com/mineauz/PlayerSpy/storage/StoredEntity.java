@@ -134,6 +134,29 @@ public class StoredEntity
 			return getEntityType().getName();
 	}
 	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof StoredEntity))
+			return false;
+		
+		StoredEntity entity = (StoredEntity)obj;
+		
+		if(mTypeId != entity.mTypeId)
+			return false;
+		
+		if(mOriginalId != entity.mOriginalId)
+			return false;
+		
+		if(!mLocation.equals(entity.mLocation))
+			return false;
+		
+		
+		if(getEntityType() == EntityType.PLAYER)
+			return mPlayerName.equals(entity.mPlayerName);
+		return true;
+	}
+	
 	private short mTypeId;
 	private StoredLocation mLocation;
 	private String mPlayerName;

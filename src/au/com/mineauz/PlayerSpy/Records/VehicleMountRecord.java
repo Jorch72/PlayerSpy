@@ -73,4 +73,21 @@ public class VehicleMountRecord extends Record implements ILocationAware
 		return mVehicle.getLocation();
 	}
 	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof VehicleMountRecord))
+			return false;
+		
+		VehicleMountRecord record = (VehicleMountRecord)obj;
+		
+		return mIsMounting == record.mIsMounting && mVehicle.equals(record.mVehicle);
+	}
+	
+	@Override
+	public String toString()
+	{
+		return "VehicleMountRecord { mounting: " + mIsMounting + " vehicle: " + mVehicle.toString() + " }";
+	}
+	
 }

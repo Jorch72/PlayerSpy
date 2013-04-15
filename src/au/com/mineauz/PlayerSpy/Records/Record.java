@@ -37,26 +37,12 @@ public abstract class Record
 			return false;
 		}
 	}
-	public boolean read(DataInputStream stream, World currentWorld, boolean absolute)
+	public void read(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
-		try
-		{
-			// Dont read type since that was already read
-			mTimestamp = stream.readLong();
+		// Dont read type since that was already read
+		mTimestamp = stream.readLong();
 			
-			readContents(stream, currentWorld, absolute);
-			return true;
-		}
-		catch (IOException e)
-		{
-			Debug.logException(e);
-			return false;
-		}
-		catch (RecordFormatException e)
-		{
-			Debug.warning("Encoutered invalid record format for type %s. %s", mType.toString(), e.getMessage());
-			return false;
-		}
+		readContents(stream, currentWorld, absolute);
 	}
 	public long getTimestamp()
 	{
@@ -73,21 +59,21 @@ public abstract class Record
 	protected abstract void writeContents(DataOutputStream stream, boolean absolute) throws IOException;
 	protected abstract void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException;
 	
-	public static Record readRecord(DataInputStream stream, World currentWorld, int version, boolean absolute)
+	public static Record readRecord(DataInputStream stream, World currentWorld, int version, boolean absolute) throws IOException, RecordFormatException
 	{
+		Record record = RecordRegistry.makeRecord(version, stream.readByte());
+
 		try
 		{
-			Record record = RecordRegistry.makeRecord(version, stream.readByte());
-
-			if(record != null && record.read(stream, currentWorld, absolute))
-				return record;
+			record.read(stream, currentWorld, absolute);
 		}
-		catch(IOException e)
+		catch(RecordFormatException e)
 		{
-			Debug.logException(e);
+			e.setSourceType(record.getType());
+			throw e;
 		}
 		
-		return null;
+		return record;
 	}
 	
 	public int getSize(boolean absolute)
@@ -97,6 +83,21 @@ public abstract class Record
 	protected abstract int getContentSize(boolean absolute);
 	
 	public abstract String getDescription();
+	
+	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof Record))
+			return false;
+		
+		return mType == ((Record)obj).mType;
+	}
+	
+	@Override
+	public String toString()
+	{
+		return mType.toString();
+	}
 	
 	private RecordType mType;
 	private long mTimestamp;
