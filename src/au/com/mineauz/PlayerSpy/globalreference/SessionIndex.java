@@ -41,7 +41,7 @@ public class SessionIndex extends Index<SessionEntry>
 	@Override
 	protected int getEntrySize()
 	{
-		return SessionEntry.cSize;
+		return SessionEntry.getByteSize();
 	}
 
 	@Override

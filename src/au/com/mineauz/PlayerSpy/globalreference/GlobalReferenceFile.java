@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -11,7 +12,6 @@ import org.bukkit.Location;
 
 import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
-import au.com.mineauz.PlayerSpy.Utilities.BloomFilter;
 import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
@@ -280,6 +280,12 @@ public class GlobalReferenceFile extends StructuredFile
 		
 		SessionEntry entry = mSessionIndex.get(fileId, session.Id);
 		
+		if(entry == null)
+		{
+			addSession(session, log);
+			return;
+		}
+		
 		entry.chunkFilter = session.ChunkLocationFilter;
 		entry.locationFilter = session.LocationFilter;
 		
@@ -312,13 +318,13 @@ public class GlobalReferenceFile extends StructuredFile
 			
 			long timeBegin = Long.MAX_VALUE;
 			long timeEnd = Long.MIN_VALUE;
-			BloomFilter chunkFilter = new BloomFilter();
+			BitSet chunkFilter = new BitSet(Utility.cBitSetSize);
 			
 			for(SessionEntry entry : mSessionIndex.subset(fileId))
 			{
 				timeBegin = Math.min(timeBegin, entry.startTime);
 				timeEnd = Math.max(timeEnd, entry.endTime);
-				chunkFilter.add(entry.chunkFilter);
+				chunkFilter.or(entry.chunkFilter);
 			}
 			fileEntry.timeBegin = timeBegin;
 			fileEntry.timeEnd = timeEnd;
@@ -365,18 +371,18 @@ public class GlobalReferenceFile extends StructuredFile
 	
 	public List<SessionEntry> getSessionsFor(Location location)
 	{
-		long locationHash = Utility.hashLocation(location);
-		long chunkHash = Utility.hashChunk(new SafeChunk(location));
+		BitSet locationHash = Utility.hashLocation(location);
+		BitSet chunkHash = Utility.hashChunk(new SafeChunk(location));
 		
 		ArrayList<SessionEntry> sessions = new ArrayList<SessionEntry>();
 		
 		for(FileEntry file : mFileIndex)
 		{
-			if(file.chunkFilter.isPresent(chunkHash))
+			if(Utility.bitSetIsPresent(file.chunkFilter, chunkHash))
 			{
 				for(SessionEntry session : mSessionIndex.subset(file.fileId))
 				{
-					if(session.chunkFilter.isPresent(chunkHash) && session.locationFilter.isPresent(locationHash))
+					if(Utility.bitSetIsPresent(session.chunkFilter, chunkHash) && Utility.bitSetIsPresent(session.locationFilter, locationHash))
 						sessions.add(session);
 				}
 			}

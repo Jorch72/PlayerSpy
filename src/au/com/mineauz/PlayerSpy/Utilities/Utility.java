@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +43,8 @@ import au.com.mineauz.PlayerSpy.wrappers.packet.Packet5EntityEquipment;
 
 public class Utility 
 {
+	public static final int cBitSetSize = 256;
+	
 	public static ItemStack convertToNative(org.bukkit.inventory.ItemStack item)
 	{
 		if(item == null)
@@ -522,78 +526,75 @@ public class Utility
 	    return x & 0x00000000ffffffffL;
 	}
 	
-	private static long xorHash(long hash)
-	{
-		long lower = getUnsignedInt((int)hash);
-		long upper = getUnsignedInt((int)(hash >>> 32));
-		
-		long diff = lower & upper;
-		
-		lower -= diff;
-		upper -= diff;
-		
-		hash = lower | (upper << 32);
-		
-		return hash;
-	}
 	/**
 	 * Approximately uniform hash for a double value
 	 */
-	private static long hashDouble(double value)
+	public static BitSet hashValue(int value)
 	{
-		
 		long hash = 0;
 		
 		if(value < 0)
 			value *= -1;
 		
-		while (value != 0)
+		hash = value;
+		
+		hash = ((hash * 39) ^ hash) ^ (hash * 11);
+		
+		BitSet set = new BitSet(cBitSetSize);
+		
+		for(int i = 0; i < 2; ++i)
 		{
-			long val = (long)value;
-			value -= val;
-			hash += val;
-			
-			if(value != 0)
-			{
-				value *= 10;
-				hash *= 10;
-			}
+			set.set(Math.abs((int)(hash % cBitSetSize)));
+			hash ^= (hash * 13);
 		}
 		
-		hash = (hash * 39) ^ hash;
-		
-		int bits = Long.numberOfLeadingZeros(hash); 
-		if (bits < 16)
-			hash = (hash * hash) ^ hash;
-		else if (bits < 32)
-			hash = (hash * hash * hash) ^ (hash * hash);
-		else if (bits < 48)
-			hash = (hash * hash * hash * hash) ^ (hash * hash * hash);
-		else
-			hash = (hash * hash * hash * hash * hash) ^ (hash * hash * hash * hash);
-		
-		return xorHash(hash);
+		return set;
 	}
 	
-	public static long hashLocation(Location location)
+	public static BitSet hashLocation(Location location)
 	{
-		long hash;
+		BitSet set = new BitSet(cBitSetSize);
 		
-		hash = hashDouble(location.getX());
-		hash |= hashDouble(location.getY());
-		hash |= hashDouble(location.getZ());
+		set.or(hashValue(location.getBlockX()));
+		set.or(hashValue(location.getBlockY()));
+		set.or(hashValue(location.getBlockZ()));
 
-		return xorHash(hash);
+		return set;
 	}
 	
-	public static long hashChunk(SafeChunk chunk)
+	public static BitSet hashChunk(SafeChunk chunk)
 	{
-		long hash;
+		BitSet set = new BitSet(cBitSetSize);
 		
-		hash = (39 * chunk.X) >>> 5;
-		hash |= (39 * chunk.Z) >>> 5;
+		set.or(hashValue(chunk.X));
+		set.or(hashValue(chunk.Z));
 		
-		return hash;
+		return set;
 	}
 	
+	public static String bitSetToString(BitSet set)
+	{
+		String output = "";
+		for(int i = 0; i < set.size(); ++i)
+			output += set.get(i) ? "1" : "0";
+		
+		return output;
+	}
+	
+	public static boolean bitSetIsPresent(BitSet a, BitSet b)
+	{
+		BitSet temp = (BitSet)b.clone();
+		temp.andNot(a);
+		return temp.isEmpty();
+	}
+	
+	/**
+	 * outputs the bitset to a fixed length array defined by cBitSetSize/8
+	 */
+	public static byte[] bitSetToBytes(BitSet set)
+	{
+		int bytes = cBitSetSize / 8;
+		
+		return Arrays.copyOf(set.toByteArray(), bytes);
+	}
 }

@@ -2,8 +2,8 @@ package au.com.mineauz.PlayerSpy.tracdata;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.BitSet;
 
-import au.com.mineauz.PlayerSpy.Utilities.BloomFilter;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.structurefile.IData;
 import au.com.mineauz.PlayerSpy.structurefile.IndexEntry;
@@ -27,7 +27,7 @@ public class FileHeader implements IData<IndexEntry>
 	public long RollbackIndexLocation;
 	public long RollbackIndexSize;
 	public int RollbackIndexCount;
-	public BloomFilter TotalLocationFilter = new BloomFilter();
+	public BitSet TotalLocationFilter = new BitSet(Utility.cBitSetSize);
 	public byte[] Reserved = new byte[30];
 	
 	public void write(RandomAccessFile file) throws IOException
@@ -59,7 +59,7 @@ public class FileHeader implements IData<IndexEntry>
 			file.writeInt((int)RollbackIndexSize);
 			file.writeShort((int)RollbackIndexCount);
 			
-			file.writeLong(TotalLocationFilter.getValue());
+			file.write(Utility.bitSetToBytes(TotalLocationFilter));
 			
 			file.write(Reserved);
 		}
@@ -102,7 +102,10 @@ public class FileHeader implements IData<IndexEntry>
 			RollbackIndexSize = file.readInt();
 			RollbackIndexCount = file.readShort();
 			
-			TotalLocationFilter = new BloomFilter(file.readLong());
+			byte[] bytes = new byte[Utility.cBitSetSize/8];
+			file.readFully(bytes);
+			
+			TotalLocationFilter = BitSet.valueOf(bytes);
 			
 			file.readFully(Reserved);
 		}
@@ -117,7 +120,7 @@ public class FileHeader implements IData<IndexEntry>
 		else if(VersionMajor == 2)
 			return 49 +  + Utility.getUTFLength(PlayerName);
 		else if(VersionMajor == 3)
-			return 83 + Utility.getUTFLength(PlayerName);
+			return 75 + Utility.getUTFLength(PlayerName) + (Utility.cBitSetSize/8);
 		else
 			throw new IllegalArgumentException("Invalid Version " + VersionMajor);
 	}
@@ -132,5 +135,11 @@ public class FileHeader implements IData<IndexEntry>
 	public IndexEntry getIndexEntry()
 	{
 		return null;
+	}
+	
+	@Override
+	public String toString()
+	{
+		return "TrackdataFileHeader";
 	}
 }

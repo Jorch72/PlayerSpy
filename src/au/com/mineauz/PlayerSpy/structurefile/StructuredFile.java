@@ -166,16 +166,36 @@ public class StructuredFile
 				// Attempt to compact further stuff
 				pullData(old.Location);
 			}
+			else
+				break;
 			
 			HoleEntry lastHole = holeData;
 			holeData = mHoleIndex.getHoleAfter(location);
 			
 			if(holeData == null && lastHole != null)
 			{
-				// Nothing to pull because there is no more data after us
-				mHoleIndex.remove(lastHole);
-				// Trim the file
-				mFile.setLength(lastHole.Location);
+				// Trim to the end of the last object
+				IData<?> last = null;
+				for(IData<?> data : allData)
+				{
+					if(last == null || last.getLocation() < data.getLocation())
+						last = data;
+				}
+				
+				if(last != null)
+				{
+					if(last instanceof HoleEntry)
+					{
+						// Nothing to pull because there is no more data after us
+						mHoleIndex.remove((HoleEntry)last);
+						
+						// Trim the file
+						mFile.setLength(last.getLocation());
+					}
+					else
+						// Trim the file
+						mFile.setLength(last.getLocation() + last.getSize());
+				}
 			}
 		}
 		Profiler.endTimingSection();
@@ -217,12 +237,18 @@ public class StructuredFile
 			if(item instanceof HoleData)
 				continue;
 			
+			if(item.getSize() == 0)
+				continue;
+			
+			if(item.getSize() < 0)
+				throw new RuntimeException(String.format("Negative size detected on %s. Size is %d. Location %X", item.toString(), item.getSize(), item.getLocation()));
+			
 			if((location >= item.getLocation() && location < item.getLocation() + item.getSize()) ||
 				(location + size > item.getLocation() && location + size < item.getLocation() + item.getSize()) ||
 				(location < item.getLocation() && location + size > item.getLocation() + item.getSize()))
 			{
 				if(free)
-					throw new RuntimeException(String.format("Holes indicate that this section is free. But absolute scan says othewise. Location: %X->%X. Space occupied by %s from %X->%X", location, location + size - 1, item.getClass().getSimpleName(), item.getLocation(), item.getLocation() + item.getSize()-1));
+					throw new RuntimeException(String.format("Holes indicate that this section is free. But absolute scan says othewise. Location: %X->%X. Space occupied by %s from %X->%X", location, location + size - 1, item.toString(), item.getLocation(), item.getLocation() + item.getSize()-1));
 				else
 					return;
 			}

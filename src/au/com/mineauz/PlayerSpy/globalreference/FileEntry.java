@@ -3,14 +3,19 @@ package au.com.mineauz.PlayerSpy.globalreference;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.UUID;
 
-import au.com.mineauz.PlayerSpy.Utilities.BloomFilter;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.structurefile.IndexEntry;
 
 public class FileEntry extends IndexEntry
 {
-	public static final int cSize = 64;
+	public static int getByteSize()
+	{
+		return 32 + cMaxFileNameLength + (Utility.cBitSetSize/8);
+	}
+
 	public static final int cMaxFileNameLength = 32;
 	
 	public UUID fileId;
@@ -18,7 +23,7 @@ public class FileEntry extends IndexEntry
 	// Max size of filename is 32 chars, it should only have the logname and ext
 	public String fileName;
 	
-	public BloomFilter chunkFilter;
+	public BitSet chunkFilter;
 	public long timeBegin;
 	public long timeEnd;
 
@@ -35,7 +40,9 @@ public class FileEntry extends IndexEntry
 		if(fileName.indexOf(0) != -1)
 			fileName = fileName.substring(0, fileName.indexOf(0));
 		
-		chunkFilter = new BloomFilter(file.readLong());
+		byte[] bytes = new byte[Utility.cBitSetSize/8];
+		file.readFully(bytes);
+		chunkFilter = BitSet.valueOf(bytes);
 		
 		timeBegin = file.readLong();
 		timeEnd = file.readLong();
@@ -54,7 +61,7 @@ public class FileEntry extends IndexEntry
 		
 		file.write(nameData);
 		
-		file.writeLong(chunkFilter.getValue());
+		file.write(Utility.bitSetToBytes(chunkFilter));
 		
 		file.writeLong(timeBegin);
 		file.writeLong(timeEnd);

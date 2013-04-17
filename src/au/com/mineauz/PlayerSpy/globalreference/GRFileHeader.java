@@ -88,9 +88,9 @@ public class GRFileHeader implements IData<IndexEntry>
 		SessionIndexSize = (long)file.readInt();
 		SessionIndexCount = (int)file.readShort();
 		
-		SessionIndexLocation = (long) file.readInt();
-		SessionIndexSize = (long)file.readInt();
-		SessionIndexCount = (int)file.readShort();
+		ChunkIndexLocation = (long) file.readInt();
+		ChunkIndexSize = (long)file.readInt();
+		ChunkIndexCount = (int)file.readShort();
 	}
 	
 	@Override
@@ -99,4 +99,9 @@ public class GRFileHeader implements IData<IndexEntry>
 		return null;
 	}
 
+	@Override
+	public String toString()
+	{
+		return "ReferenceFileHeader";
+	}
 }

@@ -1,9 +1,9 @@
 package au.com.mineauz.PlayerSpy.commands;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Field;
+import java.util.BitSet;
 import java.util.List;
+import java.util.Random;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 import java.util.logging.Level;
@@ -14,6 +14,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.debugging.Profiler;
 import au.com.mineauz.PlayerSpy.structurefile.HoleEntry;
@@ -24,10 +25,6 @@ import au.com.mineauz.PlayerSpy.tracdata.RollbackIndex;
 import au.com.mineauz.PlayerSpy.tracdata.SessionEntry;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
-import au.com.mineauz.PlayerSpy.wrappers.nbt.NBTCompressedStreamTools;
-import au.com.mineauz.PlayerSpy.wrappers.nbt.NBTTagCompound;
-import au.com.mineauz.PlayerSpy.wrappers.nbt.NBTTagList;
-import au.com.mineauz.PlayerSpy.wrappers.nbt.NBTTagString;
 
 public class DebugCommand implements ICommand
 {
@@ -245,27 +242,31 @@ public class DebugCommand implements ICommand
 		}
 		else if(args[0].equalsIgnoreCase("test"))
 		{
-			NBTTagCompound root = new NBTTagCompound("");
-			root.set("type", new NBTTagString("","sign"));
+
+		}
+		else if(args[0].equalsIgnoreCase("test2"))
+		{
+			Random r = new Random(123456778);
 			
-			NBTTagList lines = new NBTTagList("");
-			lines.add(new NBTTagString("","line 1"));
-			lines.add(new NBTTagString("","line 2"));
-			lines.add(new NBTTagString("","line 3"));
-			lines.add(new NBTTagString("","line 4"));
+			BitSet set = new BitSet(256);
 			
-			root.set("lines", lines);
+			for(int i = 0; i < 1000; ++i)
+			{
+				long hash = (r.nextInt(20000) - 10000);
+				
+				hash = ((hash * 39) ^ hash) ^ (hash * 11);
+				
+				long ohash = hash;
+				hash = 0;
+				
+				for(int b = 0; b < 4; ++b)
+				{
+					set.set((int)Math.abs((ohash % set.size())));
+					ohash ^= (ohash * 13);
+				}
+			}
 			
-			ByteArrayOutputStream output = new ByteArrayOutputStream();
-			NBTCompressedStreamTools.writeCompressed(root, output);
-			
-			ByteArrayInputStream input = new ByteArrayInputStream(output.toByteArray());
-			root = NBTCompressedStreamTools.readCompressed(input);
-			long remain = input.available();
-			if(remain == 0)
-				sender.sendMessage("Clean");
-			else
-				sender.sendMessage("" + remain + " Dirty bytes");
+			sender.sendMessage(Utility.bitSetToString(set));
 		}
 		else
 			return false;

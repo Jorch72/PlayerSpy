@@ -2,14 +2,28 @@ package au.com.mineauz.PlayerSpy.tracdata;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.BitSet;
 
-import au.com.mineauz.PlayerSpy.Utilities.BloomFilter;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.structurefile.IndexEntry;
 
 // Represents a session declaration
 public class SessionEntry extends IndexEntry
 {
-	public static final int[] cSize = new int[] {0, 27, 35, 51};
+	public static int getByteSize(int version)
+	{
+		switch(version)
+		{
+		case 1:
+			return 27;
+		case 2:
+			return 35;
+		case 3:
+			return 39 + 2*(Utility.cBitSetSize/8);
+		default:
+			throw new IllegalArgumentException("Invalid version number " + version);
+		}
+	}
 	public int version;
 	
 	public long StartTimestamp;
@@ -19,8 +33,8 @@ public class SessionEntry extends IndexEntry
 	public long TotalSize;
 	public long Padding;
 	
-	public BloomFilter LocationFilter = new BloomFilter();
-	public BloomFilter ChunkLocationFilter = new BloomFilter();
+	public BitSet LocationFilter = new BitSet(Utility.cBitSetSize);
+	public BitSet ChunkLocationFilter = new BitSet(Utility.cBitSetSize);
 	
 	public boolean Compressed;
 	public int Id;
@@ -43,8 +57,8 @@ public class SessionEntry extends IndexEntry
 		if(version == 3)
 		{
 			file.writeInt((int)Padding);
-			file.writeLong(LocationFilter.getValue());
-			file.writeLong(ChunkLocationFilter.getValue());
+			file.write(Utility.bitSetToBytes(LocationFilter));
+			file.write(Utility.bitSetToBytes(ChunkLocationFilter));
 		}
 	}
 	public void read(RandomAccessFile file) throws IOException
@@ -65,8 +79,11 @@ public class SessionEntry extends IndexEntry
 		if(version == 3)
 		{
 			Padding = (long)file.readInt();
-			LocationFilter = new BloomFilter(file.readLong());
-			ChunkLocationFilter = new BloomFilter(file.readLong());
+			byte[] bytes = new byte[Utility.cBitSetSize/8];
+			file.readFully(bytes);
+			LocationFilter = BitSet.valueOf(bytes);
+			file.readFully(bytes);
+			ChunkLocationFilter = BitSet.valueOf(bytes);
 		}
 	}
 	

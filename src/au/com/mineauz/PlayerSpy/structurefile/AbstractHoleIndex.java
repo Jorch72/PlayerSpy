@@ -191,6 +191,7 @@ public abstract class AbstractHoleIndex extends DataIndex<HoleEntry, IMovableDat
 				if(canMergeHoles(oldIndexHole,mElements.get(i)))
 				{
 					mElements.set(i, mergeHoles(oldIndexHole,mElements.get(i)));
+					Debug.finest("Merged hole for old location into @%d. Range is now %X -> %X", i, mElements.get(i).Location, mElements.get(i).Location + mElements.get(i).Size - 1);
 					
 					if(merged)
 						mElements.remove(oldIndexHole);
@@ -204,11 +205,15 @@ public abstract class AbstractHoleIndex extends DataIndex<HoleEntry, IMovableDat
 			if(!merged && oldIndexHole.Size != 0)
 			{
 				mElements.add(getInsertIndex(oldIndexHole), oldIndexHole);
+				Debug.finest("Adding hole for old location %X -> %X", oldLocation, oldLocation + oldSize - 1);
 			}
 			
 			updatePadding(HoleEntry.cSize);
 			// The total size of the hole index now including 1 extra entry as padding
 			long newSize = mElements.size() * getEntrySize();
+			
+			// Temporary relocate so that the hole index can be placed into a space that used to include this index
+			updateLocation(mFile.length());
 			
 			// Find a new location for the index
 			long newLocation = mLocator.findFreeSpace(newSize + getPadding());

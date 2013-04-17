@@ -1,6 +1,7 @@
 package au.com.mineauz.PlayerSpy.tracdata;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -15,7 +16,6 @@ import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.LogTasks.*;
 import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
-import au.com.mineauz.PlayerSpy.Utilities.BloomFilter;
 import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
@@ -96,9 +96,9 @@ public class LogFile extends StructuredFile
 		return result;
 	}
 	
-	public BloomFilter getChunkFilter()
+	public BitSet getChunkFilter()
 	{
-		return new BloomFilter(mHeader.TotalLocationFilter);
+		return (BitSet)mHeader.TotalLocationFilter.clone();
 	}
 	
 	void pullDataExposed( long location ) throws IOException
@@ -270,7 +270,7 @@ public class LogFile extends StructuredFile
 			// So that active sessions are mapped correctly
 			mSessionIndex.read();
 			
-			if(header.VersionMajor >= 3 && header.VersionMinor >= 1)
+			if(header.VersionMajor >= 3)
 				mRollbackIndex.read();
 
 			
@@ -1023,9 +1023,9 @@ public class LogFile extends StructuredFile
 								// Add any location to the location filter 
 								if(record instanceof ILocationAware && !(record instanceof IPlayerLocationAware))
 								{
-									entry.LocationFilter.add(Utility.hashLocation(((ILocationAware)record).getLocation()));
+									entry.LocationFilter.or(Utility.hashLocation(((ILocationAware)record).getLocation()));
 									SafeChunk chunk = new SafeChunk(((ILocationAware)record).getLocation());
-									entry.ChunkLocationFilter.add(Utility.hashChunk(chunk));
+									entry.ChunkLocationFilter.or(Utility.hashChunk(chunk));
 								}
 							}
 							

@@ -284,4 +284,10 @@ public abstract class Index<T extends IndexEntry> implements Iterable<T>, IData<
 	}
 	
 	protected abstract void saveChanges() throws IOException;
+	
+	@Override
+	public String toString()
+	{
+		return getIndexName() + String.format(" { loc: %x size: %x }", getLocation(), getSize());
+	}
 }

@@ -25,7 +25,7 @@ import au.com.mineauz.PlayerSpy.tracdata.SessionEntry;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
-@SuppressWarnings( "deprecation" )
+@SuppressWarnings( { "deprecation", "unchecked" } )
 public class Upgrader 
 {
 	public static void run()

@@ -210,6 +210,7 @@ public class RollbackIndex extends DataIndex<RollbackEntry, IMovableData<Rollbac
 			Debug.fine("Updaing rollback detail for %d", mRollbackEntry.sessionId);
 			
 			int diff = newList.size() - mRollbackEntry.count;
+			mRollbackEntry.count = (short) newList.size();
 			if(diff < 0)
 			{
 				Debug.finer("Losing %d entries", diff);
@@ -343,6 +344,12 @@ public class RollbackIndex extends DataIndex<RollbackEntry, IMovableData<Rollbac
 				data[i] = mFile.readShort();
 			
 			return data;
+		}
+		
+		@Override
+		public String toString()
+		{
+			return String.format("RBData {session: %d}", mRollbackEntry.sessionId);
 		}
 	}
 

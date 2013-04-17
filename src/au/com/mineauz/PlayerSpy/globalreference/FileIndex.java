@@ -47,7 +47,7 @@ public class FileIndex extends Index<FileEntry>
 	@Override
 	protected int getEntrySize()
 	{
-		return FileEntry.cSize;
+		return FileEntry.getByteSize();
 	}
 
 	@Override

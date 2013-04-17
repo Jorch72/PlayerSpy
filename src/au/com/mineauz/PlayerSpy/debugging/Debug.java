@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -204,6 +205,8 @@ public class Debug
 		// Find the source
 		StackTraceElement[] stack = new Throwable().getStackTrace();
 		
+		StackTraceElement[] trace = stack;
+		
 		String sourceClass = null;
 		String sourceMethod = null;
 		
@@ -215,9 +218,10 @@ public class Debug
 				continue;
 			
 			sourceMethod = stack[i].getMethodName();
+			trace = Arrays.copyOfRange(stack, i, stack.length);
 			break;
 		}
 		
-		mDebugLog.logp(level, sourceClass, sourceMethod, message);
+		mDebugLog.logp(level, sourceClass, sourceMethod, message, new Object[] {trace});
 	}
 }

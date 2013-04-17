@@ -2,21 +2,25 @@ package au.com.mineauz.PlayerSpy.globalreference;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.BitSet;
 import java.util.UUID;
 
-import au.com.mineauz.PlayerSpy.Utilities.BloomFilter;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.structurefile.IndexEntry;
 
 public class SessionEntry extends IndexEntry
 {
-	public static final int cSize = 52;
+	public static int getByteSize()
+	{
+		return 36 + 2*(Utility.cBitSetSize/8);
+	}
 	
 	public int sessionId;
 	public UUID fileId;
 	public long startTime;
 	public long endTime;
-	public BloomFilter chunkFilter;
-	public BloomFilter locationFilter;
+	public BitSet chunkFilter;
+	public BitSet locationFilter;
 	
 
 	@Override
@@ -29,8 +33,11 @@ public class SessionEntry extends IndexEntry
 		startTime = file.readLong();
 		endTime = file.readLong();
 		
-		chunkFilter = new BloomFilter(file.readLong());
-		locationFilter = new BloomFilter(file.readLong());
+		byte[] bytes = new byte[Utility.cBitSetSize/8];
+		file.readFully(bytes);
+		chunkFilter = BitSet.valueOf(bytes);
+		file.readFully(bytes);
+		locationFilter = BitSet.valueOf(bytes);
 	}
 
 	@Override
@@ -44,9 +51,8 @@ public class SessionEntry extends IndexEntry
 		file.writeLong(startTime);
 		file.writeLong(endTime);
 		
-		file.writeLong(chunkFilter.getValue());
-		file.writeLong(locationFilter.getValue());
-
+		file.write(Utility.bitSetToBytes(chunkFilter));
+		file.write(Utility.bitSetToBytes(locationFilter));
 	}
 
 }

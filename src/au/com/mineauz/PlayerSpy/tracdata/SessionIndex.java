@@ -78,7 +78,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 	@Override
 	protected int getEntrySize()
 	{
-		return SessionEntry.cSize[mHeader.VersionMajor];
+		return SessionEntry.getByteSize(mHeader.VersionMajor);
 	}
 
 	@Override
@@ -165,7 +165,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 		rebuildSessionMap();
 		
 		// Update the location filter for the file
-		mHeader.TotalLocationFilter.add(entry.ChunkLocationFilter);
+		mHeader.TotalLocationFilter.or(entry.ChunkLocationFilter);
 		mFile.seek(0);
 		mHeader.write(mFile);
 		
@@ -244,7 +244,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 		super.set(index, entry);
 		
 		// Update the location filter for the file
-		mHeader.TotalLocationFilter.add(entry.ChunkLocationFilter);
+		mHeader.TotalLocationFilter.or(entry.ChunkLocationFilter);
 		mFile.seek(0);
 		mHeader.write(mFile);
 	}
@@ -254,7 +254,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 		mHeader.TotalLocationFilter.clear();
 		
 		for(SessionEntry session : this)
-			mHeader.TotalLocationFilter.add(session.ChunkLocationFilter);
+			mHeader.TotalLocationFilter.or(session.ChunkLocationFilter);
 		
 		mFile.seek(0);
 		mHeader.write(mFile);
@@ -545,9 +545,9 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 						
 						if(location != null)
 						{
-							mSession.LocationFilter.add(Utility.hashLocation(location));
+							mSession.LocationFilter.or(Utility.hashLocation(location));
 							SafeChunk chunk = new SafeChunk(((ILocationAware)record).getLocation());
-							mSession.ChunkLocationFilter.add(Utility.hashChunk(chunk));
+							mSession.ChunkLocationFilter.or(Utility.hashChunk(chunk));
 						}
 					}
 					
@@ -637,6 +637,12 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 			{
 				Profiler.endTimingSection();
 			}
+		}
+		
+		@Override
+		public String toString()
+		{
+			return String.format("Session %d", mSession.Id);
 		}
 	}
 }

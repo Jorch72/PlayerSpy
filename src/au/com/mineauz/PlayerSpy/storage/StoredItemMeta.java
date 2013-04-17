@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.bukkit.Color;
 import org.bukkit.inventory.meta.*;
 
 import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
@@ -87,16 +88,28 @@ public class StoredItemMeta
 		
 		else if(tag instanceof NBTTagCompound)
 		{
-			Map<String, Object> map = new HashMap<String, Object>();
+			String type = ((NBTTagCompound)tag).getString("type");
+			NBTBase value = ((NBTTagCompound)tag).get("value");
 			
-			Collection<NBTBase> tags = (Collection<NBTBase>)((NBTTagCompound)tag).getTags();
-			
-			for(NBTBase subTag : tags)
+			if(type.equals("color"))
 			{
-				map.put(subTag.getName(), makeObjectFor(subTag));
+				data = Color.fromRGB(((NBTTagInt)value).getData());
 			}
-			
-			data = map;
+			else if(type.equals("map"))
+			{
+				Map<String, Object> map = new HashMap<String, Object>();
+				
+				Collection<NBTBase> tags = (Collection<NBTBase>)((NBTTagCompound)value).getTags();
+				
+				for(NBTBase subTag : tags)
+				{
+					map.put(subTag.getName(), makeObjectFor(subTag));
+				}
+				
+				data = map;
+			}
+			else
+				throw new RuntimeException("Unsupported type: " + type);
 		}
 		
 		else
@@ -155,13 +168,23 @@ public class StoredItemMeta
 		else if(data instanceof Map)
 		{
 			tag = new NBTTagCompound("");
+			((NBTTagCompound)tag).set("type", new NBTTagString("", "map"));
+			NBTTagCompound map = new NBTTagCompound("");
 			
 			for(Entry<String, Object> entry : ((Map<String, Object>)data).entrySet())
 			{
 				NBTBase subTag = makeTagFor(entry.getValue());
 				if(subTag != null)
-					((NBTTagCompound)tag).set(entry.getKey(), subTag);
+					map.set(entry.getKey(), subTag);
 			}
+			
+			((NBTTagCompound)tag).set("value", map);
+		}
+		else if(data instanceof Color)
+		{
+			tag = new NBTTagCompound("");
+			((NBTTagCompound)tag).set("type", new NBTTagString("", "color"));
+			((NBTTagCompound)tag).set("value", new NBTTagInt("", ((Color)data).asRGB()));
 		}
 		else
 			throw new RuntimeException("Invalid type " + data.getClass().getName() + " for making NBT tags");
