@@ -13,7 +13,7 @@ import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.LogTasks.MarkRecordRollbackStateTask;
 import au.com.mineauz.PlayerSpy.Records.IRollbackable;
 import au.com.mineauz.PlayerSpy.Records.Record;
-import au.com.mineauz.PlayerSpy.search.NoRolledbackConstraint;
+import au.com.mineauz.PlayerSpy.search.RolledbackConstraint;
 import au.com.mineauz.PlayerSpy.search.SearchFilter;
 import au.com.mineauz.PlayerSpy.search.SearchTask;
 
@@ -46,7 +46,7 @@ public class RollbackManager
 		
 		RollbackSession session = new RollbackSession();
 		
-		filter.andConstraints.add(new NoRolledbackConstraint());
+		filter.andConstraints.add(new RolledbackConstraint(false));
 		session.filter = filter;
 		session.notifyPlayer = notifyPlayer;
 		session.preview = preview;
@@ -77,6 +77,48 @@ public class RollbackManager
 	public void startRollback(SearchFilter filter)
 	{
 		startRollback(filter, null, false);
+	}
+	
+	/**
+	 * Starts a restore using a specified filter
+	 * @param filter What to restore
+	 * @param notifyPlayer The player who will be notified, can be null unless preview is set
+	 * @param preview Whether to actually do the restore, or do it client side only. If this is set, then notifyPlayer cannot be null
+	 */
+	public void startRestore(SearchFilter filter, Player notifyPlayer, boolean preview)
+	{
+		assert filter != null;
+		assert (preview && notifyPlayer != null) || !preview;
+		
+		RollbackSession session = new RollbackSession();
+		
+		filter.andConstraints.add(new RolledbackConstraint(true));
+		session.filter = filter;
+		session.notifyPlayer = notifyPlayer;
+		session.preview = preview;
+		
+		session.restore = true;
+		
+		session.future = SpyPlugin.getExecutor().submit(new SearchTask(filter));
+		
+		session.changed = 0;
+		session.failed = 0;
+		
+		session.modified = new ArrayList<Record>();
+		
+		mSessions.add(session);
+		if(!session.preview)
+			mLastSessions.put(notifyPlayer, session);
+		
+		if(notifyPlayer != null)
+			notifyPlayer.sendMessage(ChatColor.GOLD + "[PlayerSpy] " + ChatColor.WHITE + " Starting restore of " + filter.getDescription());
+		else
+			LogUtil.info("Starting restore of " + filter.getDescription());
+	}
+	
+	public void startRestore(SearchFilter filter)
+	{
+		startRestore(filter, null, false);
 	}
 	
 	public RollbackSession getLastRollbackSessionFor(Player player)

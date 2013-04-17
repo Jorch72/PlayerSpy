@@ -55,6 +55,7 @@ public class SpyPlugin extends JavaPlugin
 		dispatch.registerCommand(new SearchCommand());
 		dispatch.registerCommand(new ReloadCommand());
 		dispatch.registerCommand(new RollbackCommand());
+		dispatch.registerCommand(new RestoreCommand());
 		dispatch.registerCommand(new InventoryCommand());
 		dispatch.registerCommand(new CatchupCommand());
 		

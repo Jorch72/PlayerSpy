@@ -1,27 +1,49 @@
 package au.com.mineauz.PlayerSpy.commands;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.OfflinePlayer;
+import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import au.com.mineauz.PlayerSpy.Cause;
-import au.com.mineauz.PlayerSpy.Utilities.Util;
+import au.com.mineauz.PlayerSpy.attributes.AttributeParser;
+import au.com.mineauz.PlayerSpy.attributes.AttributeValueType;
+import au.com.mineauz.PlayerSpy.attributes.Modifier;
+import au.com.mineauz.PlayerSpy.attributes.NamedAttribute;
+import au.com.mineauz.PlayerSpy.attributes.RollbackTypeAttribute;
+import au.com.mineauz.PlayerSpy.attributes.AttributeParser.ParsedAttribute;
 import au.com.mineauz.PlayerSpy.rollback.RollbackManager;
 import au.com.mineauz.PlayerSpy.rollback.RollbackSession;
+import au.com.mineauz.PlayerSpy.search.CompoundConstraint;
 import au.com.mineauz.PlayerSpy.search.DistanceConstraint;
-import au.com.mineauz.PlayerSpy.search.EndResultOnlyModifier;
 import au.com.mineauz.PlayerSpy.search.FilterCauseConstraint;
+import au.com.mineauz.PlayerSpy.search.FilterConstraint;
+import au.com.mineauz.PlayerSpy.search.NotConstraint;
 import au.com.mineauz.PlayerSpy.search.SearchFilter;
 import au.com.mineauz.PlayerSpy.search.TimeConstraint;
+import au.com.mineauz.PlayerSpy.search.interfaces.CauseConstraint;
 import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
+import au.com.mineauz.PlayerSpy.search.interfaces.IConstraint;
 
 public class RollbackCommand implements ICommand
 {
-	//private static String[] sTypes = {"block change","block place","block break","painting change", "painting place", "painting break", "itemframe change", "itemframe place", "itemframe break", "any"};
+	private static AttributeParser mParser;
+	
+	static
+	{
+		mParser = new AttributeParser();
+		Modifier notModifier = new Modifier("not", "!");
+		
+		mParser.addAttribute(new RollbackTypeAttribute().addModifier(notModifier));
+		mParser.addAttribute(new NamedAttribute("filter",AttributeValueType.Sentence, "f:").addModifier(notModifier).setSingular(false));
+		mParser.addAttribute(new NamedAttribute("dist",AttributeValueType.Number, "d:").addModifier(notModifier));
+		mParser.addAttribute(new NamedAttribute("by",AttributeValueType.String, "@").addModifier(notModifier).setSingular(false));
+		mParser.addAttribute(new NamedAttribute("after",AttributeValueType.Date, "ts:"));
+		mParser.addAttribute(new NamedAttribute("before",AttributeValueType.Date, "te:"));
+		mParser.addAttribute(new NamedAttribute("preview",AttributeValueType.Null));
+	}
 	
 	@Override
 	public String getName()
@@ -44,7 +66,7 @@ public class RollbackCommand implements ICommand
 	@Override
 	public String[] getUsageString( String label, CommandSender sender )
 	{
-		return new String[] {label + " [undo|[c:<cause>] [r:<radius>] [t:<time>]]"};
+		return new String[] {label + " [undo|<options>]"};
 	}
 
 	@Override
@@ -60,6 +82,7 @@ public class RollbackCommand implements ICommand
 	@Override
 	public boolean canBeCommandBlock() { return false; }
 	
+	@SuppressWarnings( { "unchecked", "rawtypes" } )
 	@Override
 	public boolean onCommand( CommandSender sender, String label, String[] args )
 	{
@@ -78,136 +101,96 @@ public class RollbackCommand implements ICommand
 			RollbackManager.instance.undoRollback(session, who);
 			return true;
 		}
-		SearchFilter filter = new SearchFilter();
-		filter.modifiers.add(new EndResultOnlyModifier());
-		filter.noLimit = true;
-		boolean preview = false;
 		
+		// Collapse the args into a single string
+		boolean preview = false;
+		String inputString = "";
 		for(int i = 0; i < args.length; i++)
 		{
-			if(!args[i].contains(":"))
-			{
-				sender.sendMessage(ChatColor.RED + "Unknown argument: " + args[i]);
-				return false;
-			}
-			
-			String c = args[i].split(":")[0].toLowerCase();
-			String val = args[i].split(":")[1];
-			
-			if(c.equals("c")) // Cause
-			{
-				Cause cause = null;
-				if(val.contains(">"))
-				{
-					String name, extra;
-					name = val.substring(0,val.indexOf(">"));
-					extra = val.substring(val.indexOf(">") + 1);
-					
-					OfflinePlayer player = Bukkit.getOfflinePlayer(name);
-					if(player.hasPlayedBefore())
-						cause= Cause.playerCause(player, extra);
-				}
-				else if(val.startsWith("#"))
-				{
-					cause = Cause.globalCause(Bukkit.getWorlds().get(0), val);
-				}
-				else
-				{
-					OfflinePlayer player = Bukkit.getOfflinePlayer(val);
-					if(player.hasPlayedBefore())
-						cause = Cause.playerCause(player);
-				}
-				
-				if(cause == null)
-				{
-					sender.sendMessage(ChatColor.RED + "Unknown cause: " + val);
-					return true;
-				}
-				
-				filter.causes.add(new FilterCauseConstraint(cause.friendlyName()));
-			}
-			else if(c.equals("r")) // Radius
-			{
-				for(Constraint constraint : filter.andConstraints)
-				{
-					if(constraint instanceof DistanceConstraint)
-					{
-						sender.sendMessage(ChatColor.RED + "Radius already specified.");
-						return true;
-					}
-				}
-				
-				if(!(sender instanceof Player))
-				{
-					sender.sendMessage(ChatColor.RED + "Cannot use radius if you are not in game");
-					return true;
-				}
-				
-				
-				int radius = -1;
-				try
-				{
-					radius = Integer.parseInt(val);
-					
-					if(radius < 0)
-					{
-						sender.sendMessage(ChatColor.RED + "Expected positive integer for radius, got: " + val);
-						return true;
-					}
-				}
-				catch(NumberFormatException e)
-				{
-					sender.sendMessage(ChatColor.RED + "Expected integer for radius, got: " + val);
-					return true;
-				}
-				
-				DistanceConstraint constraint = new DistanceConstraint(radius, ((Player)sender).getLocation());
-				filter.andConstraints.add(constraint);
-			}
-			else if(c.equals("t")) // time
-			{
-				String timeString = val;
-				for(int j = i; j < args.length; j++)
-				{
-					if(!args[j].contains(":"))
-					{
-						timeString += " " + args[j];
-						i = j;
-					}
-					else
-						break;
-				}
-				
-				long time = Util.parseDateDiff(timeString);
-				
-				if (time <= 0)
-				{
-					sender.sendMessage(ChatColor.RED + "Invalid date diff format");
-					return true;
-				}
-				
-				filter.andConstraints.add(new TimeConstraint(System.currentTimeMillis() - time, true));
-				filter.andConstraints.add(new TimeConstraint(System.currentTimeMillis(), false));
-			}
-			else if(c.equals("preview"))
-			{
-				if(!(sender instanceof Player))
-				{
-					sender.sendMessage(ChatColor.RED + "Cannot use preview if you are not in game");
-					return true;
-				}
-				preview = true;
-			}
+			if(i != 0)
+				inputString += " ";
+			inputString += args[i];
 		}
 		
-		if(!(sender instanceof Player))
+		try
 		{
-			RollbackManager.instance.startRollback(filter);
+			List<ParsedAttribute> attributes = mParser.parse(inputString);
+			
+			ArrayList<Constraint> constraints = new ArrayList<Constraint>();
+			ArrayList<CauseConstraint> causeConstraints = new ArrayList<CauseConstraint>();
+			ArrayList<au.com.mineauz.PlayerSpy.search.interfaces.Modifier> modifiers = new ArrayList<au.com.mineauz.PlayerSpy.search.interfaces.Modifier>();
+			for(ParsedAttribute res : attributes)
+			{
+				IConstraint<?> constraint = null;
+				
+				if(res.source.getName().equals("type"))
+					constraint = new CompoundConstraint(false,(ArrayList<Constraint>)res.value);
+				else if(res.source.getName().equals("dist"))
+				{
+					Location loc = null;
+					if(sender instanceof Player)
+						loc = ((Player)sender).getLocation();
+					
+					if(loc == null)
+					{
+						sender.sendMessage(ChatColor.RED + "You must be in-game to use the distance attribute.");
+						return true;
+					}
+					
+					constraint = new DistanceConstraint((Double)res.value, loc);
+				}
+				else if(res.source.getName().equals("filter"))
+					constraint = new FilterConstraint((String)res.value);
+				else if(res.source.getName().equals("after"))
+					constraint = new TimeConstraint((Long)res.value, true);
+				else if(res.source.getName().equals("before"))
+					constraint = new TimeConstraint((Long)res.value, false);
+				else if(res.source.getName().equals("by"))
+					constraint = new FilterCauseConstraint((String)res.value);
+				else if(res.source.getName().equals("preview"))
+					preview = true;
+				
+				if(constraint == null)
+					continue;
+				
+				// Apply modifiers
+				for(Modifier mod : res.appliedModifiers)
+				{
+					if(mod.getName().equals("not"))
+					{
+						if(constraint != null)
+							constraint = new NotConstraint(constraint);
+					}
+				}
+				
+				if(constraint instanceof Constraint)
+					constraints.add((Constraint)constraint);
+				if(constraint instanceof CauseConstraint)
+					causeConstraints.add((CauseConstraint)constraint);
+			}
+			
+			SearchFilter filter = new SearchFilter();
+			filter.andConstraints = constraints;
+			filter.causes = causeConstraints;
+			filter.modifiers = modifiers;
+			filter.noLimit = true;
+			
+			//filter.modifiers.add(new EndResultOnlyModifier());
+			
+			if(!(sender instanceof Player))
+			{
+				RollbackManager.instance.startRollback(filter);
+			}
+			else
+			{
+				RollbackManager.instance.startRollback(filter, (Player)sender, preview);
+			}
 		}
-		else
+		catch(IllegalArgumentException e)
 		{
-			RollbackManager.instance.startRollback(filter, (Player)sender, preview);
+			sender.sendMessage(ChatColor.RED + e.getMessage());
 		}
+		
 		return true;
 	}
 

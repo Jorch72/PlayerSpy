@@ -4,15 +4,21 @@ import au.com.mineauz.PlayerSpy.Records.IRollbackable;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 
-public class NoRolledbackConstraint extends Constraint
+public class RolledbackConstraint extends Constraint
 {
-
+	private boolean mIsRolledBack;
+	
+	public RolledbackConstraint(boolean isRolledBack)
+	{
+		mIsRolledBack = isRolledBack;
+	}
+	
 	@Override
 	public boolean matches( Record record )
 	{
 		if(record instanceof IRollbackable)
 		{
-			return !((IRollbackable)record).wasRolledBack();
+			return ((IRollbackable)record).wasRolledBack() == mIsRolledBack;
 		}
 		return true;
 	}
@@ -20,7 +26,7 @@ public class NoRolledbackConstraint extends Constraint
 	@Override
 	public String getDescription()
 	{
-		return "No rolled back records";
+		return null;
 	}
 
 }
