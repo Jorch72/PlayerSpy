@@ -10,6 +10,7 @@ import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -242,28 +243,33 @@ public class DebugCommand implements ICommand
 		}
 		else if(args[0].equalsIgnoreCase("test"))
 		{
-
+			Random r = new Random(123456778);
+			
+			Location loc = new Location(Bukkit.getWorlds().get(0), r.nextInt(10000)-5000, r.nextInt(10000)-5000, r.nextInt(10000)-5000);
+			
+			if(args.length > 1)
+			{
+				int times = Integer.parseInt(args[1]) - 1;
+				
+				for(int i = 0; i < times; ++i)
+					loc = new Location(Bukkit.getWorlds().get(0), r.nextInt(10000)-5000, r.nextInt(10000)-5000, r.nextInt(10000)-5000);
+			}
+			
+			BitSet set = Utility.hashLocation(loc);
+			
+			sender.sendMessage(Utility.bitSetToString(set));
 		}
 		else if(args[0].equalsIgnoreCase("test2"))
 		{
 			Random r = new Random(123456778);
 			
-			BitSet set = new BitSet(256);
+			BitSet set = new BitSet(Utility.cBitSetSize);
 			
-			for(int i = 0; i < 1000; ++i)
+			for(int i = 0; i < 500; ++i)
 			{
-				long hash = (r.nextInt(20000) - 10000);
+				Location loc = new Location(Bukkit.getWorlds().get(0), r.nextInt(10000)-5000, r.nextInt(10000)-5000, r.nextInt(10000)-5000);
 				
-				hash = ((hash * 39) ^ hash) ^ (hash * 11);
-				
-				long ohash = hash;
-				hash = 0;
-				
-				for(int b = 0; b < 4; ++b)
-				{
-					set.set((int)Math.abs((ohash % set.size())));
-					ohash ^= (ohash * 13);
-				}
+				set.or(Utility.hashLocation(loc));
 			}
 			
 			sender.sendMessage(Utility.bitSetToString(set));

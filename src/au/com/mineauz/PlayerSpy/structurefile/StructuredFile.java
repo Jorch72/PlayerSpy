@@ -158,24 +158,20 @@ public class StructuredFile
 				}
 				
 				// Move the hole
-				mHoleIndex.remove(holeData);
-				
-				// Add in the new hole
-				mHoleIndex.add(old);
-				
-				// Attempt to compact further stuff
-				pullData(old.Location);
+				holeData.Location += nextSize;
+				mHoleIndex.set(mHoleIndex.indexOf(holeData), holeData);
 			}
 			else
 				break;
 			
-			HoleEntry lastHole = holeData;
 			holeData = mHoleIndex.getHoleAfter(location);
 			
-			if(holeData == null && lastHole != null)
+			if(holeData == null)
 			{
 				// Trim to the end of the last object
 				IData<?> last = null;
+				
+				allData = getAllData();
 				for(IData<?> data : allData)
 				{
 					if(last == null || last.getLocation() < data.getLocation())

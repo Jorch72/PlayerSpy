@@ -12,6 +12,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Random;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -43,7 +44,8 @@ import au.com.mineauz.PlayerSpy.wrappers.packet.Packet5EntityEquipment;
 
 public class Utility 
 {
-	public static final int cBitSetSize = 256;
+	public static final int cBitSetSize = 512;
+	private static Random mHashRandom = new Random();
 	
 	public static ItemStack convertToNative(org.bukkit.inventory.ItemStack item)
 	{
@@ -526,26 +528,54 @@ public class Utility
 	    return x & 0x00000000ffffffffL;
 	}
 	
+	
+	public static long FNVHash(long value)
+	{
+		long hash = 2166136261L; //14695981039346656037L;
+		
+	    byte[] writeBuffer = new byte[ 8 ];
+
+	    // Convert the long into bytes
+	    writeBuffer[0] = (byte)(value >>> 56);
+	    writeBuffer[1] = (byte)(value >>> 48);
+	    writeBuffer[2] = (byte)(value >>> 40);
+	    writeBuffer[3] = (byte)(value >>> 32);
+	    writeBuffer[4] = (byte)(value >>> 24);
+	    writeBuffer[5] = (byte)(value >>> 16);
+	    writeBuffer[6] = (byte)(value >>>  8);
+	    writeBuffer[7] = (byte)(value >>>  0);
+		
+	    for(int i = 0; i < 8; ++i)
+	    {
+	    	hash *= 1099511628211L; 
+	    	hash ^= writeBuffer[i];
+	    }
+		return hash;
+	}
 	/**
 	 * Approximately uniform hash for a double value
 	 */
-	public static BitSet hashValue(int value)
+	public static BitSet hashValue(int value, int bits)
 	{
 		long hash = 0;
+//		
+//		if(value < 0)
+//			value *= -1;
+//		
+//		hash = value;
 		
-		if(value < 0)
-			value *= -1;
+		mHashRandom.setSeed(value);
 		
-		hash = value;
-		
-		hash = ((hash * 39) ^ hash) ^ (hash * 11);
+		//hash = FNVHash(value);
+		hash = mHashRandom.nextLong();
 		
 		BitSet set = new BitSet(cBitSetSize);
 		
-		for(int i = 0; i < 2; ++i)
+		for(int i = 0; i < bits; ++i)
 		{
 			set.set(Math.abs((int)(hash % cBitSetSize)));
-			hash ^= (hash * 13);
+			//hash = FNVHash(hash);
+			hash = mHashRandom.nextLong();
 		}
 		
 		return set;
@@ -555,9 +585,9 @@ public class Utility
 	{
 		BitSet set = new BitSet(cBitSetSize);
 		
-		set.or(hashValue(location.getBlockX()));
-		set.or(hashValue(location.getBlockY()));
-		set.or(hashValue(location.getBlockZ()));
+		set.or(hashValue(location.getBlockX(), 4));
+		//set.or(hashValue(location.getBlockY(), 3));
+		set.or(hashValue(location.getBlockZ(), 4));
 
 		return set;
 	}
@@ -566,8 +596,11 @@ public class Utility
 	{
 		BitSet set = new BitSet(cBitSetSize);
 		
-		set.or(hashValue(chunk.X));
-		set.or(hashValue(chunk.Z));
+		set.or(hashValue(chunk.X, 40));
+		set.or(hashValue(chunk.Z, 40));
+		
+		//set.or(hashValue(Integer.MAX_VALUE - Math.abs(chunk.X), 10));
+		//set.or(hashValue(Integer.MAX_VALUE - Math.abs(chunk.Z), 10));
 		
 		return set;
 	}
