@@ -31,6 +31,34 @@ public class Pair<A,B>
 	}
 	
 	@Override
+	public boolean equals( Object obj )
+	{
+		if(!(obj instanceof Pair))
+			return false;
+		
+		Pair<?,?> p = (Pair<?,?>)obj;
+		
+		if(!((mArg1 == null && p.getArg1() == null) || (mArg1 != null && mArg1.equals(p.getArg1()))))
+			return false;
+		
+		if(!((mArg2 == null && p.getArg2() == null) || (mArg2 != null && mArg2.equals(p.getArg2()))))
+			return false;
+		
+		return true;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = 17;
+		if(mArg1 != null)
+			hash ^= mArg1.hashCode() * 13;
+		if(mArg2 != null)
+			hash ^= mArg2.hashCode() * 11;
+		
+		return hash;
+	}
+	@Override
 	public String toString() 
 	{
 		return "Pair: (" + mArg1 + ", " + mArg2 + " )";

@@ -19,12 +19,14 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
+import org.bukkit.block.BlockFace;
 import org.bukkit.inventory.PlayerInventory;
 
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.storage.InventorySlot;
+import au.com.mineauz.PlayerSpy.storage.StoredBlock;
 import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftInventoryPlayer;
 import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftItemStack;
 import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftWorld;
@@ -629,5 +631,211 @@ public class Utility
 		int bytes = cBitSetSize / 8;
 		
 		return Arrays.copyOf(set.toByteArray(), bytes);
+	}
+	
+	/**
+	 * Gets the location of a block that needs to exist for this block to exist
+	 */
+	public static Location getDependantLocation(StoredBlock block)
+	{
+		if(block.getType().hasGravity())
+			return block.getLocation().clone().add(0,-1,0);
+	
+		BlockFace face = null;
+		switch(block.getType())
+		{
+		// Down ones
+		case RAILS:
+		case POWERED_RAIL:
+		case DETECTOR_RAIL:
+		case ACTIVATOR_RAIL:
+		case SIGN_POST:
+		case SAPLING:
+		case LONG_GRASS:
+		case DEAD_BUSH:
+		case YELLOW_FLOWER:
+		case RED_ROSE:
+		case RED_MUSHROOM:
+		case BROWN_MUSHROOM:
+		case REDSTONE_WIRE:
+		case CROPS:
+		case WOODEN_DOOR:
+		case STONE_PLATE:
+		case WOOD_PLATE:
+		case IRON_DOOR_BLOCK:
+		case CACTUS:
+		case SUGAR_CANE_BLOCK:
+		case DIODE_BLOCK_OFF:
+		case DIODE_BLOCK_ON:
+		case PUMPKIN_STEM:
+		case MELON_STEM:
+		case WATER_LILY:
+		case NETHER_WARTS:
+		case FLOWER_POT:
+		case CARROT:
+		case POTATO:
+		case REDSTONE_COMPARATOR_OFF:
+		case REDSTONE_COMPARATOR_ON:
+			face = BlockFace.DOWN;
+			break;
+			
+		// Side Ones
+		case TRAP_DOOR:
+			switch(block.getData() & 3)
+			{
+			case 0:
+				face = BlockFace.SOUTH;
+				break;
+			case 1:
+				face = BlockFace.NORTH;
+				break;
+			case 2:
+				face = BlockFace.EAST;
+				break;
+			case 3:
+				face = BlockFace.WEST;
+				break;
+			}
+			break;
+		case VINE:
+			if((block.getData() & 1) == 1)
+				face = BlockFace.SOUTH;
+			else if((block.getData() & 2) == 2)
+				face = BlockFace.WEST;
+			else if((block.getData() & 4) == 4)
+				face = BlockFace.NORTH;
+			else if((block.getData() & 8) == 8)
+				face = BlockFace.EAST;
+			break;
+		case TRIPWIRE_HOOK:
+			switch(block.getData() & 3)
+			{
+			case 0:
+				face = BlockFace.NORTH;
+				break;
+			case 1:
+				face = BlockFace.EAST;
+				break;
+			case 2:
+				face = BlockFace.SOUTH;
+				break;
+			case 3:
+				face = BlockFace.WEST;
+				break;
+			}
+			break;
+		case COCOA:
+			switch(block.getData() & 3)
+			{
+			case 0:
+				face = BlockFace.SOUTH;
+				break;
+			case 1:
+				face = BlockFace.WEST;
+				break;
+			case 2:
+				face = BlockFace.NORTH;
+				break;
+			case 3:
+				face = BlockFace.EAST;
+				break;
+			}
+			break;
+		
+		case LADDER:
+		case WALL_SIGN:
+			switch(block.getData())
+			{
+			case 2:
+				face = BlockFace.SOUTH;
+				break;
+			case 3:
+				face = BlockFace.NORTH;
+				break;
+			case 4:
+				face = BlockFace.EAST;
+				break;
+			case 5:
+				face = BlockFace.WEST;
+				break;
+			}
+		case WOOD_BUTTON:
+		case STONE_BUTTON:
+			switch(block.getData() & 7)
+			{
+			case 1:
+				face = BlockFace.WEST;
+				break;
+			case 2:
+				face = BlockFace.EAST;
+				break;
+			case 3:
+				face = BlockFace.NORTH;
+				break;
+			case 4:
+				face = BlockFace.SOUTH;
+				break;
+			}
+			break;
+			
+		// Special
+		case LEVER:
+			switch(block.getData() & 7)
+			{
+			case 0:
+			case 7:
+				face = BlockFace.UP;
+				break;
+			
+			case 1:
+				face = BlockFace.WEST;
+				break;
+			case 2:
+				face = BlockFace.EAST;
+				break;
+			case 3:
+				face = BlockFace.NORTH;
+				break;
+			case 4:
+				face = BlockFace.SOUTH;
+				break;
+				
+			case 5:
+			case 6:
+				face = BlockFace.DOWN;
+				break;
+			}
+			break;
+			
+		case REDSTONE_TORCH_OFF:
+		case REDSTONE_TORCH_ON:
+		case TORCH:
+			switch(block.getData())
+			{
+			case 1:
+				face = BlockFace.WEST;
+				break;
+			case 2:
+				face = BlockFace.EAST;
+				break;
+			case 3:
+				face = BlockFace.NORTH;
+				break;
+			case 4:
+				face = BlockFace.SOUTH;
+				break;
+			case 5:
+			case 6:
+				face = BlockFace.DOWN;
+				break;
+			}
+		default:
+			break;
+		}
+		
+		if(face == null)
+			return null;
+		
+		return block.getLocation().clone().add(face.getModX(), face.getModY(), face.getModZ());
 	}
 }

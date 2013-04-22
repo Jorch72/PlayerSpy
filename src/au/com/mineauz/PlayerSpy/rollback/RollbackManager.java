@@ -47,6 +47,7 @@ public class RollbackManager
 		RollbackSession session = new RollbackSession();
 		
 		filter.andConstraints.add(new RolledbackConstraint(false));
+		filter.modifiers.add(new RestoreOrderer(false));
 		session.filter = filter;
 		session.notifyPlayer = notifyPlayer;
 		session.preview = preview;
@@ -93,6 +94,7 @@ public class RollbackManager
 		RollbackSession session = new RollbackSession();
 		
 		filter.andConstraints.add(new RolledbackConstraint(true));
+		filter.modifiers.add(new RestoreOrderer(true));
 		session.filter = filter;
 		session.notifyPlayer = notifyPlayer;
 		session.preview = preview;
