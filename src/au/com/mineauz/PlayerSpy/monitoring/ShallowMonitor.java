@@ -92,11 +92,13 @@ public class ShallowMonitor
 	 */
 	public synchronized void logRecord(Record record)
 	{
+		Debug.loggedAssert(record != null);
 		mBuffers.get(null).add(record);
 		tryFlush(null);
 	}
 	public synchronized void logRecord(Record record, String cause)
 	{
+		Debug.loggedAssert(record != null);
 		if(!mBuffers.containsKey(cause))
 			mBuffers.put(cause, new RecordList());
 		

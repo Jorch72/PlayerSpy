@@ -72,7 +72,7 @@ public class CauseFinder
 					if(!((BlockChangeRecord)record).wasPlaced())
 						continue;
 					
-					if(((BlockChangeRecord)record).getLocation().equals(loc));
+					if(((BlockChangeRecord)record).getLocation().equals(loc))
 					{
 						// Record it
 						if(answer == null)

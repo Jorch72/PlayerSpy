@@ -48,6 +48,8 @@ public class GlobalMonitor implements Listener
 	private HashMap<World, HashMap<String, RecordList>> mBuffers = new HashMap<World, HashMap<String,RecordList>>();
 	private HashMap<Cause, Pair<RecordList,Cause>> mPendingRecords = new HashMap<Cause, Pair<RecordList,Cause>>();
 	
+	private HashMap<Integer, Cause> mFallingBlockCauses = new HashMap<Integer, Cause>();
+	
 	private PersistantData mPersist;
 
 	private SpreadTracker mSpreadTracker = new SpreadTracker();
@@ -845,7 +847,10 @@ public class GlobalMonitor implements Listener
 	private void onEntityChangeBlock(EntityChangeBlockEvent event)
 	{
 		Cause cause = Cause.globalCause(event.getEntity().getWorld(), "#" + event.getEntity().getType().getName().toLowerCase());
-		BlockChangeRecord record = null;
+		Cause defaultCause = null;
+		
+		BlockChangeRecord record = new BlockChangeRecord(event.getBlock().getState().getData(), new MaterialData(event.getTo()), event.getBlock().getLocation(), event.getTo() != Material.AIR);
+		
 		if(event.getEntityType() == EntityType.ENDERMAN)
 		{
 			if(event.getBlock().getType() == Material.AIR)
@@ -853,12 +858,42 @@ public class GlobalMonitor implements Listener
 			else
 				record = new BlockChangeRecord(event.getBlock().getState().getData(), new MaterialData(event.getTo()), event.getBlock().getLocation(), false);
 		}
-		else
+		else if(event.getEntityType() == EntityType.FALLING_BLOCK)
 		{
-			record = new BlockChangeRecord(event.getBlock().getState().getData(), new MaterialData(event.getTo()), event.getBlock().getLocation(), event.getTo() != Material.AIR);
+			cause = Cause.globalCause(event.getEntity().getWorld(), "#fall");
+
+			if(event.getTo() == Material.AIR)
+			{
+				defaultCause = cause;
+				cause = mCauseFinder.getCauseFor(event.getBlock().getRelative(BlockFace.DOWN).getLocation());
+				
+				// Fall Begin
+				mFallingBlockCauses.put(event.getEntity().getEntityId(),cause); 
+			}
+			else
+			{
+				// Fall End
+				Cause c = mFallingBlockCauses.remove(event.getEntity().getEntityId());
+				if(c != null)
+				{
+					defaultCause = cause;
+					cause = c;
+				}
+			}
+			
+			if(cause.isUnknown()) // Its already been checked and is unknown
+				cause = defaultCause;
+			if(cause.isPlayer() && cause.getExtraCause() == null)
+				cause.update(Cause.playerCause(cause.getCausingPlayer(), defaultCause.getExtraCause()));
+		}
+		else if(event.getEntityType() == EntityType.BOAT)
+		{
+			if(event.getEntity().getPassenger() != null && event.getEntity().getPassenger() instanceof Player)
+				cause = Cause.playerCause((Player)event.getEntity().getPassenger());
 		}
 
-		logRecord(record, cause, null);
+		if(cause != null && !cause.isUnknown())
+			logRecord(record, cause, defaultCause);
 	}
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onEntityExplode(EntityExplodeEvent event)
@@ -1147,19 +1182,22 @@ public class GlobalMonitor implements Listener
 		if(mPendingRecords.containsKey(event.getPlaceholder()))
 		{
 			Pair<RecordList, Cause> records = mPendingRecords.remove(event.getPlaceholder());
-			event.getPlaceholder().update(event.getCause());
 			
 			// Log the records using the new cause
 			if(event.getCause().isUnknown())
+			{
 				logRecords(records.getArg1(), records.getArg2(), records.getArg2());
+				event.getPlaceholder().update(records.getArg2());
+			}
 			else
 			{
 				Cause cause = event.getCause();
-				if(event.getCause().getExtraCause() == null && records.getArg2().getExtraCause() != null)
+				if(event.getCause().isPlayer() && event.getCause().getExtraCause() == null && records.getArg2().getExtraCause() != null)
 				{
 					// Update it to include that
 					cause = Cause.playerCause(cause.getCausingPlayer(), records.getArg2().getExtraCause());
 				}
+				event.getPlaceholder().update(cause);
 				logRecords(records.getArg1(), cause, records.getArg2());
 			}
 		}
