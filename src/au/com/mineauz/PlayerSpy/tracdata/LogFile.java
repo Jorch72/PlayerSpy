@@ -26,6 +26,8 @@ import au.com.mineauz.PlayerSpy.structurefile.Index;
 import au.com.mineauz.PlayerSpy.structurefile.SpaceLocator;
 import au.com.mineauz.PlayerSpy.structurefile.StructuredFile;
 import au.com.mineauz.PlayerSpy.tracdata.SessionIndex.SessionData;
+import au.com.mineauz.PlayerSpy.wrappers.nbt.NBTCompressedStreamTools;
+import au.com.mineauz.PlayerSpy.wrappers.nbt.NBTTagCompound;
 
 public class LogFile extends StructuredFile
 {
@@ -273,6 +275,7 @@ public class LogFile extends StructuredFile
 			if(header.VersionMajor >= 3)
 				mRollbackIndex.read();
 
+			readTags();
 			
 			mPlayerName = header.PlayerName;
 			
@@ -1124,6 +1127,8 @@ public class LogFile extends StructuredFile
 			
 			if(mHeader.VersionMajor >= 3)
 				mRollbackIndex.read();
+			
+			readTags();
 		}
 		catch(IOException e)
 		{
@@ -1136,6 +1141,122 @@ public class LogFile extends StructuredFile
 	public String getName()
 	{
 		return mPlayerName;
+	}
+	
+	public NBTTagCompound getTags()
+	{
+		return mTag;
+	}
+	
+	public void setTags(NBTTagCompound tags)
+	{
+		mTag = tags;
+	}
+	
+	public void saveTags()
+	{
+		lockWrite();
+		try
+		{
+			mFile.beginTransaction();
+			
+			if(mTag != null)
+			{
+				ByteArrayOutputStream output = new ByteArrayOutputStream();
+			
+				NBTCompressedStreamTools.writeCompressed(mTag, output);
+				
+				if(mHeader.TagSize <= output.size())
+				{
+					Debug.finer("Shrinking tags from %X->%X to %X->%X", mHeader.TagLocation, mHeader.TagLocation + mHeader.TagSize - 1, mHeader.TagLocation, mHeader.TagLocation + output.size() - 1);
+					
+					mFile.seek(mHeader.TagLocation);
+					mFile.write(output.toByteArray());
+					
+					// Free remaining space
+					mSpaceLocator.releaseSpace(mHeader.TagLocation + output.size(), mHeader.TagSize - output.size());
+					
+					mHeader.TagSize = output.size();
+				}
+				else
+				{
+					if(mSpaceLocator.isFreeSpace(mHeader.TagLocation + mHeader.TagSize, output.size() - mHeader.TagSize))
+					{
+						Debug.finer("Expanding tags from %X->%X to %X->%X", mHeader.TagLocation, mHeader.TagLocation + mHeader.TagSize - 1, mHeader.TagLocation, mHeader.TagLocation + output.size() - 1);
+						// Expand
+						mFile.seek(mHeader.TagLocation);
+						mFile.write(output.toByteArray());
+						
+						mSpaceLocator.consumeSpace(mHeader.TagLocation + mHeader.TagSize, output.size() - mHeader.TagSize);
+					}
+					else
+					{
+						// Relocate
+						mSpaceLocator.releaseSpace(mHeader.TagLocation, mHeader.TagSize);
+						long oldLocation = mHeader.TagLocation;
+						long oldSize = mHeader.TagSize;
+						
+						mHeader.TagLocation = mSpaceLocator.findFreeSpace(output.size());
+						mHeader.TagSize = output.size();
+						
+						mFile.seek(mHeader.TagLocation);
+						mFile.write(output.toByteArray());
+						
+						mSpaceLocator.consumeSpace(mHeader.TagLocation, output.size());
+						Debug.finer("Relocating tags from %X->%X to %X->%X", oldLocation, oldLocation + oldSize - 1, mHeader.TagLocation, mHeader.TagLocation + mHeader.TagSize - 1);
+					}
+				}
+			}
+			else if(mHeader.TagSize != 0)
+			{
+				Debug.finer("Clearing tags from %X->%X", mHeader.TagLocation, mHeader.TagLocation + mHeader.TagSize - 1);
+				mSpaceLocator.releaseSpace(mHeader.TagLocation, mHeader.TagSize);
+				mHeader.TagSize = 0;
+			}
+			
+			mFile.seek(0);
+			mHeader.write(mFile);
+			
+			mFile.commit();
+		}
+		catch(Throwable e)
+		{
+			Debug.logException(e);
+			mFile.rollback();
+			readIndexes();
+		}
+		finally
+		{
+			unlockWrite();
+		}
+	}
+	
+	private void readTags()
+	{
+		lockRead();
+		try
+		{
+			if(mHeader.TagSize != 0)
+			{
+				byte[] data = new byte[(int)mHeader.TagSize];
+				mFile.seek(mHeader.TagLocation);
+				mFile.readFully(data);
+				
+				ByteArrayInputStream input = new ByteArrayInputStream(data);
+				
+				mTag = NBTCompressedStreamTools.readCompressed(input);
+			}
+			else
+				mTag = null;
+		}
+		catch(Throwable e)
+		{
+			Debug.logException(e);
+		}
+		finally
+		{
+			unlockRead();
+		}
 	}
 
 	private int mReferenceCount = 0;
@@ -1158,6 +1279,8 @@ public class LogFile extends StructuredFile
 	private FileHeader mHeader;
 	
 	public static boolean sNoTimeoutOverride = false;
+	
+	private NBTTagCompound mTag;
 	
 	/** Used for testing so that the file is used in isolation */
 	public boolean testOverride = false;

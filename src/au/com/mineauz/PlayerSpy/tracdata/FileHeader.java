@@ -28,7 +28,9 @@ public class FileHeader implements IData<IndexEntry>
 	public long RollbackIndexSize;
 	public int RollbackIndexCount;
 	public BitSet TotalLocationFilter = new BitSet(Utility.cBitSetSize);
-	public byte[] Reserved = new byte[30];
+	public long TagLocation;
+	public long TagSize;
+	public byte[] Reserved = new byte[22];
 	
 	public void write(RandomAccessFile file) throws IOException
 	{
@@ -60,6 +62,9 @@ public class FileHeader implements IData<IndexEntry>
 			file.writeShort((int)RollbackIndexCount);
 			
 			file.write(Utility.bitSetToBytes(TotalLocationFilter));
+			
+			file.writeInt((int)TagLocation);
+			file.writeInt((int)TagSize);
 			
 			file.write(Reserved);
 		}
@@ -106,6 +111,9 @@ public class FileHeader implements IData<IndexEntry>
 			file.readFully(bytes);
 			
 			TotalLocationFilter = BitSet.valueOf(bytes);
+			
+			TagLocation = file.readInt();
+			TagSize = file.readInt();
 			
 			file.readFully(Reserved);
 		}

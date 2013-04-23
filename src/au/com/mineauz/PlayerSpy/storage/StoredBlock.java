@@ -27,6 +27,7 @@ import org.bukkit.material.MaterialData;
 
 import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.wrappers.nbt.*;
 
 public class StoredBlock 
@@ -343,7 +344,14 @@ public class StoredBlock
 			return size;
 		
 		ByteArrayOutputStream temp = new ByteArrayOutputStream();
-		NBTCompressedStreamTools.writeCompressed(mStateData, temp);
+		try
+		{
+			NBTCompressedStreamTools.writeCompressed(mStateData, temp);
+		}
+		catch(IOException e)
+		{
+			Debug.logException(e);
+		}
 		
 		return size + temp.size();
 	}
