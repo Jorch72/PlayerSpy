@@ -108,7 +108,7 @@ public class SearchTask implements Task<SearchResults>
 	
 	private void processRecords(RecordList records, Cause cause)
 	{
-        if(records.size() == 0)
+        if(records == null || records.size() == 0)
             return;
 		// Get the cause id
 		int id;

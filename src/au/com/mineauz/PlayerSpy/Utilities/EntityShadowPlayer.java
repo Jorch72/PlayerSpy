@@ -1,8 +1,8 @@
 package au.com.mineauz.PlayerSpy.Utilities;
 
-import net.minecraft.server.v1_5_R2.ChunkCoordinates;
-import net.minecraft.server.v1_5_R2.EntityHuman;
-import net.minecraft.server.v1_5_R2.World;
+import net.minecraft.server.v1_5_R3.ChunkCoordinates;
+import net.minecraft.server.v1_5_R3.EntityHuman;
+import net.minecraft.server.v1_5_R3.World;
 
 public class EntityShadowPlayer extends EntityHuman
 {

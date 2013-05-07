@@ -1064,10 +1064,10 @@ public class LogFile
 				
 			}
 		}
-		catch (Exception e)
+		catch (Throwable e)
 		{
 			Debug.logException(e);
-			throw e;
+			throw new RuntimeException(e);
 		}
 		finally
 		{
