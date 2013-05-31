@@ -9,8 +9,8 @@ import java.util.Map.Entry;
 import org.bukkit.Location;
 
 import au.com.mineauz.PlayerSpy.Cause;
-import au.com.mineauz.PlayerSpy.Utilities.Utility;
-import au.com.mineauz.PlayerSpy.debugging.Debug;
+//import au.com.mineauz.PlayerSpy.Utilities.Utility;
+//import au.com.mineauz.PlayerSpy.debugging.Debug;
 
 /**
  * Tracks the spread of blocks. Does not track the spread of blocks between reloads.
@@ -49,7 +49,7 @@ public class SpreadTracker
 		mCheckPriority.put(checkTime, cloned);
 		mCheckMap.put(cloned, checkTime);
 		
-		Debug.finer("Spread source added by " + cause + " (" + loc.getBlock().getType().toString() + ")");
+		//Debug.finer("Spread source added by " + cause + " (" + loc.getBlock().getType().toString() + ")");
 	}
 	/**
 	 * Updates a source with newly found info about what caused it
@@ -88,7 +88,7 @@ public class SpreadTracker
 		// Map the destination block back to the source block
 		if(sourceLocation != null && mSources.containsKey(sourceLocation))
 		{
-			Debug.finer("Spreading " + from.getBlock().getType().toString() + " from " + Utility.locationToStringShort(from) + " to " + Utility.locationToStringShort(to) + " thanks to " + mSources.get(sourceLocation));
+			//Debug.finer("Spreading " + from.getBlock().getType().toString() + " from " + Utility.locationToStringShort(from) + " to " + Utility.locationToStringShort(to) + " thanks to " + mSources.get(sourceLocation));
 			Location loc = to.clone();
 			mMap.put(loc, sourceLocation);
 			mReferenceCount.put(sourceLocation, mReferenceCount.get(sourceLocation) + 1);
@@ -113,7 +113,7 @@ public class SpreadTracker
 		
 		if(sourceLocation != null && mSources.containsKey(sourceLocation))
 		{
-			Debug.finer("Removing @" + Utility.locationToStringShort(loc));
+			//Debug.finer("Removing @" + Utility.locationToStringShort(loc));
 			mMap.remove(loc);
 
 			// Remove the scheduled delete
@@ -130,7 +130,7 @@ public class SpreadTracker
 				// remove the source since nothing points to it anymore
 				mReferenceCount.remove(sourceLocation);
 				mSources.remove(sourceLocation);
-				Debug.finer("Removed source");
+				//Debug.finer("Removed source");
 			}
 		}
 	}

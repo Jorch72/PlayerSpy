@@ -58,6 +58,7 @@ public class SpyPlugin extends JavaPlugin
 		dispatch.registerCommand(new RestoreCommand());
 		dispatch.registerCommand(new InventoryCommand());
 		dispatch.registerCommand(new CatchupCommand());
+		dispatch.registerCommand(new IntegrityCheckCommand());
 		
 		// Attempt to load the test package if present
 		try
@@ -99,7 +100,7 @@ public class SpyPlugin extends JavaPlugin
 			ent.getValue().close();
 		
 		mPlayers.clear();
-		
+		LogUtil.info("Shutting down PlayerSpy");
 		GlobalMonitor.instance.shutdown();
 		LogFileRegistry.unloadAll();
 		CrossReferenceIndex.getInstance().close();

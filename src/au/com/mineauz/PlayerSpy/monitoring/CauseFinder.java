@@ -142,7 +142,7 @@ public class CauseFinder
 			
 		}
 	}
-	private class BlockSearchTask implements Task<Cause>
+	private static class BlockSearchTask implements Task<Cause>
 	{
 		private Location mSearchLocation;
 		
@@ -224,7 +224,7 @@ public class CauseFinder
 		@Override
 		public int getTaskTargetId() 
 		{
-			return 8888;
+			return -1;
 		}
 		
 	}

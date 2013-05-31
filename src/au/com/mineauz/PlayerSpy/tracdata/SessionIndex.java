@@ -341,7 +341,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 			mFile.seek(mSession.Location);
 
 			byte[] sessionRaw = new byte[(int)mSession.TotalSize];
-			mFile.read(sessionRaw);
+			mFile.readFully(sessionRaw);
 			
 			// make it available to use
 			ByteArrayInputStream istream = new ByteArrayInputStream(sessionRaw);

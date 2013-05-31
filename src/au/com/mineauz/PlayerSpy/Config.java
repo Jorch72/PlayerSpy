@@ -39,7 +39,7 @@ public class Config extends AutoConfig
 	@ConfigField(comment = "When set to true, records fire caused by lava.", category="logging")
 	public boolean recordLavaFire = true;
 
-	@ConfigField(comment = "When set to true, records leaf, grass, and mycel decay.", category="logging")
+	@ConfigField(comment = "When set to true, records leaf, grass, and mycel decay, and when ice melts.", category="logging")
 	public boolean recordDecay = true;
 	
 	@ConfigField(comment = "When set to true, records blocks that fall.", category="logging")

@@ -35,6 +35,7 @@ public class RecordList extends ArrayList<Record>
 				inv = true;
 				break;
 			default:
+				break;
 			}
 		}
 		
@@ -382,15 +383,16 @@ public class RecordList extends ArrayList<Record>
 	@Override
 	public String toString()
 	{
-		String result = "RecordList: [";
+		StringBuilder result = new StringBuilder("RecordList: [");
 		
 		for(int i = 0; i < size(); ++i)
 		{
 			if(i != 0)
-				result += ", ";
+				result.append(", ");
 			
-			result += get(i);
+			result.append(get(i));
 		}
-		return result + "]";
+		
+		return result.append("]").toString();
 	}
 }

@@ -116,8 +116,10 @@ public class GlobalMonitor implements Listener
 	public void shutdown() 
 	{
 		Debug.fine("Shutting down the Global Monitor");
-		flushAll();
+		
 		LogFile.sNoTimeoutOverride = true;
+		flushAll();
+		
 		for(Entry<World,LogFile> ent : mGlobalLogs.entrySet())
 			LogFileRegistry.unloadLogFile(ent.getKey());
 		
@@ -136,6 +138,10 @@ public class GlobalMonitor implements Listener
 		mDeepMonitors.clear();
 		mShallowMonitors.clear();
 		mOfflineMonitors.clear();
+		
+		LogUtil.info("Waiting for shutdown tasks to complete.");
+		SpyPlugin.getExecutor().waitForAll();
+		LogUtil.info("Shutdown complete");
 		
 		LogFile.sNoTimeoutOverride = false;
 	}
@@ -858,7 +864,7 @@ public class GlobalMonitor implements Listener
 			else
 				record = new BlockChangeRecord(event.getBlock().getState().getData(), new MaterialData(event.getTo()), event.getBlock().getLocation(), false);
 		}
-		else if(event.getEntityType() == EntityType.FALLING_BLOCK)
+		else if(event.getEntityType() == EntityType.FALLING_BLOCK && SpyPlugin.getSettings().recordFallingBlocks)
 		{
 			cause = Cause.globalCause(event.getEntity().getWorld(), "#fall");
 
@@ -885,6 +891,11 @@ public class GlobalMonitor implements Listener
 				cause = defaultCause;
 			if(cause.isPlayer() && cause.getExtraCause() == null)
 				cause.update(Cause.playerCause(cause.getCausingPlayer(), defaultCause.getExtraCause()));
+			
+			if(cause.isGlobal() && !SpyPlugin.getSettings().recordNaturalFallingBlocks)
+				return;
+			else if(!SpyPlugin.getSettings().recordNaturalFallingBlocks)
+				defaultCause = Cause.unknownCause();
 		}
 		else if(event.getEntityType() == EntityType.BOAT)
 		{
@@ -965,6 +976,10 @@ public class GlobalMonitor implements Listener
 		{
 		case GRASS:
 		case MYCEL:
+			
+			if(!SpyPlugin.getSettings().recordDecay)
+				return;
+			
 			cause = Cause.globalCause(event.getBlock().getWorld(),"#decay");
 			
 			if(SpyPlugin.getSettings().recordGrassSpread)
@@ -979,8 +994,16 @@ public class GlobalMonitor implements Listener
 			}
 			else
 				cause = Cause.globalCause(event.getBlock().getWorld(), "#melt");
+			
+			if(!SpyPlugin.getSettings().recordDecay)
+				return;
+			
 			break;
 		case SNOW:
+			
+			if(!SpyPlugin.getSettings().recordDecay)
+				return;
+			
 			cause = Cause.globalCause(event.getBlock().getWorld(), "#melt");
 			break;
 		case FIRE:
@@ -1060,6 +1083,11 @@ public class GlobalMonitor implements Listener
 					cause = backupCause;
 				if(cause.isPlayer() && cause.getExtraCause() == null)
 					cause.update(Cause.playerCause(cause.getCausingPlayer(), backupCause.getExtraCause()));
+
+				if(cause.isGlobal() && !SpyPlugin.getSettings().recordNaturalFluidFlow)
+					return;
+				else if(!SpyPlugin.getSettings().recordNaturalFluidFlow)
+					backupCause = Cause.unknownCause();
 				
 				delayLogBlockChange(event.getToBlock(), cause, backupCause);
 			}
@@ -1099,6 +1127,25 @@ public class GlobalMonitor implements Listener
 		if(cause.isPlayer() && cause.getExtraCause() == null)
 			cause.update(Cause.playerCause(cause.getCausingPlayer(), backupCause.getExtraCause()));
 		
+		if(cause.isGlobal())
+		{
+			if(event.getNewState().getType() == Material.GRASS  && SpyPlugin.getSettings().recordNaturalGrassSpread)
+				return;
+			else if((event.getNewState().getType() == Material.RED_MUSHROOM || event.getNewState().getType() == Material.BROWN_MUSHROOM)  && SpyPlugin.getSettings().recordNaturalMushroomSpread)
+				return;
+			else if(cause.getExtraCause().equals("#lightning") && !SpyPlugin.getSettings().recordLightningFire)
+				return;
+			else if(cause.getExtraCause().equals("#lavafire") && !SpyPlugin.getSettings().recordLavaFire)
+				return;
+		}
+		else
+		{
+			if(event.getNewState().getType() == Material.GRASS  && SpyPlugin.getSettings().recordNaturalGrassSpread)
+				backupCause = Cause.unknownCause();
+			else if((event.getNewState().getType() == Material.RED_MUSHROOM || event.getNewState().getType() == Material.BROWN_MUSHROOM)  && SpyPlugin.getSettings().recordNaturalMushroomSpread)
+				backupCause = Cause.unknownCause();
+		}
+		
 		BlockChangeRecord record = new BlockChangeRecord(event.getBlock().getState(),event.getNewState(), true);
 		logRecord(record, cause, backupCause);
 	}
@@ -1125,9 +1172,13 @@ public class GlobalMonitor implements Listener
 			break;
 		case LAVA:
 			extraCause = "#lavafire";
+			if(!SpyPlugin.getSettings().recordLavaFire)
+				return;
 			break;
 		case LIGHTNING:
 			extraCause = "#lightning";
+			if(!SpyPlugin.getSettings().recordLightningFire)
+				return;
 			break;
 		case FLINT_AND_STEEL:
 			if(event.getIgnitingBlock() != null && event.getIgnitingBlock().getType() == Material.DISPENSER)
@@ -1159,8 +1210,12 @@ public class GlobalMonitor implements Listener
 		{
 			if(extraCause != null)
 			{
-				cause = Cause.globalCause(event.getBlock().getWorld(), extraCause);
-				logRecord(record, cause, null);
+				if((!extraCause.equals("#lightning") || SpyPlugin.getSettings().recordLightningFire) && 
+					(!extraCause.equals("#lavafire") || SpyPlugin.getSettings().recordLavaFire))
+				{
+					cause = Cause.globalCause(event.getBlock().getWorld(), extraCause);
+					logRecord(record, cause, null);
+				}
 			}
 		}
 		
@@ -1186,8 +1241,11 @@ public class GlobalMonitor implements Listener
 			// Log the records using the new cause
 			if(event.getCause().isUnknown())
 			{
-				logRecords(records.getArg1(), records.getArg2(), records.getArg2());
-				event.getPlaceholder().update(records.getArg2());
+				if(!records.getArg2().isUnknown())
+				{
+					logRecords(records.getArg1(), records.getArg2(), records.getArg2());
+					event.getPlaceholder().update(records.getArg2());
+				}
 			}
 			else
 			{

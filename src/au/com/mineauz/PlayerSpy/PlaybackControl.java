@@ -340,12 +340,8 @@ public class PlaybackControl
 			mSearchTask = null;
 		}
 		
-		//mSearchTask = mBuffer.getLogFile().submitTask(new SearchForBlockChangeTask(mBuffer.getLogFile(), block, mined, date, !before));
 		mSearchTask = SpyPlugin.getExecutor().submit(new SearchForBlockChangeTask(mBuffer.getLogFile(), block, mined, date, !before));
-		if(mSearchTask != null)
-			return true;
-		
-		return false;
+		return true;
 	}
 
 	public boolean seekToItem(Material item, boolean gained, long date, boolean before) 
@@ -356,12 +352,8 @@ public class PlaybackControl
 			mSearchTask = null;
 		}
 		
-		//mSearchTask = mBuffer.getLogFile().submitTask(new SearchForItemTask(mBuffer.getLogFile(), item, gained, date, !before));
 		mSearchTask = SpyPlugin.getExecutor().submit(new SearchForItemTask(mBuffer.getLogFile(), item, gained, date, !before));
-		if(mSearchTask != null)
-			return true;
-		
-		return false;
+		return true;
 	}
 
 	public boolean seekToEvent(RecordType type, long date, boolean before) 
@@ -372,12 +364,8 @@ public class PlaybackControl
 			mSearchTask = null;
 		}
 		
-		//mSearchTask = mBuffer.getLogFile().submitTask(new SearchForEventTask(mBuffer.getLogFile(), type, date, !before));
 		mSearchTask = SpyPlugin.getExecutor().submit(new SearchForEventTask(mBuffer.getLogFile(), type, date, !before));
-		if(mSearchTask != null)
-			return true;
-		
-		return false;
+		return true;
 	}
 	public boolean seekToDamage(EntityType entType, boolean attack, String playerName, long date, boolean before)
 	{
@@ -387,12 +375,8 @@ public class PlaybackControl
 			mSearchTask = null;
 		}
 		
-		//mSearchTask = mBuffer.getLogFile().submitTask(new SearchForDamageTask(mBuffer.getLogFile(), entType, attack, playerName, date, !before));
 		mSearchTask = SpyPlugin.getExecutor().submit(new SearchForDamageTask(mBuffer.getLogFile(), entType, attack, playerName, date, !before));
-		if(mSearchTask != null)
-			return true;
-		
-		return false;
+		return true;
 	}
 	
 	private void onSeek()

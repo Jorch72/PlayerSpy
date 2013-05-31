@@ -97,7 +97,7 @@ public class Util
 		int years,months,weeks,days,hours,minutes,seconds;
 		if(dateDiff >= 26298000000L)
 		{
-			years = (int)Math.floor(dateDiff / 26298000000L);
+			years = (int)(dateDiff / 26298000000L);
 			dateDiff -= years * 26298000000L;
 			if(shortFormat)
 				result += years + "y";
@@ -107,7 +107,7 @@ public class Util
 		
 		if(dateDiff >= 2191500000L)
 		{
-			months = (int)Math.floor(dateDiff / 2191500000L);
+			months = (int)(dateDiff / 2191500000L);
 			dateDiff -= months * 2191500000L;
 			if(shortFormat)
 				result += months + "mo";
@@ -119,7 +119,7 @@ public class Util
 		
 		if(dateDiff >= 504000000L)
 		{
-			weeks = (int)Math.floor(dateDiff / 504000000L);
+			weeks = (int)(dateDiff / 504000000L);
 			dateDiff -= weeks * 504000000L;
 			if(shortFormat)
 				result += weeks + "w";
@@ -131,7 +131,7 @@ public class Util
 		
 		if(dateDiff >= 72000000L)
 		{
-			days = (int)Math.floor(dateDiff / 72000000L);
+			days = (int)(dateDiff / 72000000L);
 			dateDiff -= days * 72000000L;
 			if(shortFormat)
 				result += days + "d";
@@ -143,7 +143,7 @@ public class Util
 		
 		if(dateDiff >= 3600000L)
 		{
-			hours = (int)Math.floor(dateDiff / 3600000L);
+			hours = (int)(dateDiff / 3600000L);
 			dateDiff -= hours * 3600000L;
 			if(shortFormat)
 				result += hours + "h";
@@ -155,7 +155,7 @@ public class Util
 		
 		if(dateDiff >= 60000L)
 		{
-			minutes = (int)Math.floor(dateDiff / 60000L);
+			minutes = (int)(dateDiff / 60000L);
 			dateDiff -= minutes * 60000L;
 			if(shortFormat)
 				result += minutes + "m";
@@ -167,8 +167,7 @@ public class Util
 		
 		if(dateDiff >= 0)
 		{
-			seconds = (int)Math.floor(dateDiff / 1000L);
-			dateDiff -= seconds * 1000L;
+			seconds = (int)(dateDiff / 1000L);
 			if(shortFormat)
 				result += seconds + "s";
 			else

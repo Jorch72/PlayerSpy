@@ -41,6 +41,7 @@ permissions:
       playerspy.normal: true
       playerspy.purge: true
       playerspy.reload: true
+      playerspy.integritycheck: true
   
   playerspy.*:
     default: op
@@ -88,3 +89,6 @@ permissions:
   playerspy.catchup:
     default: op
     description: Allows a player to use the catchup command
+  playerspy.integritycheck:
+    default: op
+    description: Allows a player to check the integrity of data files

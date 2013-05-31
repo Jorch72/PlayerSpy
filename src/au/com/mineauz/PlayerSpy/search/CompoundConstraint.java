@@ -45,6 +45,11 @@ public class CompoundConstraint extends Constraint
 		
 		return ok;
 	}
+	
+	public List<Constraint> getSubContraints()
+	{
+		return mSubConstraints;
+	}
 
 	@Override
 	public String getDescription()

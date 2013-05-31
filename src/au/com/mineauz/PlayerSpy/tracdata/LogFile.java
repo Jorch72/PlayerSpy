@@ -309,7 +309,7 @@ public class LogFile extends StructuredFile
 			ok = false;
 			mIsCorrupt = true;
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
 			Debug.logException(e);
 			try
@@ -925,7 +925,110 @@ public class LogFile extends StructuredFile
 				{
 					String otag = getOwnerTag(entry);
 					boolean isAbsolute = otag != null;
-					if(entry.StartTimestamp >= fromDate && entry.EndTimestamp < toDate)
+					boolean purgeAnyway = false;
+					
+					if(entry.StartTimestamp < fromDate || entry.EndTimestamp >= toDate)
+					{
+						int sessionIndex = mSessionIndex.indexOf(entry);
+						if(sessionIndex == -1)
+							continue;
+						
+						// Part of the session must be purged
+						RecordList sessionData = loadSession(entry);
+						if(sessionData != null)
+						{
+							int startIndex = sessionData.getNextRecordAfter(fromDate);
+							int endIndex = sessionData.getLastRecordBefore(toDate);
+							
+							// Split the data
+							RecordList lower = sessionData.splitRecords(startIndex, false);
+							sessionData.splitRecords(endIndex, false);
+							sessionData.addAll(0, lower);
+							//sessionData.splitRecords(endIndex, true);
+							//sessionData.removeBefore(startIndex);
+							
+							// Write back the new updated data
+							if(sessionData.size() == 0)
+							{
+								mSessionIndex.remove(sessionIndex);
+								
+								if(mSessionIndex.getActiveSessionFor(otag) != null && mSessionIndex.getActiveSessionFor(otag).Id == entry.Id)
+									mSessionIndex.setActiveSession(otag, null);
+								
+								// Pull the proceeding data forward
+								pullData(entry.Location);
+								
+								// So that anything else using this object through a reference, wont do any damage
+								entry.RecordCount = 0;
+								entry.Location = 0;
+								entry.Id = -1;
+								entry.TotalSize = 0;
+							}
+							else
+							{
+								// Compile the records
+								int totalSize = 0;
+								for(Record record : sessionData)
+									totalSize += record.getSize(isAbsolute);
+								
+								entry.ChunkLocationFilter.clear();
+								entry.LocationFilter.clear();
+								
+								ByteArrayOutputStream bstream = new ByteArrayOutputStream(totalSize);
+								DataOutputStream stream = new DataOutputStream(bstream);
+								
+								long lastSize = stream.size();
+								for(Record record : sessionData)
+								{
+									int expectedSize = record.getSize(isAbsolute);
+									if(!record.write(stream,isAbsolute))
+										return false;
+									
+									long actualSize = stream.size() - lastSize;
+									
+									if(expectedSize != actualSize)
+									{
+										Debug.severe(record.getType().toString() + " is returning incorrect size. Expected: " + expectedSize + " got " + actualSize);
+									}
+									lastSize = stream.size();
+									
+									// Add any location to the location filter 
+									if(record instanceof ILocationAware && !(record instanceof IPlayerLocationAware))
+									{
+										entry.LocationFilter.or(Utility.hashLocation(((ILocationAware)record).getLocation()));
+										SafeChunk chunk = new SafeChunk(((ILocationAware)record).getLocation());
+										entry.ChunkLocationFilter.or(Utility.hashChunk(chunk));
+									}
+								}
+								
+								long oldSize = entry.TotalSize;
+								
+								// Write to file
+								mFile.seek(entry.Location);
+								mFile.write(bstream.toByteArray());
+								
+								// Update the session header
+								entry.Compressed = false;
+								entry.StartTimestamp = sessionData.getStartTimestamp();
+								entry.EndTimestamp = sessionData.getEndTimestamp();
+								entry.RecordCount = (short) sessionData.size();
+								entry.TotalSize = totalSize;
+								
+								mSessionIndex.set(sessionIndex,entry);
+								CrossReferenceIndex.updateSession(this, entry);
+								
+								mSpaceLocator.releaseSpace(entry.Location + entry.TotalSize, oldSize - entry.TotalSize);
+								
+								// Pull the proceeding data forward
+								pullData(entry.Location + entry.TotalSize);
+								
+							}
+						}
+						else
+							purgeAnyway = true; // Corrupt sessions should just be purged
+					}
+					
+					if(purgeAnyway || entry.StartTimestamp >= fromDate && entry.EndTimestamp < toDate)
 					{
 						// Whole session must be purged
 						int index = mSessionIndex.indexOf(entry);
@@ -959,101 +1062,6 @@ public class LogFile extends StructuredFile
 						entry.Id = -1;
 						entry.TotalSize = 0;
 						entry.OwnerTagId = -1;
-					}
-					else
-					{
-						int sessionIndex = mSessionIndex.indexOf(entry);
-						if(sessionIndex == -1)
-							continue;
-						
-						// Part of the session must be purged
-						RecordList sessionData = loadSession(entry);
-						int startIndex = sessionData.getNextRecordAfter(fromDate);
-						int endIndex = sessionData.getLastRecordBefore(toDate);
-						
-						// Split the data
-						RecordList lower = sessionData.splitRecords(startIndex, false);
-						sessionData.splitRecords(endIndex, false);
-						sessionData.addAll(0, lower);
-						//sessionData.splitRecords(endIndex, true);
-						//sessionData.removeBefore(startIndex);
-						
-						// Write back the new updated data
-						if(sessionData.size() == 0)
-						{
-							mSessionIndex.remove(sessionIndex);
-							
-							if(mSessionIndex.getActiveSessionFor(otag) != null && mSessionIndex.getActiveSessionFor(otag).Id == entry.Id)
-								mSessionIndex.setActiveSession(otag, null);
-							
-							// Pull the proceeding data forward
-							pullData(entry.Location);
-							
-							// So that anything else using this object through a reference, wont do any damage
-							entry.RecordCount = 0;
-							entry.Location = 0;
-							entry.Id = -1;
-							entry.TotalSize = 0;
-						}
-						else
-						{
-							// Compile the records
-							int totalSize = 0;
-							for(Record record : sessionData)
-								totalSize += record.getSize(isAbsolute);
-							
-							entry.ChunkLocationFilter.clear();
-							entry.LocationFilter.clear();
-							
-							ByteArrayOutputStream bstream = new ByteArrayOutputStream(totalSize);
-							DataOutputStream stream = new DataOutputStream(bstream);
-							
-							long lastSize = stream.size();
-							for(Record record : sessionData)
-							{
-								int expectedSize = record.getSize(isAbsolute);
-								if(!record.write(stream,isAbsolute))
-									return false;
-								
-								long actualSize = stream.size() - lastSize;
-								
-								if(expectedSize != actualSize)
-								{
-									Debug.severe(record.getType().toString() + " is returning incorrect size. Expected: " + expectedSize + " got " + actualSize);
-								}
-								lastSize = stream.size();
-								
-								// Add any location to the location filter 
-								if(record instanceof ILocationAware && !(record instanceof IPlayerLocationAware))
-								{
-									entry.LocationFilter.or(Utility.hashLocation(((ILocationAware)record).getLocation()));
-									SafeChunk chunk = new SafeChunk(((ILocationAware)record).getLocation());
-									entry.ChunkLocationFilter.or(Utility.hashChunk(chunk));
-								}
-							}
-							
-							long oldSize = entry.TotalSize;
-							
-							// Write to file
-							mFile.seek(entry.Location);
-							mFile.write(bstream.toByteArray());
-							
-							// Update the session header
-							entry.Compressed = false;
-							entry.StartTimestamp = sessionData.getStartTimestamp();
-							entry.EndTimestamp = sessionData.getEndTimestamp();
-							entry.RecordCount = (short) sessionData.size();
-							entry.TotalSize = totalSize;
-							
-							mSessionIndex.set(sessionIndex,entry);
-							CrossReferenceIndex.updateSession(this, entry);
-							
-							mSpaceLocator.releaseSpace(entry.Location + entry.TotalSize, oldSize - entry.TotalSize);
-							
-							// Pull the proceeding data forward
-							pullData(entry.Location + entry.TotalSize);
-							
-						}
 					}
 				}
 				// Make sure the filters are accurate again

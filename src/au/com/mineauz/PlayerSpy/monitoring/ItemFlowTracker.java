@@ -346,7 +346,7 @@ public class ItemFlowTracker implements Listener
 					}
 				}
 				else
-					islot.Item = (newStack != null ? newStack.clone() : newStack);
+					islot.Item = (newStack != null ? newStack.clone() : null);
 				changes.add(islot);
 			}
 		}
@@ -388,7 +388,7 @@ public class ItemFlowTracker implements Listener
 				}
 			}
 			else
-				islot.Item = (newStack != null ? newStack.clone() : newStack);
+				islot.Item = (newStack != null ? newStack.clone() : null);
 			changes.add(islot);
 		}
 		

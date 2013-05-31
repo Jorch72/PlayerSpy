@@ -3,6 +3,7 @@ package au.com.mineauz.PlayerSpy;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -71,24 +72,33 @@ public class PlaybackModeController implements Listener
 				if(splitStr.length == 0)
 					return;
 				
-				String[] args = Arrays.copyOfRange(splitStr, 1, splitStr.length);
+				final String[] args = Arrays.copyOfRange(splitStr, 1, splitStr.length);
 				
-				String command = splitStr[0];
+				final String command = splitStr[0];
 				
-				if(command.equals("exit") || command.equals("quit"))
+				Bukkit.getScheduler().scheduleSyncDelayedTask(SpyPlugin.getInstance(), new Runnable()
 				{
-					SpyPlugin.getInstance().removePlayback(mPlayer);
-					mPlayer.sendMessage("You are no longer in playback mode");
-					mPlayer = null;
-				}
-				else if(sCommandHandlers.containsKey(command))
-				{
-					sCommandHandlers.get(command).onCommand(mPlayer, mPlayback, args);
-				}
-				else
-				{
-					mPlayer.sendMessage(ChatColor.RED + "Invalid command. Type " + ChatColor.YELLOW + "help" + ChatColor.RED + " for a list of commands.");
-				}
+					
+					@Override
+					public void run()
+					{
+						if(command.equals("exit") || command.equals("quit"))
+						{
+							SpyPlugin.getInstance().removePlayback(mPlayer);
+							mPlayer.sendMessage("You are no longer in playback mode");
+							mPlayer = null;
+						}
+						else if(sCommandHandlers.containsKey(command))
+						{
+							sCommandHandlers.get(command).onCommand(mPlayer, mPlayback, args);
+						}
+						else
+						{
+							mPlayer.sendMessage(ChatColor.RED + "Invalid command. Type " + ChatColor.YELLOW + "help" + ChatColor.RED + " for a list of commands.");
+						}
+					}
+				});
+				
 			}
 		}
 	}

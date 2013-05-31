@@ -93,7 +93,7 @@ public class DebugLogFormatter extends Formatter
 					--currentLevel;
 					flow += Strings.repeat(' ', currentLevel*2);
 					
-					flow += "< " + String.format("%s(%s)\n", exiting[i].getClassName() + "." + exiting[i].getMethodName(), src);
+					flow += "< " + String.format("%s(%s)%n", exiting[i].getClassName() + "." + exiting[i].getMethodName(), src);
 					changed = true;
 				}
 			}
@@ -117,7 +117,7 @@ public class DebugLogFormatter extends Formatter
 					
 					flow += Strings.repeat(' ', currentLevel*2);
 					++currentLevel;
-					flow += "> " + String.format("%s(%s)\n", entering[i].getClassName() + "." + entering[i].getMethodName(), src);
+					flow += "> " + String.format("%s(%s)%n", entering[i].getClassName() + "." + entering[i].getMethodName(), src);
 					changed = true;
 				}
 			}
@@ -135,7 +135,7 @@ public class DebugLogFormatter extends Formatter
 		}
 		else
 		{
-			result = String.format("\n%s [%d-%s] [%s]\n================================================\n",fmt.format(new Date(record.getMillis())), record.getThreadID(), (theThread != null ? theThread.getName() : "Unknown Thread"), record.getLevel().toString().toUpperCase());
+			result = String.format("\n%s [%d-%s] [%s]%n================================================%n",fmt.format(new Date(record.getMillis())), record.getThreadID(), (theThread != null ? theThread.getName() : "Unknown Thread"), record.getLevel().toString().toUpperCase());
 			
 			if(changed)
 				result += flow + "\n";
@@ -168,7 +168,7 @@ public class DebugLogFormatter extends Formatter
 							src += frame.getLineNumber() + "";
 					}
 					
-					result += Strings.repeat(' ', currentLevel*2) + String.format("    at %s(%s)\n", frame.getClassName() + "." + frame.getMethodName(), src);
+					result += Strings.repeat(' ', currentLevel*2) + String.format("    at %s(%s)%n", frame.getClassName() + "." + frame.getMethodName(), src);
 				}
 				
 				throwable = throwable.getCause();

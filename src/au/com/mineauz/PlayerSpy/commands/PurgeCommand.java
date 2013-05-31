@@ -224,7 +224,7 @@ public class PurgeCommand implements ICommand
 		
 		return true;
 	}
-	private class ConfirmPrompt extends StringPrompt
+	private static class ConfirmPrompt extends StringPrompt
 	{
 		@Override
 		public String getPromptText(ConversationContext context) 

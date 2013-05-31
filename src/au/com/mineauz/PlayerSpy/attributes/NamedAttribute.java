@@ -40,9 +40,6 @@ public class NamedAttribute extends Attribute
 				
 		Match m = super.matchNext(input, start);
 		
-		if(m == null)
-			return null;
-		
 		return new Match(nameStart, m.endPosition, m.value, this);
 	}
 }

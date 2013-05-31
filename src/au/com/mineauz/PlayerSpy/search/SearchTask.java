@@ -40,10 +40,7 @@ public class SearchTask implements Task<SearchResults>
 	private int nextCauseId = 0;
 	
 	private static final Comparator<Pair<Record,Integer>> sForwardComparator;
-	@SuppressWarnings( "unused" )
-	private static final Comparator<Pair<Record,Integer>> sReverseComparator;
 	
-	private Comparator<Pair<Record,Integer>> activeComparator;
 	private long minDate = 0;
 	
 	// debug data
@@ -65,26 +62,11 @@ public class SearchTask implements Task<SearchResults>
 				return 0;
 			}
 		};
-		sReverseComparator = new Comparator<Pair<Record,Integer>>() 
-		{
-
-			@Override
-			public int compare(Pair<Record, Integer> a, Pair<Record, Integer> b) 
-			{
-				if(a.getArg1().getTimestamp() < b.getArg1().getTimestamp())
-					return -1;
-				if(a.getArg1().getTimestamp() > b.getArg1().getTimestamp())
-					return 1;
-				
-				return 0;
-			}
-		};
 	}
 	
 	public SearchTask(SearchFilter filter)
 	{
 		mFilter = filter;
-		activeComparator = sForwardComparator;
 	}
 	
 	private void insertRecord(Record record, int id)
@@ -93,11 +75,10 @@ public class SearchTask implements Task<SearchResults>
 		
 		if(results.allRecords.size() != 0)
 		{
-			int index = Collections.binarySearch(results.allRecords,toInsert,activeComparator);
+			int index = Collections.binarySearch(results.allRecords,toInsert,sForwardComparator);
 			if(index < 0)
 				index = -index - 1;
 			
-			//if(index == results.allRecords.size())
 			results.allRecords.add(index,toInsert);
 		}
 		
@@ -137,7 +118,7 @@ public class SearchTask implements Task<SearchResults>
 			// First, time
 			if(record.getTimestamp() < startTime)
 				break;
-			if(record.getTimestamp() < minDate && results.allRecords.size() >= SpyPlugin.getSettings().maxSearchResults)
+			if(!mFilter.noLimit && results.allRecords.size() >= SpyPlugin.getSettings().maxSearchResults && record.getTimestamp() < minDate)
 				break;
 			
 			if(record.getTimestamp() > endTime)
@@ -167,6 +148,7 @@ public class SearchTask implements Task<SearchResults>
 		if(addedRecords)
 			results.causes.put(id, cause);
 	}
+	
 	@Override
 	public SearchResults call()
 	{
@@ -314,10 +296,9 @@ public class SearchTask implements Task<SearchResults>
 				if(ownerTag == null)
 				{
 					Debug.severe("Sesison %d in log file %s which requires owner tags does not have an owner tag with it.", fileSession.Session.Id, fileSession.Log.getName());
-					// :( shouldnt happen but does
 					continue;
 				}
-				
+
 				cause = Cause.globalCause(Bukkit.getWorld(fileSession.Log.getName().substring(LogFileRegistry.cGlobalFilePrefix.length())), ownerTag);
 			}
 			else
@@ -373,7 +354,7 @@ public class SearchTask implements Task<SearchResults>
 	@Override
 	public int getTaskTargetId() 
 	{
-		return 999999999;
+		return -1;
 	}
 
 }

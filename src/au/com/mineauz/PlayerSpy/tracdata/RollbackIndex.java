@@ -244,7 +244,7 @@ public class RollbackIndex extends DataIndex<RollbackEntry, IMovableData<Rollbac
 				long newSize = newList.size() * 2;
 				long oldSize = mRollbackEntry.detailSize - mRollbackEntry.padding;
 				
-				if(newSize <= availableSpace)
+				if(diff*2 <= availableSpace)
 				{
 					mFile.seek(mRollbackEntry.detailLocation);
 					for(Short index : newList)
