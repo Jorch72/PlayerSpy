@@ -109,9 +109,13 @@ public class PurgeTask  implements Task<Boolean>
 	@Override
 	public int getTaskTargetId()
 	{
-		return 999923451;
+		return -1;
 	}
 	
-
+	@Override
+	public au.com.mineauz.PlayerSpy.LogTasks.Task.Priority getTaskPriority()
+	{
+		return Priority.Normal;
+	}
 
 }

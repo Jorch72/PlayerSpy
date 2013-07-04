@@ -49,6 +49,10 @@ public class AppendRecordsTask implements Task<Boolean>
 		return mLog.getName().hashCode();
 	}
 	
-	
+	@Override
+	public au.com.mineauz.PlayerSpy.LogTasks.Task.Priority getTaskPriority()
+	{
+		return Priority.Normal;
+	}
 	
 }

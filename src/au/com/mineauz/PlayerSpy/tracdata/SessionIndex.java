@@ -189,11 +189,10 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 		
 		// Find a location and ensure the space exists
 		session.Location = mLocator.findFreeSpace(mInitialSessionSize);
+		mLocator.consumeSpace(session.Location, mInitialSessionSize);
 		
 		mFile.seek(session.Location + mInitialSessionSize - 1);
 		mFile.writeByte(0);
-		
-		mLocator.consumeSpace(session.Location, mInitialSessionSize);
 		
 		// Write the index entry
 		add(session);
@@ -478,7 +477,8 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 				mSession.Compressed = true;
 				
 				set(indexOf(mSession), mSession);
-				
+
+				Debug.logLayout(mHostingFile);
 				mLocator.releaseSpace(mSession.Location + ostream.size(), oldSize - ostream.size());
 
 				((LogFile)mHostingFile).pullDataExposed(mSession.Location + ostream.size());
@@ -588,7 +588,9 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 
 					if(!((LogFile)mHostingFile).testOverride)
 						CrossReferenceIndex.updateSession(((LogFile)mHostingFile), mSession);
+					
 					Debug.info("Completed append to Session %d", mSession.Id);
+					Debug.logLayout(mHostingFile);
 					
 					if(!rolledBackEntries.isEmpty())
 						((LogFile)mHostingFile).mRollbackIndex.setRollbackState(mSession, rolledBackEntries, true);

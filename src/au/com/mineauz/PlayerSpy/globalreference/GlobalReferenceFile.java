@@ -374,9 +374,9 @@ public class GlobalReferenceFile extends StructuredFile
 		BitSet locationHash = Utility.hashLocation(location);
 		BitSet chunkHash = Utility.hashChunk(new SafeChunk(location));
 		
-		Debug.finer("Finding sessions for %s.", location.toString());
-		Debug.finer("Location hash: %s.", Utility.bitSetToString(locationHash));
-		Debug.finer("Chunk hash: %s.", Utility.bitSetToString(chunkHash));
+//		Debug.finer("Finding sessions for %s.", location.toString());
+//		Debug.finer("Location hash: %s.", Utility.bitSetToString(locationHash));
+//		Debug.finer("Chunk hash: %s.", Utility.bitSetToString(chunkHash));
 		
 		ArrayList<SessionEntry> sessions = new ArrayList<SessionEntry>();
 		
@@ -384,13 +384,13 @@ public class GlobalReferenceFile extends StructuredFile
 		{
 			if(Utility.bitSetIsPresent(file.chunkFilter, chunkHash))
 			{
-				Debug.finest("File %s contains chunk. File filter: %s.", file.fileName, Utility.bitSetToString(file.chunkFilter));
+				//Debug.finest("File %s contains chunk. File filter: %s.", file.fileName, Utility.bitSetToString(file.chunkFilter));
 				
 				for(SessionEntry session : mSessionIndex.subset(file.fileId))
 				{
 					if(Utility.bitSetIsPresent(session.chunkFilter, chunkHash) && Utility.bitSetIsPresent(session.locationFilter, locationHash))
 					{
-						Debug.finest("Session %s contains location. ChunkFilter: %s LocationFilter: %s.", session.sessionId, Utility.bitSetToString(session.chunkFilter), Utility.bitSetToString(session.locationFilter));
+						//Debug.finest("Session %s contains location. ChunkFilter: %s LocationFilter: %s.", session.sessionId, Utility.bitSetToString(session.chunkFilter), Utility.bitSetToString(session.locationFilter));
 						sessions.add(session);
 					}
 				}

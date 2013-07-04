@@ -4,8 +4,12 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.TreeMap;
+import java.util.Map.Entry;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -15,6 +19,15 @@ import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
+import au.com.mineauz.PlayerSpy.Utilities.Pair;
+import au.com.mineauz.PlayerSpy.structurefile.HoleEntry;
+import au.com.mineauz.PlayerSpy.structurefile.StructuredFile;
+import au.com.mineauz.PlayerSpy.tracdata.FileHeader;
+import au.com.mineauz.PlayerSpy.tracdata.HoleIndex;
+import au.com.mineauz.PlayerSpy.tracdata.LogFile;
+import au.com.mineauz.PlayerSpy.tracdata.RollbackEntry;
+import au.com.mineauz.PlayerSpy.tracdata.RollbackIndex;
+import au.com.mineauz.PlayerSpy.tracdata.SessionEntry;
 
 public class Debug 
 {
@@ -23,6 +36,9 @@ public class Debug
 	private static Handler mHandler;
 	
 	private static HashMap<Player, Level> mDebugReceiver = new HashMap<Player, Level>();
+	
+	private static OutputStreamWriter mLayoutWriter;
+	private static HashMap<Long, String> mLastMessage = new HashMap<Long, String>();
 	
 	public static synchronized void init(File debugLogFile)
 	{
@@ -77,10 +93,15 @@ public class Debug
 	
 	public static synchronized void logException(Throwable e)
 	{
-		if(mDebugLog == null)
-			return;
-		mDebugLog.log(Level.SEVERE, "Caught exception", e);
+		if(mDebugLog != null)
+			mDebugLog.log(Level.SEVERE, "Caught exception", e);
 		SpyPlugin.getInstance().getLogger().log(Level.SEVERE, "Caught exception", e);
+	}
+	public static synchronized void logCrash(CrashReporter crash)
+	{
+		if(mDebugLog != null)
+			crash.log(mDebugLog);
+		crash.log(SpyPlugin.getInstance().getLogger());
 	}
 	
 	public static Logger getDebugLog()
@@ -223,5 +244,105 @@ public class Debug
 		}
 		
 		mDebugLog.logp(level, sourceClass, sourceMethod, message, new Object[] {trace});
+		mLastMessage.put(Thread.currentThread().getId(), message);
+	}
+	
+	public static void logLayout(StructuredFile log)
+	{
+		if(log instanceof LogFile)
+			logLayoutInt((LogFile)log);
+	}
+	private static void logLayoutInt(LogFile log)
+	{
+		if(!log.getName().equals("__world"))
+			return;
+		
+		try
+		{
+			if(mLayoutWriter == null)
+				mLayoutWriter = new OutputStreamWriter(new FileOutputStream(new File(SpyPlugin.getInstance().getDataFolder(), "layout.txt")));
+			
+			HoleIndex holeIndex;
+			RollbackIndex rollbackIndex;
+			FileHeader header;
+			try
+			{
+				Field field = log.getClass().getDeclaredField("mHoleIndex");
+				field.setAccessible(true);
+				
+				holeIndex = (HoleIndex) field.get(log);
+				
+				field = log.getClass().getDeclaredField("mHeader");
+				field.setAccessible(true);
+				
+				header = (FileHeader)field.get(log);
+				
+				field = log.getClass().getDeclaredField("mRollbackIndex");
+				field.setAccessible(true);
+				
+				rollbackIndex = (RollbackIndex) field.get(log);
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+				return;
+			}
+			
+			mLayoutWriter.write("\r\nLayout: ");
+			String message = mLastMessage.get(Thread.currentThread().getId());
+			if(message != null)
+				mLayoutWriter.write(message);
+
+			mLayoutWriter.write("\r\n");
+			
+			TreeMap<Long,Pair<Long,Object>> sortedItems = new TreeMap<Long, Pair<Long,Object>>();
+			sortedItems.put(0L, new Pair<Long,Object>((long)header.getSize(),"Header"));
+			
+			sortedItems.put(header.IndexLocation, new Pair<Long,Object>(header.IndexSize,"Session Index"));
+			sortedItems.put(header.HolesIndexLocation, new Pair<Long,Object>(header.HolesIndexSize,"Holes Index (" + header.HolesIndexPadding + ")"));
+			sortedItems.put(header.OwnerMapLocation, new Pair<Long,Object>(header.OwnerMapSize,"OwnerMap"));
+			sortedItems.put(header.RollbackIndexLocation, new Pair<Long,Object>(header.RollbackIndexSize,"RollbackIndex"));
+			
+			for(HoleEntry hole : holeIndex)
+				sortedItems.put(hole.Location, new Pair<Long,Object>(hole.Size,"Hole"));
+			
+			for(RollbackEntry entry : rollbackIndex)
+				sortedItems.put(entry.detailLocation, new Pair<Long,Object>(entry.detailSize,"RollbackDetail for Session " + entry.sessionId));
+			
+			for(SessionEntry session : log.getSessions())
+			{
+				String tag = log.getOwnerTag(session);
+				
+				sortedItems.put(session.Location, new Pair<Long,Object>(session.TotalSize,"Session " + (tag != null ? tag + "(" + session.Id + ")" : session.Id) + " Padding: " + session.Padding));
+			}
+			
+			// Find any Unallocated space
+			long lastPos = 0;
+			String last = "";
+			for(Entry<Long, Pair<Long, Object>> entry : sortedItems.entrySet())
+			{
+				if(lastPos > entry.getKey())
+					mLayoutWriter.write(String.format("%X-%X:\t\tCONFLICT with %s!\r\n", entry.getKey(), entry.getKey(), last));
+				else if(lastPos < entry.getKey())
+				{
+					mLayoutWriter.write(String.format("%X-%X:\t\tUnallocated space!\r\n", lastPos, entry.getKey() - 1));
+					lastPos = entry.getKey() + entry.getValue().getArg1();
+					last = (String)entry.getValue().getArg2();
+				}
+				else
+				{
+					lastPos = entry.getKey() + entry.getValue().getArg1();
+					last = (String)entry.getValue().getArg2();
+				}
+				
+				mLayoutWriter.write(String.format("%X-%X:\t\t%s\r\n", entry.getKey(), entry.getKey() + entry.getValue().getArg1() - 1, entry.getValue().getArg2()));
+			}
+			
+			mLayoutWriter.flush();
+		}
+		catch(IOException e)
+		{
+			
+		}
 	}
 }

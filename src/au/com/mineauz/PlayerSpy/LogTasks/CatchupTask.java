@@ -75,4 +75,9 @@ public class CatchupTask implements Task<Void>
 		return -1;
 	}
 
+	@Override
+	public au.com.mineauz.PlayerSpy.LogTasks.Task.Priority getTaskPriority()
+	{
+		return Priority.High;
+	}
 }

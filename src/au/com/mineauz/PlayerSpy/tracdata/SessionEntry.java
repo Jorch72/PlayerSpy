@@ -116,4 +116,10 @@ public class SessionEntry extends IndexEntry
 	{
 		return TotalSize;
 	}
+	
+	@Override
+	public String toString()
+	{
+		return "Session: " + Id;
+	}
 }

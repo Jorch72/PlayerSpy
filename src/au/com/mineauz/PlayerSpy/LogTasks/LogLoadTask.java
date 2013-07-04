@@ -87,4 +87,10 @@ public class LogLoadTask implements Task<Boolean>
 		return -1;
 	}
 	
+	@Override
+	public au.com.mineauz.PlayerSpy.LogTasks.Task.Priority getTaskPriority()
+	{
+		return Priority.Critical;
+	}
+	
 }

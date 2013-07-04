@@ -134,12 +134,13 @@ public abstract class Index<T extends IndexEntry> implements Iterable<T>, IData<
 			updateElementCount(mElements.size());
 			updateSize(mElements.size() * getEntrySize());
 
+			mLocator.consumeSpace(getLocation() + (mElements.size()-1) * getEntrySize(), getEntrySize());
+			
 			// Shift the index entries
 			write(insertIndex);
 			
 			Debug.finest("Writing %d " + getIndexName() + " entries from %X -> %X", mElements.size() - insertIndex, getLocation() + insertIndex * getEntrySize(), getLocation() + getSize() - 1);
-			
-			mLocator.consumeSpace(getLocation() + (mElements.size()-1) * getEntrySize(), getEntrySize());
+			Debug.logLayout(mHostingFile);
 		}
 		else
 		{
@@ -149,8 +150,7 @@ public abstract class Index<T extends IndexEntry> implements Iterable<T>, IData<
 			long newSize = mElements.size() * getEntrySize();
 			// Find a new location for the index
 			long newLocation = mLocator.findFreeSpace(newSize);
-			if(newLocation == 0)
-				newLocation = mFile.length();
+			mLocator.consumeSpace(newLocation, newSize);
 
 			// Calculate the new header values
 			updateElementCount(mElements.size());
@@ -161,8 +161,8 @@ public abstract class Index<T extends IndexEntry> implements Iterable<T>, IData<
 			write(0);
 			
 			Debug.finest(getIndexName() + " relocated from %X -> (%X->%X)", oldLocation, newLocation, newLocation + newSize - 1);
+			Debug.logLayout(mHostingFile);
 			
-			mLocator.consumeSpace(newLocation, newSize);
 			mLocator.releaseSpace(oldLocation, oldSize);
 		}
 		
@@ -198,9 +198,12 @@ public abstract class Index<T extends IndexEntry> implements Iterable<T>, IData<
 		updateSize(mElements.size() * getEntrySize());
 		updateElementCount(mElements.size());
 		
+		Debug.finer("Entry %d removed from %s", index, getIndexName());
+		Debug.logLayout(mHostingFile);
+		
 		mLocator.releaseSpace(mFile.getFilePointer(), getEntrySize());
 		
-		Debug.finer("Entry %d removed from %s", index, getIndexName());
+		
 
 		saveChanges();
 	}

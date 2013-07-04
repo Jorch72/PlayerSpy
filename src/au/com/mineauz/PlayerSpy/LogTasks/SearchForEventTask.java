@@ -78,4 +78,10 @@ public class SearchForEventTask implements Task<Long>
 	{
 		return mLogFile.getName().hashCode();
 	}
+	
+	@Override
+	public au.com.mineauz.PlayerSpy.LogTasks.Task.Priority getTaskPriority()
+	{
+		return Priority.High;
+	}
 }

@@ -210,6 +210,7 @@ public class RollbackIndex extends DataIndex<RollbackEntry, IMovableData<Rollbac
 			Debug.fine("Updaing rollback detail for %d", mRollbackEntry.sessionId);
 			
 			int diff = newList.size() - mRollbackEntry.count;
+			long oldSize = mRollbackEntry.count * 2;
 			mRollbackEntry.count = (short) newList.size();
 			if(diff < 0)
 			{
@@ -222,7 +223,6 @@ public class RollbackIndex extends DataIndex<RollbackEntry, IMovableData<Rollbac
 				else
 				{
 					long newSize = newList.size() * 2;
-					long oldSize = mRollbackEntry.detailSize - mRollbackEntry.padding;
 					
 					// Update the entries
 					mFile.seek(mRollbackEntry.detailLocation);
@@ -231,6 +231,7 @@ public class RollbackIndex extends DataIndex<RollbackEntry, IMovableData<Rollbac
 					
 					mRollbackEntry.padding += (oldSize - newSize);
 					Debug.finer("Adding %d bytes of padding", (oldSize - newSize));
+					Debug.logLayout(mHostingFile);
 				}
 			}
 			else if(diff > 0)
@@ -239,33 +240,34 @@ public class RollbackIndex extends DataIndex<RollbackEntry, IMovableData<Rollbac
 				long availableSpace = mRollbackEntry.padding;
 				availableSpace += mLocator.getFreeSpace(mRollbackEntry.detailLocation + mRollbackEntry.detailSize);
 				
-				Debug.finer("*Avaiable Space: " + availableSpace);
+				Debug.finer("*Avaiable Space: " + availableSpace + " padding: " + mRollbackEntry.padding);
 				
 				long newSize = newList.size() * 2;
-				long oldSize = mRollbackEntry.detailSize - mRollbackEntry.padding;
 				
 				if(diff*2 <= availableSpace)
 				{
-					mFile.seek(mRollbackEntry.detailLocation);
-					for(Short index : newList)
-						mFile.writeShort(index);
-					
 					// Work out how much padding will be left
-					newSize -= oldSize;
+					newSize = diff*2;
+					
 					long temp = Math.min(mRollbackEntry.padding, newSize);
 					mRollbackEntry.padding -= temp;
 					newSize -= temp;
 					
-					if(mRollbackEntry.padding == 0)
+					if(mRollbackEntry.padding == 0 && newSize != 0)
 					{
 						// There is a hole to consume
 						mLocator.consumeSpace(mRollbackEntry.detailLocation + mRollbackEntry.detailSize, newSize);
+						mRollbackEntry.detailSize += newSize;
 					}
 					
-					mRollbackEntry.detailSize += newSize;
+					mFile.seek(mRollbackEntry.detailLocation);
+					for(Short index : newList)
+						mFile.writeShort(index);
+					
 					set(indexOf(mRollbackEntry), mRollbackEntry);
 					
 					Debug.finest("Rollback detail expanded to %X -> %X", mRollbackEntry.detailLocation, mRollbackEntry.detailLocation + mRollbackEntry.detailSize - 1);
+					Debug.logLayout(mHostingFile);
 				}
 				else
 				{
@@ -276,8 +278,10 @@ public class RollbackIndex extends DataIndex<RollbackEntry, IMovableData<Rollbac
 					// Reset the padding
 					mRollbackEntry.padding = 8;
 					
+					mRollbackEntry.detailLocation = mLocator.findFreeSpace(newSize);
+					mLocator.consumeSpace(mRollbackEntry.detailLocation, newSize);
+					
 					mRollbackEntry.detailSize = newSize;
-					mRollbackEntry.detailLocation = mLocator.findFreeSpace(mRollbackEntry.detailSize);
 					
 					mFile.seek(mRollbackEntry.detailLocation);
 					for(Short index : newList)
@@ -286,10 +290,12 @@ public class RollbackIndex extends DataIndex<RollbackEntry, IMovableData<Rollbac
 					// Update rollback entry
 					set(indexOf(mRollbackEntry), mRollbackEntry);
 					
-					mLocator.consumeSpace(mRollbackEntry.detailLocation, mRollbackEntry.detailSize);
+					Debug.finest("Rollback detail reloated to %X -> %X from %X -> %X", mRollbackEntry.detailLocation, mRollbackEntry.detailLocation + mRollbackEntry.detailSize - 1, oldLocation, oldLocation + oldSize - 1);
+					Debug.logLayout(mHostingFile);
+					
 					mLocator.releaseSpace(oldLocation, oldSize);
 					
-					Debug.finest("Rollback detail reloated to %X -> %X from %X -> %X", mRollbackEntry.detailLocation, mRollbackEntry.detailLocation + mRollbackEntry.detailSize - 1, oldLocation, oldLocation + oldSize - 1);
+					
 				}
 			}
 		}

@@ -3,9 +3,9 @@ package au.com.mineauz.PlayerSpy.inspect;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import org.bukkit.Bukkit;
@@ -162,39 +162,48 @@ public class InspectBlockTask implements Task<Void>
 		for(ShallowMonitor mon : GlobalMonitor.instance.getAllMonitors())
 		{
 			List<Pair<String, RecordList>> inBuffer = mon.getBufferedRecords();
-			for(Pair<String, RecordList> pair : inBuffer)
+			synchronized(inBuffer)
 			{
-				Cause cause;
-				if(pair.getArg1() != null)
-					cause = Cause.playerCause(mon.getMonitorTarget(), pair.getArg1());
-				else
-					cause = Cause.playerCause(mon.getMonitorTarget());
-				
-				// Load up the records in the session
-				RecordList source = pair.getArg2();
-
-				processRecords(cause, source);
+				for(Pair<String, RecordList> pair : inBuffer)
+				{
+					Cause cause;
+					if(pair.getArg1() != null)
+						cause = Cause.playerCause(mon.getMonitorTarget(), pair.getArg1());
+					else
+						cause = Cause.playerCause(mon.getMonitorTarget());
+					
+					// Load up the records in the session
+					RecordList source = pair.getArg2();
+	
+					processRecords(cause, source);
+				}
 			}
 		}
 		
 		// Global records
 		for(World world : Bukkit.getWorlds())
 		{
-			HashMap<String, RecordList> buffers = GlobalMonitor.instance.getBufferForWorld(world);
-			for(Entry<String, RecordList> buffer : buffers.entrySet())
+			Map<String, RecordList> buffers = GlobalMonitor.instance.getBufferForWorld(world);
+			synchronized(buffers)
 			{
-				Cause cause = Cause.globalCause(world, buffer.getKey());
-				
-				// Load up the records in the session
-				processRecords(cause, buffer.getValue());
+				for(Entry<String, RecordList> buffer : buffers.entrySet())
+				{
+					Cause cause = Cause.globalCause(world, buffer.getKey());
+					
+					// Load up the records in the session
+					processRecords(cause, buffer.getValue());
+				}
 			}
 		}
 		
-		// Pending records
-		for(Pair<RecordList,Cause> pending : GlobalMonitor.instance.getPendingRecords().values())
+		synchronized(GlobalMonitor.instance.getPendingRecords())
 		{
-			// Load up the records in the session
-			processRecords(pending.getArg2(), pending.getArg1());
+			// Pending records
+			for(Pair<RecordList,Cause> pending : GlobalMonitor.instance.getPendingRecords().values())
+			{
+				// Load up the records in the session
+				processRecords(pending.getArg2(), pending.getArg1());
+			}
 		}
 		
 		// Check stuff saved to disk
@@ -306,7 +315,12 @@ public class InspectBlockTask implements Task<Void>
 	@Override
 	public int getTaskTargetId() 
 	{
-		return 99999999;
+		return -1;
 	}
 
+	@Override
+	public au.com.mineauz.PlayerSpy.LogTasks.Task.Priority getTaskPriority()
+	{
+		return Priority.High;
+	}
 }

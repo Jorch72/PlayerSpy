@@ -106,95 +106,101 @@ public class StructuredFile
 	
 	protected void pullData(long location) throws IOException
 	{
-		Profiler.beginTimingSection("pullData");
-		// Grab what ever is next after this
-		long nextLocation;
-		long nextSize = 0;
-		HoleEntry holeData = mHoleIndex.getHoleAfter(location);
-		
-		List<IData<?>> allData = getAllData();
-
-		while(holeData != null)
-		{
-			// Find what data needs to be pulled
-			nextLocation = holeData.Location + holeData.Size;
-			
-			Debug.finest("Pulling data from %X to %X", nextLocation, holeData.Location);
-			
-			IData<?> selectedData = null;
-			
-			for(IData<?> data : allData)
-			{
-				if(data instanceof HoleEntry || (!(data instanceof IMovableData) && !(data instanceof Index)))
-					continue;
-				
-				if(data.getLocation() == nextLocation)
-				{
-					nextSize = data.getSize();
-					selectedData = data;
-					break;
-				}
-			}
-
-			// Pull the data
-			if(selectedData != null)
-			{
-				Utility.shiftBytes(mFile, nextLocation, holeData.Location, nextSize);
-				
-				HoleEntry old = new HoleEntry();
-				old.Location = holeData.Location + nextSize;
-				old.Size = holeData.Size;
-				
-				if(selectedData instanceof Index)
-				{
-					((Index<?>)selectedData).setLocation(holeData.Location);
-					Debug.finest("Shifted %s from %X -> (%X-%X)", ((Index<?>)selectedData).getIndexName(), nextLocation, holeData.Location, holeData.Location + nextSize - 1);
-				}
-				else
-				{
-					((IMovableData<?>)selectedData).setLocation(holeData.Location);
-					((IMovableData<?>)selectedData).saveChanges();
-					Debug.finest("Shifted %s from %X -> (%X-%X)", ((IMovableData<?>)selectedData).toString(), nextLocation, holeData.Location, holeData.Location + nextSize - 1);
-				}
-				
-				// Move the hole
-				holeData.Location += nextSize;
-				mHoleIndex.set(mHoleIndex.indexOf(holeData), holeData);
-			}
-			else
-				break;
-			
-			holeData = mHoleIndex.getHoleAfter(location);
-			
-			if(holeData == null)
-			{
-				// Trim to the end of the last object
-				IData<?> last = null;
-				
-				allData = getAllData();
-				for(IData<?> data : allData)
-				{
-					if(last == null || last.getLocation() < data.getLocation())
-						last = data;
-				}
-				
-				if(last != null)
-				{
-					if(last instanceof HoleEntry)
-					{
-						// Nothing to pull because there is no more data after us
-						mHoleIndex.remove((HoleEntry)last);
-						
-						// Trim the file
-						mFile.setLength(last.getLocation());
-					}
-					else
-						// Trim the file
-						mFile.setLength(last.getLocation() + last.getSize());
-				}
-			}
-		}
-		Profiler.endTimingSection();
+//		Profiler.beginTimingSection("pullData");
+//		// Grab what ever is next after this
+//		long nextLocation;
+//		long nextSize = 0;
+//		HoleEntry holeData = mHoleIndex.getHoleAfter(location);
+//		
+//		List<IData<?>> allData = getAllData();
+//
+//		while(holeData != null)
+//		{
+//			// Find what data needs to be pulled
+//			nextLocation = holeData.Location + holeData.Size;
+//			
+//			Debug.finest("Pulling data from %X to %X", nextLocation, holeData.Location);
+//			
+//			IData<?> selectedData = null;
+//			
+//			for(IData<?> data : allData)
+//			{
+//				if(data instanceof HoleEntry || (!(data instanceof IMovableData) && !(data instanceof Index)))
+//					continue;
+//				
+//				if(data.getLocation() == nextLocation)
+//				{
+//					nextSize = data.getSize();
+//					selectedData = data;
+//					break;
+//				}
+//			}
+//
+//			// Pull the data
+//			if(selectedData != null)
+//			{
+//				Utility.shiftBytes(mFile, nextLocation, holeData.Location, nextSize);
+//				
+//				HoleEntry old = new HoleEntry();
+//				old.Location = holeData.Location + nextSize;
+//				old.Size = holeData.Size;
+//				
+//				if(selectedData instanceof Index)
+//				{
+//					((Index<?>)selectedData).setLocation(holeData.Location);
+//					Debug.finest("Shifted %s from %X -> (%X-%X)", ((Index<?>)selectedData).getIndexName(), nextLocation, holeData.Location, holeData.Location + nextSize - 1);
+//				}
+//				else
+//				{
+//					((IMovableData<?>)selectedData).setLocation(holeData.Location);
+//					((IMovableData<?>)selectedData).saveChanges();
+//					Debug.finest("Shifted %s from %X -> (%X-%X)", ((IMovableData<?>)selectedData).toString(), nextLocation, holeData.Location, holeData.Location + nextSize - 1);
+//				}
+//				
+//				Debug.logLayout(this);
+//				// Move the hole
+//				holeData.Location += nextSize;
+//				if(holeData.Location + holeData.Size >= mFile.length())
+//					mHoleIndex.remove(holeData);
+//				else
+//					mHoleIndex.set(mHoleIndex.indexOf(holeData), holeData);
+//			}
+//			else
+//				break;
+//			
+//			holeData = mHoleIndex.getHoleAfter(location);
+//			
+//			if(holeData == null)
+//			{
+//				// Trim to the end of the last object
+//				IData<?> last = null;
+//				
+//				allData = getAllData();
+//				for(IData<?> data : allData)
+//				{
+//					if(last == null || last.getLocation() < data.getLocation())
+//						last = data;
+//				}
+//				
+//				if(last != null)
+//				{
+//					if(last instanceof HoleEntry)
+//					{
+//						// Nothing to pull because there is no more data after us
+//						mHoleIndex.remove((HoleEntry)last);
+//						
+//						// Trim the file
+//						mFile.setLength(last.getLocation());
+//					}
+//					else
+//						// Trim the file
+//						mFile.setLength(last.getLocation() + last.getSize());
+//					
+//					Debug.logLayout(this);
+//				}
+//			}
+//		}
+//		Profiler.endTimingSection();
 	}
 	
 	@SuppressWarnings( { "rawtypes", "unchecked" } )
@@ -244,13 +250,21 @@ public class StructuredFile
 				(location < item.getLocation() && location + size > item.getLocation() + item.getSize()))
 			{
 				if(free)
+				{
+					Debug.finest("CheckSpaceFail");
+					Debug.logLayout(this);
 					throw new RuntimeException(String.format("Holes indicate that this section is free. But absolute scan says othewise. Location: %X->%X. Space occupied by %s from %X->%X", location, location + size - 1, item.toString(), item.getLocation(), item.getLocation() + item.getSize()-1));
+				}
 				else
 					return;
 			}
 		}
 		
 		if(!free)
+		{
+			Debug.finest("CheckSpaceFail");
+			Debug.logLayout(this);
 			throw new RuntimeException(String.format("Holes indicate that this section is not free. But absolute scan says othewise. Location: %X->%X", location, location + size - 1));
+		}
 	}
 }

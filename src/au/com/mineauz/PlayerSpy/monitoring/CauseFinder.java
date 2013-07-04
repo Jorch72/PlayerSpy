@@ -19,7 +19,6 @@ import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.LogTasks.Task;
 import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
-import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex.SessionInFile;
 import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
@@ -48,7 +47,6 @@ public class CauseFinder
 	public Cause getCauseFor(Location loc)
 	{
 		// Search through the currently buffered data for an answer
-		Debug.fine("Looking for cause of " + Utility.locationToStringShort(loc));
 		
 		Pair<Long, Cause> answer = null;
 		for(ShallowMonitor mon : GlobalMonitor.instance.getAllMonitors())
@@ -87,7 +85,6 @@ public class CauseFinder
 		// Now see if we have an answer
 		if(answer != null)
 		{
-			Debug.fine("Found cause in active buffers. Result: %s", answer.getArg2().friendlyName());
 			return answer.getArg2();
 		}
 		else
@@ -99,7 +96,6 @@ public class CauseFinder
 				cause = mCurrentBlockTasks.get(loc);
 			else
 			{
-				Debug.fine("Cause not found in buffered records for " + Utility.locationToStringShort(loc) + ". Submitting search task.");
 				cause = Cause.placeholderCause();
 			
 				mCurrentBlockTasks.put(loc, cause);
@@ -165,7 +161,7 @@ public class CauseFinder
 				RecordList records = result.Log.loadSession(result.Session);
 				String ownerTag = result.Log.getOwnerTag(result.Session);
 				
-				if(records.size() == 0)
+				if(records == null || records.size() == 0)
 					continue;
 				
 				// Now filter the records to find just what we are looking for
@@ -212,12 +208,10 @@ public class CauseFinder
 			
 			if(answer == null)
 			{
-				Debug.fine("BlockSearchTask finished. Result: Unknown");
 				return Cause.unknownCause();
 			}
 			else
 			{
-				Debug.fine("BlockSearchTask finished. Result: %s", answer.getArg2().friendlyName());
 				return answer.getArg2();
 			}
 		}
@@ -225,6 +219,12 @@ public class CauseFinder
 		public int getTaskTargetId() 
 		{
 			return -1;
+		}
+		
+		@Override
+		public au.com.mineauz.PlayerSpy.LogTasks.Task.Priority getTaskPriority()
+		{
+			return Priority.Low;
 		}
 		
 	}

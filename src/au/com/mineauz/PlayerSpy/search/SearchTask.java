@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -187,36 +188,39 @@ public class SearchTask implements Task<SearchResults>
 		for(ShallowMonitor mon : GlobalMonitor.instance.getAllMonitors())
 		{
 			List<Pair<String, RecordList>> inBuffer = mon.getBufferedRecords();
-			for(Pair<String, RecordList> pair : inBuffer)
+			synchronized(inBuffer)
 			{
-				Cause cause;
-				if(pair.getArg1() != null)
-					cause = Cause.playerCause(mon.getMonitorTarget(), pair.getArg1());
-				else
-					cause = Cause.playerCause(mon.getMonitorTarget());
-				
-				// Check the constraints
-				if(mFilter.causes.size() != 0)
+				for(Pair<String, RecordList> pair : inBuffer)
 				{
-					boolean constraintOk = true;
-					for(CauseConstraint constraint : mFilter.causes)
-					{
-						if(!constraint.matches(cause))
-						{
-							constraintOk = false;
-							break;
-						}
-					}
+					Cause cause;
+					if(pair.getArg1() != null)
+						cause = Cause.playerCause(mon.getMonitorTarget(), pair.getArg1());
+					else
+						cause = Cause.playerCause(mon.getMonitorTarget());
 					
-					if(!constraintOk)
-						continue;
+					// Check the constraints
+					if(mFilter.causes.size() != 0)
+					{
+						boolean constraintOk = true;
+						for(CauseConstraint constraint : mFilter.causes)
+						{
+							if(!constraint.matches(cause))
+							{
+								constraintOk = false;
+								break;
+							}
+						}
+						
+						if(!constraintOk)
+							continue;
+					}
+					bufferedCount++;
+					sessionCount++;
+					// Load up the records in the session
+					RecordList source = (RecordList)pair.getArg2().clone();
+	
+					processRecords(source, cause);
 				}
-				bufferedCount++;
-				sessionCount++;
-				// Load up the records in the session
-				RecordList source = pair.getArg2();
-
-				processRecords(source, cause);
 			}
 		}
 		
@@ -224,10 +228,48 @@ public class SearchTask implements Task<SearchResults>
 		// Global records
 		for(World world : Bukkit.getWorlds())
 		{
-			HashMap<String, RecordList> buffers = GlobalMonitor.instance.getBufferForWorld(world);
-			for(Entry<String, RecordList> buffer : buffers.entrySet())
+			Map<String, RecordList> buffers = GlobalMonitor.instance.getBufferForWorld(world);
+			
+			synchronized(buffers)
 			{
-				Cause cause = Cause.globalCause(world, buffer.getKey());
+				for(Entry<String, RecordList> buffer : buffers.entrySet())
+				{
+					Cause cause = Cause.globalCause(world, buffer.getKey());
+					
+					// Check the constraints
+					if(mFilter.causes.size() != 0)
+					{
+						boolean constraintOk = true;
+						for(CauseConstraint constraint : mFilter.causes)
+						{
+							if(!constraint.matches(cause))
+							{
+								constraintOk = false;
+								break;
+							}
+						}
+						
+						if(!constraintOk)
+							continue;
+					}
+					bufferedCount++;
+					sessionCount++;
+					// Load up the records in the session
+					processRecords((RecordList)buffer.getValue().clone(),cause);
+				}
+			}
+		}
+		
+		Debug.fine("*Searching pending records");
+		
+		synchronized(GlobalMonitor.instance.getPendingRecords())
+		{
+			Debug.fine("Starting iteration over pending");
+			int i = 0;
+			// Pending records
+			for(Pair<RecordList,Cause> pending : GlobalMonitor.instance.getPendingRecords().values())
+			{
+				Debug.fine("Iteration %d", i++);
 				
 				// Check the constraints
 				if(mFilter.causes.size() != 0)
@@ -235,7 +277,7 @@ public class SearchTask implements Task<SearchResults>
 					boolean constraintOk = true;
 					for(CauseConstraint constraint : mFilter.causes)
 					{
-						if(!constraint.matches(cause))
+						if(!constraint.matches(pending.getArg2()))
 						{
 							constraintOk = false;
 							break;
@@ -245,39 +287,13 @@ public class SearchTask implements Task<SearchResults>
 					if(!constraintOk)
 						continue;
 				}
+				
 				bufferedCount++;
 				sessionCount++;
-				// Load up the records in the session
-				processRecords(buffer.getValue(),cause);
-			}
-		}
-		
-		Debug.fine("*Searching pending records");
-		// Pending records
-		for(Pair<RecordList,Cause> pending : GlobalMonitor.instance.getPendingRecords().values())
-		{
-			// Check the constraints
-			if(mFilter.causes.size() != 0)
-			{
-				boolean constraintOk = true;
-				for(CauseConstraint constraint : mFilter.causes)
-				{
-					if(!constraint.matches(pending.getArg2()))
-					{
-						constraintOk = false;
-						break;
-					}
-				}
 				
-				if(!constraintOk)
-					continue;
+				// Load up the records in the session
+				processRecords((RecordList)pending.getArg1().clone(), pending.getArg2());
 			}
-			
-			bufferedCount++;
-			sessionCount++;
-			
-			// Load up the records in the session
-			processRecords(pending.getArg1(), pending.getArg2());
 		}
 		
 		Debug.fine("*Searching index for possibles");
@@ -357,4 +373,9 @@ public class SearchTask implements Task<SearchResults>
 		return -1;
 	}
 
+	@Override
+	public au.com.mineauz.PlayerSpy.LogTasks.Task.Priority getTaskPriority()
+	{
+		return Priority.High;
+	}
 }

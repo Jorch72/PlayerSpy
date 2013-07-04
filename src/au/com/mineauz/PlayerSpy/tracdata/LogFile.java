@@ -19,6 +19,7 @@ import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
 import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.debugging.CrashReporter;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.debugging.Profiler;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
@@ -168,10 +169,12 @@ public class LogFile extends StructuredFile
 		catch(IOException e)
 		{
 			LogUtil.severe("Failed to create log file for " + playerName);
-			e.printStackTrace();
 			
-			Debug.severe("Failed to create log file for %s", playerName);
-			Debug.logException(e);
+			CrashReporter reporter = new CrashReporter(e);
+			reporter.setMessage("Logfile creation");
+			reporter.addVariable("LogFile", playerName);
+			
+			Debug.logCrash(reporter);
 			
 			file.rollback();
 			
@@ -294,24 +297,15 @@ public class LogFile extends StructuredFile
 			mIsLoaded = true;
 			ok = true;
 		}
-		catch(IOException e)
-		{
-			Debug.logException(e);
-			try
-			{
-				if(file != null)
-					file.close();
-			}
-			catch(IOException ex)
-			{
-				Debug.logException(ex);
-			}
-			ok = false;
-			mIsCorrupt = true;
-		}
 		catch(Throwable e)
 		{
-			Debug.logException(e);
+			CrashReporter reporter = new CrashReporter(e);
+			reporter.setMessage("Loading log file");
+			reporter.addVariable("LogFile", mPlayerName);
+			reporter.addVariable("Path", filename);
+			
+			Debug.logCrash(reporter);
+
 			try
 			{
 				if(file != null)
@@ -489,6 +483,9 @@ public class LogFile extends StructuredFile
 		Profiler.beginTimingSection("loadRecords");
 		RecordList allRecords = loadRecordChunks(startDate,endDate,owner);
 		
+		if (allRecords == null)
+			return null;
+		
 		int trimStart = 0;
 		int trimEnd = 0;
 		
@@ -539,6 +536,9 @@ public class LogFile extends StructuredFile
 		
 		Profiler.beginTimingSection("loadRecords");
 		RecordList allRecords = loadRecordChunks(startDate, endDate);
+		
+		if(allRecords == null)
+			return null;
 		
 		int trimStart = 0;
 		int trimEnd = 0;
@@ -660,7 +660,9 @@ public class LogFile extends StructuredFile
 		RecordList allRecords = new RecordList();
 		for(SessionEntry session : relevantEntries)
 		{
-			allRecords.addAll(loadSession(session));
+			RecordList list = loadSession(session);
+			if(list != null)
+				allRecords.addAll(list);
 		}
 		
 		unlockWrite();
@@ -719,7 +721,9 @@ public class LogFile extends StructuredFile
 		RecordList allRecords = new RecordList();
 		for(SessionEntry session : relevantEntries)
 		{
-			allRecords.addAll(loadSession(session));
+			RecordList list = loadSession(session);
+			if(list != null)
+				allRecords.addAll(list);
 		}
 		Debug.fine("  " + allRecords.size() + " loaded records");
 		
@@ -756,13 +760,15 @@ public class LogFile extends StructuredFile
 			SessionData data = mSessionIndex.getDataFor(session);
 			return data.read();
 		}
-		catch(RecordFormatException e)
+		catch(Throwable e)
 		{
-			Debug.logException(e);
-		}
-		catch(IOException e)
-		{
-			Debug.logException(e);
+			CrashReporter reporter = new CrashReporter(e);
+			reporter.setMessage("Loading session");
+			reporter.addVariable("LogFile", mPlayerName);
+			reporter.addVariable("Session", session.Id);
+			reporter.addVariable("Is Compressed?", session.Compressed);
+			
+			Debug.logCrash(reporter);
 		}
 		finally
 		{
@@ -796,6 +802,8 @@ public class LogFile extends StructuredFile
 		Object synchObject = CrossReferenceIndex.getInstance();
 		if(testOverride)
 			synchObject = this;
+		
+		SessionEntry chosenSession = null;
 		
 		synchronized (synchObject)
 		{
@@ -848,7 +856,14 @@ public class LogFile extends StructuredFile
 			}
 			catch(Throwable e)
 			{
-				Debug.logException(e);
+				CrashReporter reporter = new CrashReporter(e);
+				reporter.setMessage("Appending to session");
+				reporter.addVariable("LogFile", mPlayerName);
+				reporter.addVariable("Session", chosenSession);
+				reporter.addVariable("owner", owner);
+				reporter.addVariable("Adding records", records.toString());
+				
+				Debug.logCrash(reporter);
 				StructuredFile.rollbackJointTransaction(CrossReferenceIndex.getInstance(), this);
 				
 				readIndexes();
@@ -897,6 +912,8 @@ public class LogFile extends StructuredFile
 		Debug.loggedAssert( mIsLoaded);
 		
 		boolean result;
+		SessionEntry lastSession = null;
+		
 		Profiler.beginTimingSection("purgeRecords");
 		synchronized(CrossReferenceIndex.getInstance())
 		{
@@ -923,6 +940,7 @@ public class LogFile extends StructuredFile
 				// Purge data
 				for(SessionEntry entry : relevantEntries)
 				{
+					lastSession = entry;
 					String otag = getOwnerTag(entry);
 					boolean isAbsolute = otag != null;
 					boolean purgeAnyway = false;
@@ -1073,7 +1091,15 @@ public class LogFile extends StructuredFile
 			}
 			catch (Throwable e)
 			{
-				Debug.logException(e);
+				CrashReporter reporter = new CrashReporter(e);
+				reporter.setMessage("Purging");
+				reporter.addVariable("LogFile", mPlayerName);
+				reporter.addVariable("fromDate", fromDate);
+				reporter.addVariable("toDate", toDate);
+				reporter.addVariable("lastSession", lastSession);
+				
+				Debug.logCrash(reporter);
+				
 				result = false;
 				StructuredFile.rollbackJointTransaction(CrossReferenceIndex.getInstance(), this);
 				
@@ -1101,9 +1127,17 @@ public class LogFile extends StructuredFile
 			
 			mFile.commit();
 		}
-		catch(Exception e)
+		catch(Throwable e)
 		{
-			Debug.logException(e);
+			CrashReporter reporter = new CrashReporter(e);
+			reporter.setMessage("Applying Rollback State");
+			reporter.addVariable("LogFile", mPlayerName);
+			reporter.addVariable("session", session.Id);
+			reporter.addVariable("state", state);
+			reporter.addVariable("indices", indices);
+			
+			Debug.logCrash(reporter);
+			
 			mFile.rollback();
 			readIndexes();
 		}
@@ -1140,7 +1174,11 @@ public class LogFile extends StructuredFile
 		}
 		catch(IOException e)
 		{
-			Debug.logException(e);
+			CrashReporter reporter = new CrashReporter(e);
+			reporter.setMessage("Read Indexes");
+			reporter.addVariable("LogFile", mPlayerName);
+			
+			Debug.logCrash(reporter);
 		}
 	}
 	/**
@@ -1191,11 +1229,11 @@ public class LogFile extends StructuredFile
 					if(mSpaceLocator.isFreeSpace(mHeader.TagLocation + mHeader.TagSize, output.size() - mHeader.TagSize))
 					{
 						Debug.finer("Expanding tags from %X->%X to %X->%X", mHeader.TagLocation, mHeader.TagLocation + mHeader.TagSize - 1, mHeader.TagLocation, mHeader.TagLocation + output.size() - 1);
+						mSpaceLocator.consumeSpace(mHeader.TagLocation + mHeader.TagSize, output.size() - mHeader.TagSize);
+						
 						// Expand
 						mFile.seek(mHeader.TagLocation);
 						mFile.write(output.toByteArray());
-						
-						mSpaceLocator.consumeSpace(mHeader.TagLocation + mHeader.TagSize, output.size() - mHeader.TagSize);
 					}
 					else
 					{
@@ -1205,12 +1243,12 @@ public class LogFile extends StructuredFile
 						long oldSize = mHeader.TagSize;
 						
 						mHeader.TagLocation = mSpaceLocator.findFreeSpace(output.size());
+						mSpaceLocator.consumeSpace(mHeader.TagLocation, output.size());
 						mHeader.TagSize = output.size();
 						
 						mFile.seek(mHeader.TagLocation);
 						mFile.write(output.toByteArray());
 						
-						mSpaceLocator.consumeSpace(mHeader.TagLocation, output.size());
 						Debug.finer("Relocating tags from %X->%X to %X->%X", oldLocation, oldLocation + oldSize - 1, mHeader.TagLocation, mHeader.TagLocation + mHeader.TagSize - 1);
 					}
 				}
@@ -1229,7 +1267,15 @@ public class LogFile extends StructuredFile
 		}
 		catch(Throwable e)
 		{
-			Debug.logException(e);
+			CrashReporter reporter = new CrashReporter(e);
+			reporter.setMessage("Applying tags");
+			reporter.addVariable("LogFile", mPlayerName);
+			reporter.addVariable("Tag", mTag);
+			reporter.addVariable("From", mHeader.TagLocation);
+			
+			Debug.logCrash(reporter);
+			
+			
 			mFile.rollback();
 			readIndexes();
 		}
@@ -1259,7 +1305,14 @@ public class LogFile extends StructuredFile
 		}
 		catch(Throwable e)
 		{
-			Debug.logException(e);
+			CrashReporter reporter = new CrashReporter(e);
+			reporter.setMessage("Reading tags");
+			reporter.addVariable("LogFile", mPlayerName);
+			reporter.addVariable("Tag", mTag);
+			reporter.addVariable("From", mHeader.TagLocation);
+			reporter.addVariable("Size", mHeader.TagSize);
+			
+			Debug.logCrash(reporter);
 		}
 		finally
 		{
@@ -1323,6 +1376,11 @@ public class LogFile extends StructuredFile
 			return mPlayerName.hashCode();
 		}
 
+		@Override
+		public au.com.mineauz.PlayerSpy.LogTasks.Task.Priority getTaskPriority()
+		{
+			return Priority.Normal;
+		}
 	}
 
 	public int getVersionMajor() 

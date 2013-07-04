@@ -2,9 +2,11 @@ package au.com.mineauz.PlayerSpy.monitoring;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import org.bukkit.Bukkit;
@@ -45,8 +47,8 @@ public class GlobalMonitor implements Listener
 
 	private HashMap<World, LogFile> mGlobalLogs = new HashMap<World, LogFile>();
 	
-	private HashMap<World, HashMap<String, RecordList>> mBuffers = new HashMap<World, HashMap<String,RecordList>>();
-	private HashMap<Cause, Pair<RecordList,Cause>> mPendingRecords = new HashMap<Cause, Pair<RecordList,Cause>>();
+	private HashMap<World, Map<String, RecordList>> mBuffers = new HashMap<World, Map<String,RecordList>>();
+	private Map<Cause, Pair<RecordList,Cause>> mPendingRecords = Collections.synchronizedMap(new HashMap<Cause, Pair<RecordList,Cause>>());
 	
 	private HashMap<Integer, Cause> mFallingBlockCauses = new HashMap<Integer, Cause>();
 	
@@ -105,7 +107,7 @@ public class GlobalMonitor implements Listener
 			else
 			{
 				mGlobalLogs.put(world, log);
-				mBuffers.put(world, new HashMap<String, RecordList>());
+				mBuffers.put(world, Collections.synchronizedMap(new HashMap<String, RecordList>()));
 			}
 		}
 		
@@ -289,47 +291,56 @@ public class GlobalMonitor implements Listener
 	{
 		Debug.loggedAssert(cause.isGlobal());
 		
-		HashMap<String, RecordList> records = mBuffers.get(cause.getWorld());
+		Map<String, RecordList> records = mBuffers.get(cause.getWorld());
 		
-		if(records.get(cause.getExtraCause()).getDataSize(true) >= ShallowMonitor.sBufferFlushThreshold)
-			flush(cause);
+		synchronized(records)
+		{
+			if(records.get(cause.getExtraCause()).getDataSize(true) >= ShallowMonitor.sBufferFlushThreshold)
+				flush(cause);
+		}
 	}
 	private void flush(Cause cause)
 	{
 		Debug.loggedAssert(cause.isGlobal());
 		
-		HashMap<String, RecordList> records = mBuffers.get(cause.getWorld());
+		Map<String, RecordList> records = mBuffers.get(cause.getWorld());
 		
-		if(records.get(cause.getExtraCause()).size() > 0)
+		synchronized(records)
 		{
-			mGlobalLogs.get(cause.getWorld()).appendRecordsAsync((RecordList)records.get(cause.getExtraCause()).clone(), cause.getExtraCause());
-			records.get(cause.getExtraCause()).clear();
+			if(records.get(cause.getExtraCause()).size() > 0)
+			{
+				mGlobalLogs.get(cause.getWorld()).appendRecordsAsync((RecordList)records.get(cause.getExtraCause()).clone(), cause.getExtraCause());
+				records.get(cause.getExtraCause()).clear();
+			}
 		}
 	}
 	
 	private void flushAll()
 	{
-		for(Entry<World,HashMap<String, RecordList>> world : mBuffers.entrySet())
+		for(Entry<World,Map<String, RecordList>> world : mBuffers.entrySet())
 		{
 			if(!mGlobalLogs.containsKey(world.getKey()))
 				continue;
 			
-			for(Entry<String, RecordList> ent : world.getValue().entrySet())
+			synchronized(world)
 			{
-				if(ent.getValue().size() == 0)
-					continue;
-				
-				mGlobalLogs.get(world.getKey()).appendRecordsAsync((RecordList)ent.getValue().clone(), ent.getKey());
-				ent.getValue().clear();
+				for(Entry<String, RecordList> ent : world.getValue().entrySet())
+				{
+					if(ent.getValue().size() == 0)
+						continue;
+					
+					mGlobalLogs.get(world.getKey()).appendRecordsAsync((RecordList)ent.getValue().clone(), ent.getKey());
+					ent.getValue().clear();
+				}
 			}
 		}
 	}
 	
-	public HashMap<String,RecordList> getBufferForWorld(World world)
+	public Map<String,RecordList> getBufferForWorld(World world)
 	{
 		return mBuffers.get(world);
 	}
-	public HashMap<Cause, Pair<RecordList,Cause>> getPendingRecords()
+	public Map<Cause, Pair<RecordList,Cause>> getPendingRecords()
 	{
 		return mPendingRecords;
 	}
@@ -348,32 +359,38 @@ public class GlobalMonitor implements Listener
 		
 		if(cause.isPlaceholder())
 		{
-			// Put the records aside until the cause is found
-			if(mPendingRecords.containsKey(cause))
+			synchronized(mPendingRecords)
 			{
-				// Add onto the existing one
-				mPendingRecords.get(cause).getArg1().addAll(records);
+				// Put the records aside until the cause is found
+				if(mPendingRecords.containsKey(cause))
+				{
+					// Add onto the existing one
+					mPendingRecords.get(cause).getArg1().addAll(records);
+				}
+				else
+					// Add a new one
+					mPendingRecords.put(cause, new Pair<RecordList, Cause>(records, defaultCause));
 			}
-			else
-				// Add a new one
-				mPendingRecords.put(cause, new Pair<RecordList, Cause>(records, defaultCause));
 		}
 		// Find where to log it
 		else if(cause.isGlobal())
 		{
-			HashMap<String, RecordList> buffers = mBuffers.get(cause.getWorld());
+			Map<String, RecordList> buffers = mBuffers.get(cause.getWorld());
 			if(buffers == null)
 			{
-				buffers = new HashMap<String, RecordList>();
+				buffers = Collections.synchronizedMap(new HashMap<String, RecordList>());
 				mBuffers.put(cause.getWorld(), buffers);
 			}
 			
-			if(!buffers.containsKey(cause.getExtraCause()))
-				buffers.put(cause.getExtraCause(), new RecordList());
-			
-			buffers.get(cause.getExtraCause()).addAll(records);
-			
-			tryFlush(cause);
+			synchronized(buffers)
+			{
+				if(!buffers.containsKey(cause.getExtraCause()))
+					buffers.put(cause.getExtraCause(), new RecordList());
+				
+				buffers.get(cause.getExtraCause()).addAll(records);
+				
+				tryFlush(cause);
+			}
 		}
 		else
 		{
@@ -444,7 +461,7 @@ public class GlobalMonitor implements Listener
 		else
 		{
 			mGlobalLogs.put(event.getWorld(), log);
-			mBuffers.put(event.getWorld(), new HashMap<String, RecordList>());
+			mBuffers.put(event.getWorld(), Collections.synchronizedMap(new HashMap<String, RecordList>()));
 		}
 	}
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -929,8 +946,10 @@ public class GlobalMonitor implements Listener
 			else
 			{
 				// Pass it off to the cause finder to find out the answer
-				cause = mCauseFinder.getCauseFor(event.getLocation());
+				//cause = mCauseFinder.getCauseFor(event.getLocation());
 				defaultCause = Cause.globalCause(event.getLocation().getWorld(),"#tnt");
+				
+				cause = defaultCause;
 			}
 			
 			if(cause.isPlayer() && cause.getExtraCause() == null)
@@ -1040,10 +1059,12 @@ public class GlobalMonitor implements Listener
 			cause = Cause.globalCause(event.getBlock().getWorld(), "#fire");
 		if(cause.isPlayer())
 			cause.update(Cause.playerCause(cause.getCausingPlayer(), "#fire"));
+		if(cause.isUnknown())
+			cause = Cause.globalCause(event.getBlock().getWorld(), "#fire");
 		
 		// Log it
 		BlockChangeRecord record = new BlockChangeRecord(event.getBlock().getState(),null, false);
-		logRecord(record, cause, null);
+		logRecord(record, cause, Cause.globalCause(event.getBlock().getWorld(), "#fire"));
 	}
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onLeavesDecay(LeavesDecayEvent event)
@@ -1233,30 +1254,33 @@ public class GlobalMonitor implements Listener
 		Debug.fine("Cause found for " + event.getPlaceholder() + ". Result: " + event.getCause());
 		mSpreadTracker.updateSource(event.getLocation(), event.getCause());
 		
-		// Apply the records
-		if(mPendingRecords.containsKey(event.getPlaceholder()))
+		synchronized(mPendingRecords)
 		{
-			Pair<RecordList, Cause> records = mPendingRecords.remove(event.getPlaceholder());
-			
-			// Log the records using the new cause
-			if(event.getCause().isUnknown())
+			// Apply the records
+			if(mPendingRecords.containsKey(event.getPlaceholder()))
 			{
-				if(!records.getArg2().isUnknown())
+				Pair<RecordList, Cause> records = mPendingRecords.remove(event.getPlaceholder());
+				
+				// Log the records using the new cause
+				if(event.getCause().isUnknown())
 				{
-					logRecords(records.getArg1(), records.getArg2(), records.getArg2());
-					event.getPlaceholder().update(records.getArg2());
+					if(!records.getArg2().isUnknown())
+					{
+						logRecords(records.getArg1(), records.getArg2(), records.getArg2());
+						event.getPlaceholder().update(records.getArg2());
+					}
 				}
-			}
-			else
-			{
-				Cause cause = event.getCause();
-				if(event.getCause().isPlayer() && event.getCause().getExtraCause() == null && records.getArg2().getExtraCause() != null)
+				else
 				{
-					// Update it to include that
-					cause = Cause.playerCause(cause.getCausingPlayer(), records.getArg2().getExtraCause());
+					Cause cause = event.getCause();
+					if(event.getCause().isPlayer() && event.getCause().getExtraCause() == null && records.getArg2().getExtraCause() != null)
+					{
+						// Update it to include that
+						cause = Cause.playerCause(cause.getCausingPlayer(), records.getArg2().getExtraCause());
+					}
+					event.getPlaceholder().update(cause);
+					logRecords(records.getArg1(), cause, records.getArg2());
 				}
-				event.getPlaceholder().update(cause);
-				logRecords(records.getArg1(), cause, records.getArg2());
 			}
 		}
 	}

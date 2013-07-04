@@ -1,8 +1,6 @@
 package au.com.mineauz.PlayerSpy.Utilities;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -13,7 +11,6 @@ import org.bukkit.Bukkit;
 
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.LogTasks.Task;
-import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.debugging.Profiler;
 
 public class PriorityExecutor
@@ -29,41 +26,50 @@ public class PriorityExecutor
 		public int id;
 		
 		public ExecutorService executor;
-		public ArrayDeque<SubmittedTask<?>> taskQueue;
+		public ArrayList<SubmittedTask<?>> taskQueue;
 		public boolean isExecuting = false;
 		public int executingTargetId = -1;
 		public SubmittedTask<?> current;
 		
 		public synchronized void scheduleNext()
 		{
-			if(taskQueue.isEmpty())
+			SubmittedTask<?> nextTask;
+			
+			synchronized(taskQueue)
 			{
-				Profiler.setValue("thread-" + id + "-queue", 0);
-				isExecuting = false;
-				return;
+				if(taskQueue.isEmpty())
+				{
+					Profiler.setValue("thread-" + id + "-queue", 0);
+					isExecuting = false;
+					return;
+				}
+				
+				// Get the next task to do
+				nextTask = taskQueue.get(0);
+				taskQueue.remove(0);
+				while((nextTask.future.isCancelled() || nextTask.future.isDone()) && taskQueue.size() > 0)
+				{
+					nextTask = taskQueue.get(0);
+					taskQueue.remove(0);
+				}
+				
+	
+				Profiler.setValue("thread-" + id + "-queue", taskQueue.size() + (isExecuting ? 1 : 0));
+				if(nextTask.future.isCancelled() || nextTask.future.isDone())
+				{
+					isExecuting = false;
+					Profiler.setValue("thread-" + id + "-queue", taskQueue.size());
+					return;
+				}
+	
+				current = nextTask;
+				
+				isExecuting = true;
+				executingTargetId = nextTask.task.getTaskTargetId();
+				
 			}
 			
-			// Get the next task to do
-			SubmittedTask<?> nextTask = taskQueue.poll();
-			while((nextTask.future.isCancelled() || nextTask.future.isDone()) && taskQueue.size() > 0)
-				nextTask = taskQueue.poll();
-
-			Profiler.setValue("thread-" + id + "-queue", taskQueue.size() + (isExecuting ? 1 : 0));
-			if(nextTask.future.isCancelled() || nextTask.future.isDone())
-			{
-				isExecuting = false;
-				Profiler.setValue("thread-" + id + "-queue", taskQueue.size());
-				return;
-			}
-
 			final SubmittedTask<?> task = nextTask;
-			
-			current = nextTask;
-			
-			Debug.finest("Executing task " + nextTask.task.getClass().getSimpleName());
-			
-			isExecuting = true;
-			executingTargetId = nextTask.task.getTaskTargetId();
 			
 			executor.execute(new Runnable() 
 			{
@@ -94,6 +100,7 @@ public class PriorityExecutor
 					}
 				}
 			});
+			
 		}
 	}
 	ArrayList<ThreadInfo> mThreadPool;
@@ -106,7 +113,7 @@ public class PriorityExecutor
 		{
 			ThreadInfo info = new ThreadInfo();
 			info.executor = Executors.newSingleThreadExecutor();
-			info.taskQueue = new ArrayDeque<PriorityExecutor.SubmittedTask<?>>();
+			info.taskQueue = new ArrayList<PriorityExecutor.SubmittedTask<?>>();
 			info.id = i;
 			mThreadPool.add(info);
 		}
@@ -121,26 +128,40 @@ public class PriorityExecutor
 		
 		// Find the appropriate thread for the task
 		int i = 0;
+		int minPosition = 0;
 		for(ThreadInfo info : mThreadPool)
 		{
-			int weight = info.taskQueue.size() + (info.isExecuting ? 1 : 0);
-			
-			if(info.isExecuting && info.executingTargetId == taskId && taskId != -1)
-				weight = -1000;
-			for(SubmittedTask<?> sTask : info.taskQueue)
+			synchronized(info.taskQueue)
 			{
-				if(sTask.future.isCancelled())
-					weight--;
-				else if(sTask.task.getTaskTargetId() == taskId && taskId != -1)
+				int weight = info.taskQueue.size() + (info.isExecuting ? 1 : 0);
+				
+				int min = 0;
+				if(info.isExecuting && info.executingTargetId == taskId && taskId != -1)
+				{
 					weight = -1000;
+					min = 0;
+				}
+				int index = 0;
+				for(SubmittedTask<?> sTask : info.taskQueue)
+				{
+					if(sTask.future.isCancelled())
+						weight--;
+					else if(sTask.task.getTaskTargetId() == taskId && taskId != -1)
+					{
+						min = index+1;
+						weight = -1000;
+					}
+					++index;
+				}
+				
+				if(weight < bestWeight)
+				{
+					best = i;
+					bestWeight = weight;
+					minPosition = min;
+				}
+				i++;
 			}
-			
-			if(weight < bestWeight)
-			{
-				best = i;
-				bestWeight = weight;
-			}
-			i++;
 		}
 		
 		if(best == -1)
@@ -152,16 +173,32 @@ public class PriorityExecutor
 		sTask.task = task;
 		sTask.future = future;
 		sTask.callback = callback;
-		
-		Profiler.setValue("thread-" + best + "-queue", mThreadPool.get(best).taskQueue.size() + (mThreadPool.get(best).isExecuting ? 1 : 0));
-		Debug.info("" + task.getClass().getSimpleName() + " submitted to thread " + best + ". QS: " + (mThreadPool.get(best).taskQueue.size() + (mThreadPool.get(best).isExecuting ? 1 : 0)));
-		
-		boolean empty = mThreadPool.get(best).taskQueue.size() == 0 && !mThreadPool.get(best).isExecuting;
-		mThreadPool.get(best).taskQueue.add(sTask);
-		
-		// Start the thread executing if it needs to
-		if(empty)
-			mThreadPool.get(best).scheduleNext();
+		synchronized(mThreadPool.get(best).taskQueue)
+		{
+			Profiler.setValue("thread-" + best + "-queue", mThreadPool.get(best).taskQueue.size() + (mThreadPool.get(best).isExecuting ? 1 : 0));
+			
+			boolean empty = mThreadPool.get(best).taskQueue.size() == 0 && !mThreadPool.get(best).isExecuting;
+			
+			// Determine where to insert it depending on the priority
+	
+			boolean added = false;
+			for(int index = minPosition; index < mThreadPool.get(best).taskQueue.size(); ++index)
+			{
+				if(task.getTaskPriority().isHigher(mThreadPool.get(best).taskQueue.get(index).task.getTaskPriority()))
+				{
+					mThreadPool.get(best).taskQueue.add(index, sTask);
+					added = true;
+					break;
+				}
+			}
+			
+			if(!added)
+				mThreadPool.get(best).taskQueue.add(sTask);
+			
+			// Start the thread executing if it needs to
+			if(empty)
+				mThreadPool.get(best).scheduleNext();
+		}
 		
 		return future;
 	}
@@ -191,10 +228,9 @@ public class PriorityExecutor
 			}
 			else
 			{
-				Iterator<SubmittedTask<?>> it = thread.taskQueue.descendingIterator();
-				while(it.hasNext())
+				for (int i = thread.taskQueue.size()-1; i>= 0; --i)
 				{
-					SubmittedTask<?> task = it.next();
+					SubmittedTask<?> task = thread.taskQueue.get(i);
 					
 					if(!task.future.isDone() && !task.future.isCancelled())
 					{

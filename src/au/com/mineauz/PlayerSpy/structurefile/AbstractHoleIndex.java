@@ -124,26 +124,41 @@ public abstract class AbstractHoleIndex extends DataIndex<HoleEntry, IMovableDat
 		{
 			mFile.setLength(entry.Location);
 			Debug.finer("Hole was at EOF, shrinking file to %X", getEndOfFile());
+			Debug.logLayout(mHostingFile);
+			
 			return mElements.size();
 		}
 		
 		// Check if we need to merge it
+		boolean merged = false;
+		int mergeIndex = 0;
 		for(int i = 0; i < mElements.size(); i++)
 		{
 			HoleEntry existing = mElements.get(i);
 			if(canMergeHoles(entry,existing))
 			{
-				HoleEntry newHole = mergeHoles(entry,existing);
-				mElements.set(i, newHole);
+				mElements.set(i, mergeHoles(entry,existing));
+				entry = mElements.get(i);
+				Debug.finest("Merging new hole into @%d changing range from (%X->%X) into (%X->%X)", i, existing.Location, existing.Location + existing.Size-1,entry.Location, entry.Location + entry.Size-1);
 				
-				// Write the changes
-				mFile.seek(getLocation() + i * getEntrySize());
-				newHole.write(mFile);
-				
-				Debug.finest("Merging new hole into @%d changing range from (%X->%X) into (%X->%X)", i, existing.Location, existing.Location + existing.Size-1,newHole.Location, newHole.Location + newHole.Size-1);
-				
-				return i;
+				if(merged)
+					remove(i);
+				else
+				{
+					// Write the changes
+					mFile.seek(getLocation() + i * getEntrySize());
+					entry.write(mFile);
+				}
+								
+				merged = true;
+				mergeIndex = i;
 			}
+		}
+		
+		if(merged)
+		{
+			Debug.logLayout(mHostingFile);
+			return mergeIndex;
 		}
 		
 		int insertIndex = getInsertIndex(entry);
@@ -159,20 +174,22 @@ public abstract class AbstractHoleIndex extends DataIndex<HoleEntry, IMovableDat
 			updatePadding(getPadding() - getEntrySize());
 			updateSize(mElements.size() * getEntrySize());
 			
-			
 			Debug.finest("Wrote %d/%d hole entries to %X -> %X Using padding. Remaining: %d bytes", mElements.size() - insertIndex, mElements.size(), getLocation() + insertIndex * getEntrySize(), getLocation() + getSize()-1, getPadding());
+			Debug.logLayout(mHostingFile);
 		}
 		// Use a hole
 		else if(mLocator.isFreeSpace(getLocation() + getSize(), getEntrySize()))
 		{
-			write(insertIndex);
-			
 			updateElementCount(mElements.size());
 			updateSize(mElements.size() * getEntrySize());
 			
-			Debug.finest("Wrote %d/%d hole entries to %X -> %X", mElements.size() - insertIndex, mElements.size(), getLocation() + insertIndex * getEntrySize(), getLocation() + getSize()-1);
-
 			mLocator.consumeSpace(getLocation() + getSize() - getEntrySize(), getEntrySize());
+			
+			
+			write(insertIndex);
+
+			Debug.finest("Wrote %d/%d hole entries to %X -> %X", mElements.size() - insertIndex, mElements.size(), getLocation() + insertIndex * getEntrySize(), getLocation() + getSize()-1);
+			Debug.logLayout(mHostingFile);
 		}
 		// Relocate it
 		else
@@ -185,7 +202,7 @@ public abstract class AbstractHoleIndex extends DataIndex<HoleEntry, IMovableDat
 			oldIndexHole.Size = oldSize;
 			
 			// Try to merge the old hole
-			boolean merged = false;
+			merged = false;
 			for(int i = 0; i < mElements.size(); i++)
 			{
 				if(canMergeHoles(oldIndexHole,mElements.get(i)))
@@ -193,10 +210,11 @@ public abstract class AbstractHoleIndex extends DataIndex<HoleEntry, IMovableDat
 					mElements.set(i, mergeHoles(oldIndexHole,mElements.get(i)));
 					Debug.finest("Merged hole for old location into @%d. Range is now %X -> %X", i, mElements.get(i).Location, mElements.get(i).Location + mElements.get(i).Size - 1);
 					
+					oldIndexHole = mElements.get(i);
+					
 					if(merged)
 						mElements.remove(oldIndexHole);
 					
-					oldIndexHole = mElements.get(i);
 					merged = true;
 				}
 			}
@@ -217,8 +235,7 @@ public abstract class AbstractHoleIndex extends DataIndex<HoleEntry, IMovableDat
 			
 			// Find a new location for the index
 			long newLocation = mLocator.findFreeSpace(newSize + getPadding());
-			if(newLocation == 0)
-				newLocation = mFile.length();
+			mLocator.consumeSpace(newLocation, newSize + getPadding());
 			
 			// Prepare the header info
 			updateElementCount(mElements.size());
@@ -232,8 +249,7 @@ public abstract class AbstractHoleIndex extends DataIndex<HoleEntry, IMovableDat
 			mFile.write(new byte[HoleEntry.cSize]);
 
 			Debug.finest("Moving hole index from %X to (%X -> %X) setting %d bytes padding", oldLocation, getLocation(), getLocation() + getSize() - 1, getPadding());
-			
-			mLocator.consumeSpace(newLocation, newSize + getPadding());
+			Debug.logLayout(mHostingFile);
 		}
 		
 		saveChanges();
@@ -249,10 +265,11 @@ public abstract class AbstractHoleIndex extends DataIndex<HoleEntry, IMovableDat
 		write(index);
 		
 		updatePadding(getPadding() + getEntrySize());
-		updateSize(mElements.size() * getEntrySize() + getPadding());
+		//updateSize(mElements.size() * getEntrySize() + getPadding());
 		updateElementCount(mElements.size());
 		
 		Debug.finer("Entry %d removed from %s", index, getIndexName());
+		Debug.logLayout(mHostingFile);
 		
 		saveChanges();
 	}
@@ -271,8 +288,33 @@ public abstract class AbstractHoleIndex extends DataIndex<HoleEntry, IMovableDat
 	@Override
 	public void set( int index, HoleEntry entry ) throws IOException
 	{
+		// Try a merge
+		for(int i = 0; i < mElements.size(); i++)
+		{
+			if(i == index)
+				continue;
+			
+			HoleEntry existing = mElements.get(i);
+			if(canMergeHoles(entry,existing))
+			{
+				HoleEntry newHole = mergeHoles(entry,existing);
+				mElements.set(i, newHole);
+				
+				// Write the changes
+				mFile.seek(getLocation() + i * getEntrySize());
+				newHole.write(mFile);
+				
+				Debug.finest("Merging new hole into @%d changing range from (%X->%X) into (%X->%X)", i, existing.Location, existing.Location + existing.Size-1,newHole.Location, newHole.Location + newHole.Size-1);
+				Debug.logLayout(mHostingFile);
+				return;
+			}
+		}
+		
+		// Cant merge, just set it
 		super.set(index, entry);
+
 		Debug.fine("Set hole @%d range to %X->%X", index, entry.Location, entry.Location + entry.Size - 1);
+		Debug.logLayout(mHostingFile);
 	}
 
 	@Override

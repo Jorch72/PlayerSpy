@@ -131,9 +131,19 @@ public class RestoreOrderer implements FormatterModifier
 			{
 				for(Pair<Record,Integer> pair : dependancies)
 					results.allRecords.add(i+1, pair);
+				
+				mDependantMap.removeAll(dependancies);
 			}
 		}
 		
+		// Stage 4: Re-insert the remaining dependent records even though their dependent block is missing 
+		for(Location location : mDependantMap.keySet())
+		{
+			Set<Pair<Record,Integer>> dependancies = mDependantMap.get(location);
+			
+			for(Pair<Record,Integer> pair : dependancies)
+				results.allRecords.add(pair);
+		}
 	}
 
 }

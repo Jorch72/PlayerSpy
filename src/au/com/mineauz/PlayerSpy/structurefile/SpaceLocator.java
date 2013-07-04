@@ -76,6 +76,9 @@ public class SpaceLocator
 	{
 		int hole = findHoleAt(location);
 		
+		if(hole == -1 && location != mIndex.getEndOfFile())
+			throw new RuntimeException("The location asked for did not have a hole to consume");
+		
 		if(hole != -1)
 		{
 			HoleEntry entry = mIndex.get(hole);
@@ -121,6 +124,9 @@ public class SpaceLocator
 					mIndex.add(newHole);
 				}
 			}
+			
+			Debug.finest("Consumed space %X-%X", location, location + size - 1);
+			Debug.logLayout(mHostingFile);
 		}
 	}
 	
