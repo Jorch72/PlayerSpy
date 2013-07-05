@@ -10,7 +10,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.Utilities.ReflectionHelper;
 
 public abstract class AutoWrapper
@@ -167,7 +166,6 @@ public abstract class AutoWrapper
 		if(getWrappedClass(thisClass) != null)
 			return;
 		
-		LogUtil.info("Preinitialization " + thisClass.getSimpleName());
 		findClass(thisClass);
 		
 		// Ensure it has a default constructor for use with instanciateWrapper
@@ -251,8 +249,6 @@ public abstract class AutoWrapper
 					}
 				}
 			}
-			
-			LogUtil.info(thisClass.getSimpleName() + " wrapper initialized");
 		}
 		catch(WrapperValidationException e)
 		{

@@ -261,18 +261,14 @@ public class DebugCommand implements ICommand
 		}
 		else if(args[0].equalsIgnoreCase("test2"))
 		{
-			Random r = new Random(123456778);
-			
-			BitSet set = new BitSet(Utility.cBitSetSize);
-			
-			for(int i = 0; i < 500; ++i)
+			if(sender instanceof Player)
 			{
-				Location loc = new Location(Bukkit.getWorlds().get(0), r.nextInt(10000)-5000, r.nextInt(10000)-5000, r.nextInt(10000)-5000);
-				
-				set.or(Utility.hashLocation(loc));
+				long dayTime = System.currentTimeMillis() / 86400000L * 86400000L;
+				dayTime = System.currentTimeMillis() - dayTime;
+				dayTime *= 20;
+				dayTime /= 1000;
+				sender.sendMessage("Your time: " + ((Player)sender).getPlayerTime() + " Offset: " + ((Player)sender).getPlayerTimeOffset() + "Sys time: " + dayTime);
 			}
-			
-			sender.sendMessage(Utility.bitSetToString(set));
 		}
 		else
 			return false;

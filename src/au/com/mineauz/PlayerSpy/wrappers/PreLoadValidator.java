@@ -67,8 +67,8 @@ public class PreLoadValidator
 		catch(RuntimeException e)
 		{
 			LogUtil.severe("!!!!!!!  Version mismatch  !!!!!!!");
-			LogUtil.severe("Required MC version: 1.4.6 or 1.4.7");
-			LogUtil.severe("Recommended CraftBukkit version: 1.4.7 Beta 1");
+			LogUtil.severe("Required MC version: 1.5.2");
+			LogUtil.severe("Recommended CraftBukkit version: 1.5.2 Beta 1");
 			
 			Throwable ex = e;
 			while (ex.getCause() != null)

@@ -10,6 +10,7 @@ import java.util.concurrent.Future;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
@@ -52,17 +53,50 @@ public class CauseFinder
 		for(ShallowMonitor mon : GlobalMonitor.instance.getAllMonitors())
 		{
 			List<Pair<String, RecordList>> inBuffer = mon.getBufferedRecords();
-			for(Pair<String, RecordList> pair : inBuffer)
+			
+			synchronized(inBuffer)
+			{
+				for(Pair<String, RecordList> pair : inBuffer)
+				{
+					// Get the cause
+					Cause cause;
+					if(pair.getArg1() == null)
+						cause = Cause.playerCause(mon.getMonitorTarget());
+					else
+						cause = Cause.playerCause(mon.getMonitorTarget(), pair.getArg1());
+					
+					// Now filter the records to find just what we are looking for
+					for(Record record : pair.getArg2())
+					{
+						if(record.getType() != RecordType.BlockChange)
+							continue;
+	
+						if(!((BlockChangeRecord)record).wasPlaced())
+							continue;
+						
+						if(((BlockChangeRecord)record).getLocation().equals(loc))
+						{
+							// Record it
+							if(answer == null)
+								answer = new Pair<Long, Cause>(record.getTimestamp(), cause);
+							else if(record.getTimestamp() > answer.getArg1())
+								answer = new Pair<Long, Cause>(record.getTimestamp(), cause);
+						}
+					}
+				}
+			}
+		}
+		
+		// Check in the other 2 buffers
+		synchronized(GlobalMonitor.instance.getPendingRecords())
+		{
+			for(Entry<Cause, Pair<RecordList, Cause>> pair : GlobalMonitor.instance.getPendingRecords().entrySet())
 			{
 				// Get the cause
-				Cause cause;
-				if(pair.getArg1() == null)
-					cause = Cause.playerCause(mon.getMonitorTarget());
-				else
-					cause = Cause.playerCause(mon.getMonitorTarget(), pair.getArg1());
+				Cause cause = pair.getKey();
 				
 				// Now filter the records to find just what we are looking for
-				for(Record record : pair.getArg2())
+				for(Record record : pair.getValue().getArg1())
 				{
 					if(record.getType() != RecordType.BlockChange)
 						continue;
@@ -77,6 +111,38 @@ public class CauseFinder
 							answer = new Pair<Long, Cause>(record.getTimestamp(), cause);
 						else if(record.getTimestamp() > answer.getArg1())
 							answer = new Pair<Long, Cause>(record.getTimestamp(), cause);
+					}
+				}
+			}
+		}
+		
+		for(World world : Bukkit.getWorlds())
+		{
+			synchronized(GlobalMonitor.instance.getBufferForWorld(world))
+			{
+				for(Entry<String, RecordList> pair : GlobalMonitor.instance.getBufferForWorld(world).entrySet())
+				{
+					// Get the cause
+					Cause cause;
+					cause = Cause.globalCause(world, pair.getKey());
+					
+					// Now filter the records to find just what we are looking for
+					for(Record record : pair.getValue())
+					{
+						if(record.getType() != RecordType.BlockChange)
+							continue;
+	
+						if(!((BlockChangeRecord)record).wasPlaced())
+							continue;
+						
+						if(((BlockChangeRecord)record).getLocation().equals(loc))
+						{
+							// Record it
+							if(answer == null)
+								answer = new Pair<Long, Cause>(record.getTimestamp(), cause);
+							else if(record.getTimestamp() > answer.getArg1())
+								answer = new Pair<Long, Cause>(record.getTimestamp(), cause);
+						}
 					}
 				}
 			}
