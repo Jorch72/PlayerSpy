@@ -40,7 +40,7 @@ public abstract class NBTBase extends AutoWrapper
 		callStaticMethod(mWriteNamedTag, tag, output);
 	}
 	
-	@WrapperMethod(name="b", returnType=NBTBase.class, parameterTypes=DataInput.class)
+	@WrapperMethod(name="a", returnType=NBTBase.class, parameterTypes=DataInput.class)
 	private static Method mReadNamedTag;
 	
 	public static NBTBase readNamedTag(DataInput input)

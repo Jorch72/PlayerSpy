@@ -19,51 +19,51 @@ public class Entity extends AutoWrapper
 	@WrapperField(name="world", type=World.class)
 	public FieldWrapper<World> world;
 	
-	@WrapperField(name="id", type=Integer.class)
+	@WrapperField(name="id", type=int.class)
 	public FieldWrapper<Integer> id;
 	
-	@WrapperField(name="positionChanged", type=Boolean.class)
+	@WrapperField(name="positionChanged", type=boolean.class)
 	public FieldWrapper<Boolean> positionChanged;
 	
-	@WrapperField(name="velocityChanged", type=Boolean.class)
+	@WrapperField(name="velocityChanged", type=boolean.class)
 	public FieldWrapper<Boolean> velocityChanged;
 	
 	
-	@WrapperField(name="lastYaw", type=Float.class)
+	@WrapperField(name="lastYaw", type=float.class)
 	public FieldWrapper<Float> lastYaw;
 	
-	@WrapperField(name="yaw", type=Float.class)
+	@WrapperField(name="yaw", type=float.class)
 	public FieldWrapper<Float> yaw;
 	
 	
-	@WrapperField(name="lastPitch", type=Float.class)
+	@WrapperField(name="lastPitch", type=float.class)
 	public FieldWrapper<Float> lastPitch;
 	
-	@WrapperField(name="pitch", type=Float.class)
+	@WrapperField(name="pitch", type=float.class)
 	public FieldWrapper<Float> pitch;
 
-	@WrapperField(name="motX",type=Double.class)
+	@WrapperField(name="motX",type=double.class)
 	public FieldWrapper<Double> motionX;
-	@WrapperField(name="motY",type=Double.class)
+	@WrapperField(name="motY",type=double.class)
 	public FieldWrapper<Double> motionY;
-	@WrapperField(name="motZ",type=Double.class)
+	@WrapperField(name="motZ",type=double.class)
 	public FieldWrapper<Double> motionZ;
 	
-	@WrapperField(name="lastX",type=Double.class)
+	@WrapperField(name="lastX",type=double.class)
 	public FieldWrapper<Double> lastX;
-	@WrapperField(name="lastY",type=Double.class)
+	@WrapperField(name="lastY",type=double.class)
 	public FieldWrapper<Double> lastY;
-	@WrapperField(name="lastZ",type=Double.class)
+	@WrapperField(name="lastZ",type=double.class)
 	public FieldWrapper<Double> lastZ;
 	
-	@WrapperField(name="locX",type=Double.class)
+	@WrapperField(name="locX",type=double.class)
 	public FieldWrapper<Double> locationX;
-	@WrapperField(name="locY",type=Double.class)
+	@WrapperField(name="locY",type=double.class)
 	public FieldWrapper<Double> locationY;
-	@WrapperField(name="locZ",type=Double.class)
+	@WrapperField(name="locZ",type=double.class)
 	public FieldWrapper<Double> locationZ;
 	
-	@WrapperField(name="height", type=Float.class)
+	@WrapperField(name="height", type=float.class)
 	public FieldWrapper<Float> height;
 	
 	@WrapperMethod(name="getDataWatcher", returnType=DataWatcher.class,parameterTypes={})
@@ -74,7 +74,7 @@ public class Entity extends AutoWrapper
 		return callMethod(mGetDataWatcher);
 	}
 	
-	@WrapperMethod(name="setLocation", returnType=Void.class, parameterTypes={Double.class, Double.class, Double.class, Float.class, Float.class})
+	@WrapperMethod(name="setLocation", returnType=Void.class, parameterTypes={double.class, double.class, double.class, float.class, float.class})
 	private static Method mSetLocation;
 	
 	public void setLocation(double x, double y, double z, float yaw, float pitch)
@@ -82,7 +82,7 @@ public class Entity extends AutoWrapper
 		callMethod(mSetLocation, x, y, z, yaw, pitch);
 	}
 	
-	@WrapperMethod(name="setSneaking", returnType=Void.class, parameterTypes=Boolean.class)
+	@WrapperMethod(name="setSneaking", returnType=void.class, parameterTypes=boolean.class)
 	private static Method mSetSneaking;
 	
 	public void setSneaking(boolean value)
@@ -90,7 +90,7 @@ public class Entity extends AutoWrapper
 		callMethod(mSetSneaking, value);
 	}
 	
-	@WrapperMethod(name="setSprinting", returnType=Void.class, parameterTypes=Boolean.class)
+	@WrapperMethod(name="setSprinting", returnType=void.class, parameterTypes=boolean.class)
 	private static Method mSetSprinting;
 	
 	public void setSprinting(boolean value)

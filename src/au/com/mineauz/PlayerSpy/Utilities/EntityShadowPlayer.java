@@ -1,32 +1,25 @@
 package au.com.mineauz.PlayerSpy.Utilities;
 
-import net.minecraft.server.v1_5_R2.ChunkCoordinates;
-import net.minecraft.server.v1_5_R2.EntityHuman;
-import net.minecraft.server.v1_5_R2.World;
+import net.minecraft.server.v1_6_R1.ChatMessage;
+import net.minecraft.server.v1_6_R1.ChunkCoordinates;
+import net.minecraft.server.v1_6_R1.EntityHuman;
+import net.minecraft.server.v1_6_R1.World;
 
 // TODO: Make this class dynamic
 public class EntityShadowPlayer extends EntityHuman
 {
 	public EntityShadowPlayer(World world, String name) 
 	{
-		super(world);
-		this.name = name;
+		super(world, name);
 	}
 
 	@Override
-	public int getMaxHealth() 
+	public void a(String arg0) 
 	{
-		return 20;
 	}
 
 	@Override
-	public void b(String arg0) 
-	{
-		this.name = arg0;
-	}
-
-	@Override
-	public void sendMessage(String arg0) 
+	public void sendMessage(ChatMessage arg0) 
 	{
 		// Do Nothing
 	}

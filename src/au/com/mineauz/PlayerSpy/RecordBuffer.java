@@ -149,6 +149,7 @@ public class RecordBuffer
 		if(mBuffer.getStartTimestamp() == 0)
 			return false;
 		
+		// TODO: Enable reading from active buffer
 		if(forward)
 		{
 			// Check if there are anymore records
@@ -190,6 +191,7 @@ public class RecordBuffer
 			mRequest.cancel(true);
 		}
 		LogUtil.finest("Seeking buffer");
+		// TODO: Enable reading from active buffer
 		if(forward)
 		{
 			

@@ -58,7 +58,7 @@ public class PlaybackDisplay implements Listener
 			mViewers.add(player);
 			String message = "[" + ChatColor.GREEN + "Playback" + ChatColor.WHITE + "] ";
 			if(mShadowPlayers.size() > 0)
-				message += "You have been added to the playback of " + mShadowPlayers.get(0).name.get();
+				message += "You have been added to the playback of " + mShadowPlayers.get(0).getName();
 			else
 				message += "You have been added to a playback";
 			
@@ -104,7 +104,7 @@ public class PlaybackDisplay implements Listener
 			mViewers.remove(player);
 			String message = "[" + ChatColor.GREEN + "Playback" + ChatColor.WHITE + "] ";
 			if(mShadowPlayers.size() > 0)
-				message += "You have been removed from the playback of " + mShadowPlayers.get(0).name.get();
+				message += "You have been removed from the playback of " + mShadowPlayers.get(0).getName();
 			else
 				message += "You have been removed from a playback";
 			
@@ -123,7 +123,7 @@ public class PlaybackDisplay implements Listener
 		{
 			String message = "[" + ChatColor.GREEN + "Playback" + ChatColor.WHITE + "] ";
 			if(mShadowPlayers.size() > 0)
-				message += "You have been removed from the playback of " + mShadowPlayers.get(0).name.get();
+				message += "You have been removed from the playback of " + mShadowPlayers.get(0).getName();
 			else
 				message += "You have been removed from a playback";
 			

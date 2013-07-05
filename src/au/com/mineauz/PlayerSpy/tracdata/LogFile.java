@@ -712,7 +712,7 @@ public class LogFile extends StructuredFile
 			   (entry.StartTimestamp >= startDate && entry.StartTimestamp < endDate) ||
 			   (entry.EndTimestamp > startDate && entry.EndTimestamp < endDate))
 			{
-				if(entry.Id == -1)
+				if(entry.OwnerTagId == -1)
 					relevantEntries.add(entry);
 			}
 		}
@@ -830,9 +830,12 @@ public class LogFile extends StructuredFile
 						data = mSessionIndex.addEmptySession();
 						activeSession = data.getIndexEntry();
 						mSessionIndex.setActiveSession(owner, activeSession);
-						
+
 						// Apply the ownertag
 						activeSession.OwnerTagId = mOwnerTagIndex.getOrCreateTag(owner);
+						
+						// Apply the correct start date
+						activeSession.StartTimestamp = records.getStartTimestamp();
 						
 						mSessionIndex.set(mSessionIndex.indexOf(activeSession), activeSession);
 					}

@@ -250,6 +250,13 @@ public abstract class AutoWrapper
 				}
 			}
 		}
+		catch(ExceptionInInitializerError e)
+		{
+			if(e.getCause() instanceof WrapperValidationException)
+				throw (WrapperValidationException)e.getCause();
+			
+			throw new RuntimeException(e);
+		}
 		catch(WrapperValidationException e)
 		{
 			throw e;

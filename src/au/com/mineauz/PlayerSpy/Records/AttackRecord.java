@@ -14,7 +14,7 @@ import au.com.mineauz.PlayerSpy.storage.StoredEntity;
 
 public class AttackRecord extends Record implements ILocationAware
 {
-	public AttackRecord(Entity damagee, int amount) 
+	public AttackRecord(Entity damagee, double amount) 
 	{
 		super(RecordType.Attack);
 
@@ -29,7 +29,7 @@ public class AttackRecord extends Record implements ILocationAware
 	@Override
 	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
 	{
-		stream.writeShort(mAmount);
+		stream.writeDouble(mAmount);
 		
 		mDamagee.write(stream);
 	}
@@ -37,7 +37,7 @@ public class AttackRecord extends Record implements ILocationAware
 	@Override
 	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException
 	{
-		mAmount = stream.readShort();
+		mAmount = stream.readDouble();
 
 		mDamagee = new StoredEntity(); 
 		mDamagee.read(stream);
@@ -52,17 +52,17 @@ public class AttackRecord extends Record implements ILocationAware
 	 * Note: When this is equal to Integer.MAX_VALUE it means it was a kill
 	 * @return
 	 */
-	public int getDamage()
+	public double getDamage()
 	{
 		return mAmount;
 	}
 	
 	private StoredEntity mDamagee;
-	private int mAmount;
+	private double mAmount;
 	@Override
 	protected int getContentSize(boolean absolute) 
 	{
-		return 2 + mDamagee.getSize();
+		return 4 + mDamagee.getSize();
 	}
 	@Override
 	public String getDescription()

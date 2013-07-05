@@ -14,7 +14,7 @@ public class DataWatcher extends AutoWrapper
 		initialize(DataWatcher.class);
 	}
 	
-	@WrapperMethod(name="a", returnType=Boolean.class, parameterTypes={})
+	@WrapperMethod(name="d", returnType=boolean.class, parameterTypes={})
 	private static Method mHasChanged;
 	
 	public boolean hasChanged()

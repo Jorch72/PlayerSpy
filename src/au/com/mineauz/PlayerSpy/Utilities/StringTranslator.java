@@ -12,7 +12,7 @@ public class StringTranslator
 	
 	public static boolean setActiveLanguage(String lang)
 	{
-		InputStream stream = ClassLoader.getSystemResourceAsStream("lang/" + lang + ".lang");
+		InputStream stream = ClassLoader.getSystemResourceAsStream("assets/minecraft/lang/" + lang + ".lang");
 		
 		if(stream == null)
 			return false;

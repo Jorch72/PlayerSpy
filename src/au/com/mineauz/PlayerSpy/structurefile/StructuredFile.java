@@ -8,9 +8,7 @@ import java.util.TreeMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
-import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
-import au.com.mineauz.PlayerSpy.debugging.Profiler;
 import au.com.mineauz.PlayerSpy.structurefile.AbstractHoleIndex.HoleData;
 
 public class StructuredFile

@@ -526,7 +526,7 @@ public class PlaybackContext
 			break;
 		}
 		case ChatCommand:
-			mDisplay.notifyViewers(forPlayer.name.get() + ": " + ((ChatCommandRecord)record).getMessage());
+			mDisplay.notifyViewers(forPlayer.getName() + ": " + ((ChatCommandRecord)record).getMessage());
 			break;
 		case Damage:
 		{
@@ -572,13 +572,13 @@ public class PlaybackContext
 			switch(gm)
 			{
 			case CREATIVE:
-				mDisplay.notifyViewers(forPlayer.name.get() + "'s gamemode was changed to Creative");
+				mDisplay.notifyViewers(forPlayer.getName() + "'s gamemode was changed to Creative");
 				break;
 			case SURVIVAL:
-				mDisplay.notifyViewers(forPlayer.name.get() + "'s gamemode was changed to Survival");
+				mDisplay.notifyViewers(forPlayer.getName() + "'s gamemode was changed to Survival");
 				break;
 			case ADVENTURE:
-				mDisplay.notifyViewers(forPlayer.name.get() + "'s gamemode was changed to Adventure");
+				mDisplay.notifyViewers(forPlayer.getName() + "'s gamemode was changed to Adventure");
 				break;
 			}
 			break;
@@ -602,19 +602,19 @@ public class PlaybackContext
 			Utility.setEntityPosition(forPlayer, ((LoginRecord)record).getLocation());
 			mDisplay.addShadowPlayer(forPlayer);
 			
-			mDisplay.notifyViewers(ChatColor.YELLOW + forPlayer.name.get() + " joined the game");
+			mDisplay.notifyViewers(ChatColor.YELLOW + forPlayer.getName() + " joined the game");
 			break;
 		case Logoff:
 			switch(((LogoffRecord)record).getLogoffType())
 			{
 			case Quit:
-				mDisplay.notifyViewers(ChatColor.YELLOW + forPlayer.name.get() + " left the game");
+				mDisplay.notifyViewers(ChatColor.YELLOW + forPlayer.getName() + " left the game");
 				break;
 			case Kick:
-				mDisplay.notifyViewers(ChatColor.RED + forPlayer.name.get() + " was kicked for: " + ((LogoffRecord)record).getReason());
+				mDisplay.notifyViewers(ChatColor.RED + forPlayer.getName() + " was kicked for: " + ((LogoffRecord)record).getReason());
 				break;
 			case Ban:
-				mDisplay.notifyViewers(ChatColor.RED + forPlayer.name.get() + " was banned for: " + ((LogoffRecord)record).getReason());
+				mDisplay.notifyViewers(ChatColor.RED + forPlayer.getName() + " was banned for: " + ((LogoffRecord)record).getReason());
 				break;
 			}
 			mDisplay.removeShadowPlayer(forPlayer);

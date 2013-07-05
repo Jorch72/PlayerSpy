@@ -36,6 +36,7 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.ServicesManager;
 import org.bukkit.plugin.messaging.Messenger;
 import org.bukkit.scheduler.BukkitScheduler;
+import org.bukkit.scoreboard.ScoreboardManager;
 
 import com.avaje.ebean.config.ServerConfig;
 
@@ -565,5 +566,12 @@ public class MockServer implements Server
 		Field m = Bukkit.class.getDeclaredField("server");
 		m.setAccessible(true);
 		m.set(null, new MockServer());
+	}
+
+	@Override
+	public ScoreboardManager getScoreboardManager()
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

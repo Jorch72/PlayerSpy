@@ -293,7 +293,7 @@ public class ShallowMonitor
 		logRecord(new DeathRecord(event.getEntity().getLocation(),event.getDeathMessage()));
 	}
 	
-	public void onDamage(Entity damageEnt, Block damageBlock, int damageAmount)
+	public void onDamage(Entity damageEnt, Block damageBlock, double damageAmount)
 	{
 		if(damageEnt != null)
 		{
@@ -320,7 +320,7 @@ public class ShallowMonitor
 			logRecord(new DamageRecord(null, damageAmount));
 		}
 	}
-	public void onAttack(Entity target, int damageAmount)
+	public void onAttack(Entity target, double damageAmount)
 	{
 		logRecord(new AttackRecord(target,damageAmount));
 	}
