@@ -71,6 +71,8 @@ public class TypeAttribute extends Attribute
 		c = new ItemTransactionConstraint(false, true);
 		mTypeMapping.put("gave", c);
 		mTypeMapping.put("put", c);
+		
+		mTypeMapping.put("spawn", new RecordTypeConstraint(RecordType.EntitySpawn));
 	}
 	
 	public TypeAttribute( )

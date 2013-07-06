@@ -157,5 +157,6 @@ public class RecordRegistry
 		registerRecordType(3, RecordType.UpdateInventory, au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord.class);
 		registerRecordType(3, RecordType.BlockChange, au.com.mineauz.PlayerSpy.Records.BlockChangeRecord.class);
 		registerRecordType(3, RecordType.PaintingChange, au.com.mineauz.PlayerSpy.Records.PaintingChangeRecord.class);
+		registerRecordType(3, RecordType.EntitySpawn, EntitySpawnRecord.class);
 	}
 }

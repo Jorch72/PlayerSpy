@@ -33,10 +33,14 @@ import org.bukkit.scheduler.BukkitTask;
 
 import au.com.mineauz.PlayerSpy.*;
 import au.com.mineauz.PlayerSpy.Records.*;
-import au.com.mineauz.PlayerSpy.Records.EntitySpawnRecord.SpawnType;
 import au.com.mineauz.PlayerSpy.Records.LogoffRecord.LogoffType;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
+import au.com.mineauz.PlayerSpy.monitoring.trackers.BreedingTracker;
+import au.com.mineauz.PlayerSpy.monitoring.trackers.BuildableMobTracker;
+import au.com.mineauz.PlayerSpy.monitoring.trackers.EggTracker;
+import au.com.mineauz.PlayerSpy.monitoring.trackers.SpawnEggTracker;
+import au.com.mineauz.PlayerSpy.monitoring.trackers.Tracker;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
@@ -46,7 +50,6 @@ public class GlobalMonitor implements Listener
 	private HashMap<String, Pair<ShallowMonitor, Long>> mOfflineMonitors;
 	private HashMap<String, DeepMonitor> mDeepMonitors;
 
-	private ItemFlowTracker mItemTracker;
 	public static final GlobalMonitor instance = new GlobalMonitor();
 
 	private HashMap<World, LogFile> mGlobalLogs = new HashMap<World, LogFile>();
@@ -62,6 +65,10 @@ public class GlobalMonitor implements Listener
 	private CauseFinder mCauseFinder = new CauseFinder();
 	
 	private BukkitTask mInvUpdateTask;
+	
+	// Trackers
+	List<Tracker> mTrackers;
+	private ItemFlowTracker mItemTracker;
 	
 	private GlobalMonitor()
 	{
@@ -116,6 +123,14 @@ public class GlobalMonitor implements Listener
 				mBuffers.put(world, Collections.synchronizedMap(new HashMap<String, RecordList>()));
 			}
 		}
+		
+		// Start trackers
+		mTrackers = new ArrayList<Tracker>();
+		
+		mTrackers.add(new BreedingTracker());
+		mTrackers.add(new EggTracker());
+		mTrackers.add(new SpawnEggTracker());
+		mTrackers.add(new BuildableMobTracker());
 		
 		mItemTracker = new ItemFlowTracker();
 		Bukkit.getPluginManager().registerEvents(this, SpyPlugin.getInstance());
@@ -1446,27 +1461,6 @@ public class GlobalMonitor implements Listener
 		{
 			mon.onConsume(event.getItem());
 			mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
-		}
-	}
-	
-	@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
-	public void onCreatureSpawn(CreatureSpawnEvent event)
-	{
-		switch(event.getSpawnReason())
-		{
-		case BREEDING:
-			logRecord(new EntitySpawnRecord(event.getEntity(), SpawnType.Breeding), Cause.globalCause(event.getEntity().getWorld(), "spawn"), null);
-			break;
-		case BUILD_IRONGOLEM:
-		case BUILD_SNOWMAN:
-		case BUILD_WITHER:
-			logRecord(new EntitySpawnRecord(event.getEntity(), SpawnType.Place), Cause.globalCause(event.getEntity().getWorld(), "spawn"), null);
-			break;
-		case EGG:
-			logRecord(new EntitySpawnRecord(event.getEntity(), SpawnType.Egg), Cause.globalCause(event.getEntity().getWorld(), "spawn"), null);
-			break;
-		default:
-			break;
 		}
 	}
 	

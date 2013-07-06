@@ -840,6 +840,8 @@ public class LogFile extends StructuredFile
 						mSessionIndex.set(mSessionIndex.indexOf(activeSession), activeSession);
 					}
 					
+					chosenSession = data.getIndexEntry();
+					
 					recordsToWrite = data.append(recordsToWrite);
 					
 					if (recordsToWrite != null)

@@ -68,7 +68,7 @@ public class DamageRecord extends Record implements ILocationAware
 	@Override
 	protected int getContentSize(boolean absolute) 
 	{
-		return 5 + (mDamager != null ? mDamager.getSize() : 0);
+		return 9 + (mDamager != null ? mDamager.getSize() : 0);
 	}
 	@Override
 	public String getDescription()

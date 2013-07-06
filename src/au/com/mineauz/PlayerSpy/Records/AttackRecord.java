@@ -62,7 +62,7 @@ public class AttackRecord extends Record implements ILocationAware
 	@Override
 	protected int getContentSize(boolean absolute) 
 	{
-		return 4 + mDamagee.getSize();
+		return 8 + mDamagee.getSize();
 	}
 	@Override
 	public String getDescription()

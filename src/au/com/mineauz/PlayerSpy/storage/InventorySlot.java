@@ -62,4 +62,10 @@ public class InventorySlot
 			return slot.Item == null;
 
 	}
+	
+	@Override
+	public String toString()
+	{
+		return "InventorySlot: { slot: " + Slot + " item: " + Item + " }";
+	}
 }
