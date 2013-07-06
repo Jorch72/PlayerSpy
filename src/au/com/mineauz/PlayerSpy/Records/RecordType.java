@@ -48,5 +48,6 @@ public enum RecordType
 	// This is like eating or throwing enderpearls etc.
 	RClickAction,
 	ItemTransaction,
-	ItemFrameChange
+	ItemFrameChange,
+	EntitySpawn
 }

@@ -26,6 +26,7 @@ import org.bukkit.inventory.PlayerInventory;
 import au.com.mineauz.PlayerSpy.Cause;
 import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
+import au.com.mineauz.PlayerSpy.Records.InventoryRecord;
 import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
@@ -48,6 +49,30 @@ public class ItemFlowTracker implements Listener
 	private void onItemSpawn(ItemSpawnEvent event)
 	{
 		
+	}
+	
+	public void updateInventoryStates()
+	{
+		for(Player player : Bukkit.getOnlinePlayers())
+		{
+			ShallowMonitor monitor = GlobalMonitor.instance.getMonitor(player);
+			
+			if(monitor == null)
+				continue;
+			
+			if(!mLastRecordedState.containsKey(player.getInventory()))
+			{
+				monitor.logRecord(new InventoryRecord(player.getInventory()));
+				recordInventoryState(player.getInventory());
+			}
+			else
+			{
+				ArrayList<InventorySlot> slots = detectChanges(player.getInventory(), false);
+				
+				if(!slots.isEmpty())
+					monitor.logRecord(new UpdateInventoryRecord(slots));
+			}
+		}
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

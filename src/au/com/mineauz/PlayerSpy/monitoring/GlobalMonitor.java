@@ -23,13 +23,17 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.player.*;
+import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
+import org.bukkit.event.vehicle.VehicleCreateEvent;
 import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.material.MaterialData;
+import org.bukkit.scheduler.BukkitTask;
 
 import au.com.mineauz.PlayerSpy.*;
 import au.com.mineauz.PlayerSpy.Records.*;
+import au.com.mineauz.PlayerSpy.Records.EntitySpawnRecord.SpawnType;
 import au.com.mineauz.PlayerSpy.Records.LogoffRecord.LogoffType;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
@@ -56,6 +60,8 @@ public class GlobalMonitor implements Listener
 
 	private SpreadTracker mSpreadTracker = new SpreadTracker();
 	private CauseFinder mCauseFinder = new CauseFinder();
+	
+	private BukkitTask mInvUpdateTask;
 	
 	private GlobalMonitor()
 	{
@@ -114,10 +120,24 @@ public class GlobalMonitor implements Listener
 		mItemTracker = new ItemFlowTracker();
 		Bukkit.getPluginManager().registerEvents(this, SpyPlugin.getInstance());
 		Bukkit.getPluginManager().registerEvents(mItemTracker, SpyPlugin.getInstance());
+		
+		mInvUpdateTask = Bukkit.getScheduler().runTaskTimer(SpyPlugin.getInstance(), new Runnable()
+		{
+			
+			@Override
+			public void run()
+			{
+				mItemTracker.updateInventoryStates();
+				updatePlayerPositions();
+			}
+		}, 1200, 1200);
 	}
+	
 	public void shutdown() 
 	{
 		Debug.fine("Shutting down the Global Monitor");
+		
+		mInvUpdateTask.cancel();
 		
 		LogFile.sNoTimeoutOverride = true;
 		flushAll();
@@ -435,6 +455,19 @@ public class GlobalMonitor implements Listener
 				logRecord(record, cause, backupCause);
 			}
 		});
+	}
+	
+	public void updatePlayerPositions()
+	{
+		for(Player player : Bukkit.getOnlinePlayers())
+		{
+			ShallowMonitor mon = getMonitor(player);
+			
+			if(mon == null)
+				continue;
+			
+			mon.logRecord(new TeleportRecord(player.getLocation(), TeleportCause.UNKNOWN));
+		}
 	}
 	
 	//***********************
@@ -854,8 +887,10 @@ public class GlobalMonitor implements Listener
 	private void onEggThrow(PlayerEggThrowEvent event)
 	{
 		ShallowMonitor mon = GlobalMonitor.instance.getMonitor(event.getPlayer());
-		if(mon != null)
-			mon.onEggThrow();
+		if(mon == null)
+			return;
+		
+		mon.onEggThrow();
 		mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
 	}
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -1363,7 +1398,7 @@ public class GlobalMonitor implements Listener
 			mon.onBreakHanging(event);
 	}
 	
-	@EventHandler
+	@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
 	public void onEntityInteract(EntityInteractEvent event)
 	{
 		if(event.getBlock().getType() == Material.WOOD_BUTTON)
@@ -1385,7 +1420,7 @@ public class GlobalMonitor implements Listener
 		}
 	}
 	
-	@EventHandler
+	@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
 	public void onStructureGrow(StructureGrowEvent event)
 	{
 		Cause c = Cause.globalCause(event.getWorld(), "#grow");
@@ -1403,7 +1438,7 @@ public class GlobalMonitor implements Listener
 		logRecords(records, c, null);
 	}
 
-	@EventHandler
+	@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
 	public void onPlayerConsumeItem(PlayerItemConsumeEvent event)
 	{
 		ShallowMonitor mon = getMonitor(event.getPlayer());
@@ -1412,6 +1447,33 @@ public class GlobalMonitor implements Listener
 			mon.onConsume(event.getItem());
 			mItemTracker.scheduleInventoryUpdate(event.getPlayer().getInventory());
 		}
+	}
+	
+	@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
+	public void onCreatureSpawn(CreatureSpawnEvent event)
+	{
+		switch(event.getSpawnReason())
+		{
+		case BREEDING:
+			logRecord(new EntitySpawnRecord(event.getEntity(), SpawnType.Breeding), Cause.globalCause(event.getEntity().getWorld(), "spawn"), null);
+			break;
+		case BUILD_IRONGOLEM:
+		case BUILD_SNOWMAN:
+		case BUILD_WITHER:
+			logRecord(new EntitySpawnRecord(event.getEntity(), SpawnType.Place), Cause.globalCause(event.getEntity().getWorld(), "spawn"), null);
+			break;
+		case EGG:
+			logRecord(new EntitySpawnRecord(event.getEntity(), SpawnType.Egg), Cause.globalCause(event.getEntity().getWorld(), "spawn"), null);
+			break;
+		default:
+			break;
+		}
+	}
+	
+	@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
+	public void onVehiclePlace(VehicleCreateEvent event)
+	{
+		
 	}
 	
 	public ItemFlowTracker getItemFlowTracker()
