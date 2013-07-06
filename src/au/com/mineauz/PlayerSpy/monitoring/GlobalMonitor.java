@@ -24,7 +24,7 @@ import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
-import org.bukkit.event.vehicle.VehicleCreateEvent;
+import org.bukkit.event.vehicle.VehicleDestroyEvent;
 import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
@@ -41,6 +41,7 @@ import au.com.mineauz.PlayerSpy.monitoring.trackers.BuildableMobTracker;
 import au.com.mineauz.PlayerSpy.monitoring.trackers.EggTracker;
 import au.com.mineauz.PlayerSpy.monitoring.trackers.SpawnEggTracker;
 import au.com.mineauz.PlayerSpy.monitoring.trackers.Tracker;
+import au.com.mineauz.PlayerSpy.monitoring.trackers.VehiclePlaceTracker;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
@@ -131,6 +132,7 @@ public class GlobalMonitor implements Listener
 		mTrackers.add(new EggTracker());
 		mTrackers.add(new SpawnEggTracker());
 		mTrackers.add(new BuildableMobTracker());
+		mTrackers.add(new VehiclePlaceTracker());
 		
 		mItemTracker = new ItemFlowTracker();
 		Bukkit.getPluginManager().registerEvents(this, SpyPlugin.getInstance());
@@ -1465,11 +1467,12 @@ public class GlobalMonitor implements Listener
 	}
 	
 	@EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
-	public void onVehiclePlace(VehicleCreateEvent event)
+	public void onVehicleDestroy(VehicleDestroyEvent event)
 	{
-		
+		if(event.getAttacker() instanceof Player)
+			logRecord(new AttackRecord(event.getVehicle(), -1), Cause.playerCause((Player)event.getAttacker()), null);
 	}
-	
+
 	public ItemFlowTracker getItemFlowTracker()
 	{
 		return mItemTracker;

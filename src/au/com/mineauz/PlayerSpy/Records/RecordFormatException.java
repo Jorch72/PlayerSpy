@@ -42,7 +42,7 @@ public class RecordFormatException extends Exception
 			return;
 		
 		mHistory = new ArrayList<Record>(5);
-		for(int i = history.size()-1 ; i >= history.size()-5; --i)
+		for(int i = history.size()-1 ; i >= history.size()-5 && i >= 0; --i)
 			mHistory.add(history.get(i));
 	}
 	
