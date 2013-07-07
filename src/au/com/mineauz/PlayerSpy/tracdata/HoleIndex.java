@@ -43,7 +43,7 @@ public class HoleIndex extends AbstractHoleIndex
 	@Override
 	protected void updateSize( long newSize )
 	{
-		mHeader.HolesIndexSize = newSize + mHeader.HolesIndexPadding;
+		mHeader.HolesIndexSize = newSize;
 	}
 
 	@Override

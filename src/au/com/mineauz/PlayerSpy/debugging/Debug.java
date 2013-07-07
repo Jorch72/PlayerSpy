@@ -19,6 +19,7 @@ import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
+import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.structurefile.HoleEntry;
 import au.com.mineauz.PlayerSpy.structurefile.StructuredFile;
@@ -97,6 +98,19 @@ public class Debug
 			mDebugLog.log(Level.SEVERE, "Caught exception", e);
 		SpyPlugin.getInstance().getLogger().log(Level.SEVERE, "Caught exception", e);
 	}
+	
+	public static synchronized void logExceptionDebugOnly(Throwable e)
+	{
+		if(mDebugLog != null)
+			mDebugLog.log(Level.SEVERE, "Caught exception", e);
+	}
+	
+	public static synchronized void logCrashDebugOnly(CrashReporter crash)
+	{
+		if(mDebugLog != null)
+			crash.log(mDebugLog);
+	}
+	
 	public static synchronized void logCrash(CrashReporter crash)
 	{
 		if(mDebugLog != null)
@@ -254,7 +268,7 @@ public class Debug
 	}
 	private static void logLayoutInt(LogFile log)
 	{
-		if(!log.getName().equals("__world"))
+		if(!log.getName().equals("Schmoller"))
 			return;
 		
 		try
@@ -265,6 +279,8 @@ public class Debug
 			HoleIndex holeIndex;
 			RollbackIndex rollbackIndex;
 			FileHeader header;
+			ACIDRandomAccessFile file;
+			
 			try
 			{
 				Field field = log.getClass().getDeclaredField("mHoleIndex");
@@ -281,6 +297,11 @@ public class Debug
 				field.setAccessible(true);
 				
 				rollbackIndex = (RollbackIndex) field.get(log);
+				
+				field = StructuredFile.class.getDeclaredField("mFile");
+				field.setAccessible(true);
+				
+				file = (ACIDRandomAccessFile) field.get(log);
 			}
 			catch(Exception e)
 			{
@@ -337,6 +358,9 @@ public class Debug
 				
 				mLayoutWriter.write(String.format("%X-%X:\t\t%s\r\n", entry.getKey(), entry.getKey() + entry.getValue().getArg1() - 1, entry.getValue().getArg2()));
 			}
+			
+			if(lastPos != file.length())
+				mLayoutWriter.write(String.format("%X-%X:\t\tUnallocated space!\r\n", lastPos, file.length()));
 			
 			mLayoutWriter.flush();
 		}

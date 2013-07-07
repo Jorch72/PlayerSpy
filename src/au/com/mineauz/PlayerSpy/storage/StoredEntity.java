@@ -21,7 +21,12 @@ public class StoredEntity
 	}
 	public StoredEntity(Entity ent)
 	{
-		mTypeId = ent.getType().getTypeId();
+		EntityType type = ent.getType();
+		// TODO: Remove when bukkit fixes this
+		if(ent instanceof Horse)
+			type = EntityType.HORSE;
+		
+		mTypeId = type.getTypeId();
 		if(mTypeId == -1)
 			mTypeId = (short) (1024 | ent.getType().ordinal());
 		

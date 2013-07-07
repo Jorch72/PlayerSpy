@@ -69,4 +69,10 @@ public class ChatCommandRecord extends Record
 		
 		return (mMessage.equals(((ChatCommandRecord)obj).mMessage) && mPrevented == ((ChatCommandRecord)obj).mPrevented);
 	}
+	
+	@Override
+	public String toString()
+	{
+		return "ChatCommand" + (mPrevented ? "- : " : ": ") + '"' + mMessage + '"';
+	}
 }

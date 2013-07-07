@@ -232,7 +232,7 @@ public class InspectBlockTask implements Task<Void>
 			}
 			
 			RecordList source = fileSession.Log.loadSession(fileSession.Session);
-			if(source.isEmpty())
+			if(source == null || source.isEmpty())
 				continue;
 			
 			processRecords(cause, source);

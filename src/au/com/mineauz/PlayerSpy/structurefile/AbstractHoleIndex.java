@@ -228,14 +228,49 @@ public abstract class AbstractHoleIndex extends DataIndex<HoleEntry, IMovableDat
 			
 			updatePadding(HoleEntry.cSize);
 			// The total size of the hole index now including 1 extra entry as padding
-			long newSize = mElements.size() * getEntrySize();
+			long newSize = mElements.size() * getEntrySize() + getPadding();
 			
 			// Temporary relocate so that the hole index can be placed into a space that used to include this index
 			updateLocation(mFile.length());
 			
 			// Find a new location for the index
-			long newLocation = mLocator.findFreeSpace(newSize + getPadding());
-			mLocator.consumeSpace(newLocation, newSize + getPadding());
+			long newLocation = mLocator.findFreeSpace(newSize);
+			
+			int elCount = mElements.size();
+			// ConsumeSpace. This is the same as in space locator but it makes sure there are no writes to file, just updates the list
+			for(HoleEntry hole : mElements)
+			{
+				if(hole.Location != newLocation)
+					continue;
+				
+				if(newLocation == hole.Location)
+				{
+					if(newLocation + newSize >= hole.Location + hole.Size)
+					{
+						// It completely covers the hole
+						mElements.remove(hole);
+					}
+					else
+					{
+						// It covers the start of the hole
+						hole.Size = (hole.Location + hole.Size) - (newLocation + newSize);
+						hole.Location += newSize;
+						
+						if(hole.Size <= 0)
+							mElements.remove(hole);
+					}
+				}
+				
+				Debug.finest("Consumed space %X-%X", newLocation, newLocation + newSize - 1);
+				Debug.logLayout(mHostingFile);
+				break;
+			}
+			
+			if(elCount > mElements.size())
+			{
+				// Something was removed, add it to padding
+				updatePadding(getPadding() + (HoleEntry.cSize * (elCount - mElements.size())));
+			}
 			
 			// Prepare the header info
 			updateElementCount(mElements.size());
@@ -246,7 +281,7 @@ public abstract class AbstractHoleIndex extends DataIndex<HoleEntry, IMovableDat
 			write(0);
 			
 			// Padding
-			mFile.write(new byte[HoleEntry.cSize]);
+			mFile.write(new byte[getPadding()]);
 
 			Debug.finest("Moving hole index from %X to (%X -> %X) setting %d bytes padding", oldLocation, getLocation(), getLocation() + getSize() - 1, getPadding());
 			Debug.logLayout(mHostingFile);

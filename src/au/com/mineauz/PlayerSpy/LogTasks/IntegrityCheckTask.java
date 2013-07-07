@@ -5,6 +5,7 @@ import java.io.FileFilter;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 import au.com.mineauz.PlayerSpy.tracdata.SessionEntry;
@@ -58,11 +59,13 @@ public class IntegrityCheckTask implements Task<IntegrityStats>
 			{
 				totalSessions++;
 				
-				if(log.loadSession(session) != null)
+				RecordList loaded = log.loadSession(session);
+				if(loaded != null && loaded.size() >= session.RecordCount)
 					sessions.put(file.getName(), sessions.get(file.getName()) + 1);
 				else
 				{
 					corruptSessions.put(file.getName(), corruptSessions.get(file.getName()) + 1);
+					sessions.put(file.getName(), sessions.get(file.getName()) + 1);
 					totalCorruptSessions++;
 				}
 			}

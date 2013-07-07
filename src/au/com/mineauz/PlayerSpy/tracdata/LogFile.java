@@ -2,6 +2,7 @@ package au.com.mineauz.PlayerSpy.tracdata;
 
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -760,6 +761,52 @@ public class LogFile extends StructuredFile
 			SessionData data = mSessionIndex.getDataFor(session);
 			return data.read();
 		}
+		catch(RecordFormatException e)
+		{
+			// Try to recover from the error
+			RecordList records = new RecordList();
+			records.addAll(e.getSucceededRecords());
+			
+			try
+			{
+				// Load the rollback state info in
+				short[] indices = mRollbackIndex.getRolledBackRecords(session);
+				for(int i = 0; i < indices.length; ++i)
+				{
+					if(indices[i] < 0 || indices[i] >= records.size())
+						continue;
+					
+					Record record = records.get(indices[i]);
+					if(record instanceof IRollbackable)
+					{
+						IRollbackable r = (IRollbackable)record;
+						r.setRollbackState(true);
+					}
+				}
+			}
+			catch(IOException ex)
+			{
+				Debug.logExceptionDebugOnly(ex);
+			}
+			
+			CrashReporter reporter = new CrashReporter(e);
+			reporter.setMessage("Loading session");
+			reporter.addVariable("LogFile", mPlayerName);
+			reporter.addVariable("Session", session.Id);
+			reporter.addVariable("Count", session.RecordCount);
+			reporter.addVariable("Is Compressed?", session.Compressed);
+			reporter.addVariable("Successful Records", records);
+			reporter.addVariable("Success Count", records.size());
+			
+			if(!mKnownBadSessions.contains(session.Id))
+				Debug.logCrash(reporter);
+			else
+				Debug.logCrashDebugOnly(reporter);
+			
+			mKnownBadSessions.add(session.Id);
+			
+			return records;
+		}
 		catch(Throwable e)
 		{
 			CrashReporter reporter = new CrashReporter(e);
@@ -768,7 +815,12 @@ public class LogFile extends StructuredFile
 			reporter.addVariable("Session", session.Id);
 			reporter.addVariable("Is Compressed?", session.Compressed);
 			
-			Debug.logCrash(reporter);
+			if(!mKnownBadSessions.contains(session.Id))
+				Debug.logCrash(reporter);
+			else
+				Debug.logCrashDebugOnly(reporter);
+			
+			mKnownBadSessions.add(session.Id);
 		}
 		finally
 		{
@@ -820,6 +872,9 @@ public class LogFile extends StructuredFile
 				{
 					// Get the session to place it
 					SessionEntry activeSession = mSessionIndex.getActiveSessionFor(owner);
+					if(activeSession != null && mKnownBadSessions.contains(activeSession.Id))
+						activeSession = null;
+					
 					SessionData data;
 					
 					if(activeSession != null)
@@ -1350,6 +1405,8 @@ public class LogFile extends StructuredFile
 	
 	/** Used for testing so that the file is used in isolation */
 	public boolean testOverride = false;
+	
+	private HashSet<Integer> mKnownBadSessions = new HashSet<Integer>();
 	
 	// Task for closing the logfile when everything is executed
 	private class CloseTask implements Task<Void> 

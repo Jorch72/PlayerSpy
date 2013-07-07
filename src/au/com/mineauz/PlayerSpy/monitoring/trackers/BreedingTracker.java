@@ -10,8 +10,13 @@ import org.bukkit.entity.Chicken;
 import org.bukkit.entity.Cow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Horse;
+import org.bukkit.entity.MushroomCow;
+import org.bukkit.entity.Ocelot;
 import org.bukkit.entity.Pig;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Sheep;
+import org.bukkit.entity.Wolf;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -45,24 +50,40 @@ public class BreedingTracker implements Listener, Tracker
 		
 		if(event.getRightClicked() instanceof Cow && (event.getPlayer().getItemInHand() != null && event.getPlayer().getItemInHand().getType() == Material.WHEAT))
 			data.entityId = event.getRightClicked().getEntityId();
+		else if(event.getRightClicked() instanceof MushroomCow && (event.getPlayer().getItemInHand() != null && event.getPlayer().getItemInHand().getType() == Material.WHEAT))
+			data.entityId = event.getRightClicked().getEntityId();
+		else if(event.getRightClicked() instanceof Sheep && (event.getPlayer().getItemInHand() != null && event.getPlayer().getItemInHand().getType() == Material.WHEAT))
+			data.entityId = event.getRightClicked().getEntityId();
 		else if(event.getRightClicked() instanceof Pig && (event.getPlayer().getItemInHand() != null && event.getPlayer().getItemInHand().getType() == Material.CARROT_ITEM))
 			data.entityId = event.getRightClicked().getEntityId();
-		// TODO: Check that this should actually be seeds
 		else if(event.getRightClicked() instanceof Chicken && (event.getPlayer().getItemInHand() != null && event.getPlayer().getItemInHand().getType() == Material.SEEDS))
 			data.entityId = event.getRightClicked().getEntityId();
+		else if(event.getRightClicked() instanceof Horse && (event.getPlayer().getItemInHand() != null && event.getPlayer().getItemInHand().getType() == Material.GOLDEN_APPLE))
+			data.entityId = event.getRightClicked().getEntityId();
+		else if(event.getRightClicked() instanceof Wolf && ((Wolf)event.getRightClicked()).isTamed() && (event.getPlayer().getItemInHand() != null && (event.getPlayer().getItemInHand().getType() == Material.PORK || event.getPlayer().getItemInHand().getType() == Material.COOKED_BEEF || event.getPlayer().getItemInHand().getType() == Material.RAW_BEEF || event.getPlayer().getItemInHand().getType() == Material.ROTTEN_FLESH || event.getPlayer().getItemInHand().getType() == Material.RAW_CHICKEN || event.getPlayer().getItemInHand().getType() == Material.COOKED_CHICKEN || event.getPlayer().getItemInHand().getType() == Material.GRILLED_PORK)))
+			data.entityId = event.getRightClicked().getEntityId();
+		else if(event.getRightClicked() instanceof Ocelot && ((Ocelot)event.getRightClicked()).isTamed() && (event.getPlayer().getItemInHand() != null && event.getPlayer().getItemInHand().getType() == Material.RAW_FISH))
+			data.entityId = event.getRightClicked().getEntityId(); 
 		
 		if(data.entityId == -1)
 			return;
 		
-		List<Data> dataList = mData.get(event.getRightClicked().getType());
+		EntityType type = event.getRightClicked().getType();
+		
+		// type returns null with horses as of writing
+		// TODO: Remove when bukkit fixes this
+		if(event.getRightClicked() instanceof Horse)
+			type = EntityType.HORSE;
+		
+		List<Data> dataList = mData.get(type);
 		
 		if(dataList == null)
 		{
 			dataList = new ArrayList<Data>();
-			mData.put(event.getRightClicked().getType(), dataList);
+			mData.put(type, dataList);
 		}
 		else
-			mData.renew(event.getRightClicked().getType());
+			mData.renew(type);
 		
 		dataList.add(data);
 	}
@@ -73,7 +94,14 @@ public class BreedingTracker implements Listener, Tracker
 		if(event.getSpawnReason() != SpawnReason.BREEDING)
 			return;
 		
-		if(!mData.containsKey(event.getEntityType()))
+		EntityType type = event.getEntityType();
+		
+		// type returns null with horses as of writing
+		// TODO: Remove when bukkit fixes this
+		if(event.getEntity() instanceof Horse)
+			type = EntityType.HORSE;
+		
+		if(!mData.containsKey(type))
 			return;
 		
 		// Guess which animal is the parent
@@ -83,7 +111,7 @@ public class BreedingTracker implements Listener, Tracker
 		
 		for(Entity ent : entities)
 		{
-			if(ent instanceof Animals && ((Animals)ent).isAdult() && ent.getType() == event.getEntityType())
+			if(ent instanceof Animals && ((Animals)ent).isAdult() && (ent.getType() == type || type == EntityType.HORSE && ent instanceof Horse))
 			{
 				double d = ent.getLocation().distanceSquared(event.getLocation());
 				if(d < dist)
@@ -98,7 +126,7 @@ public class BreedingTracker implements Listener, Tracker
 			return;
 		
 		// See if we have a record for this animal
-		List<Data> dataList = mData.get(event.getEntityType());
+		List<Data> dataList = mData.get(type);
 		for(Data data : dataList)
 		{
 			if(data.entityId == nearest.getEntityId())

@@ -160,7 +160,7 @@ public abstract class Index<T extends IndexEntry> implements Iterable<T>, IData<
 			// Append the index to the back of the file
 			write(0);
 			
-			Debug.finest(getIndexName() + " relocated from %X -> (%X->%X)", oldLocation, newLocation, newLocation + newSize - 1);
+			Debug.finest(getIndexName() + " relocated from (%X->%X) -> (%X->%X)", oldLocation, oldLocation + oldSize - 1, newLocation, newLocation + newSize - 1);
 			Debug.logLayout(mHostingFile);
 			
 			mLocator.releaseSpace(oldLocation, oldSize);

@@ -421,7 +421,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 			}
 			catch(RecordFormatException e)
 			{
-				e.setHistory(records);
+				e.setSucceededRecords(records);
 				throw e;
 			}
 			
