@@ -39,14 +39,6 @@ public class ItemFrameChangeRecord extends Record implements IRollbackable, ILoc
 		super(RecordType.ItemFrameChange);
 		mIsRolledBack = false;
 	}
-	@SuppressWarnings( "deprecation" )
-	public ItemFrameChangeRecord(au.com.mineauz.PlayerSpy.legacy.v2.ItemFrameChangeRecord old)
-	{
-		super(RecordType.ItemFrameChange);
-		
-		mFrame = new StoredItemFrame(old.getItemFrame());
-		mPlaced = old.getPlaced();
-	}
 
 	@Override
 	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 

@@ -203,7 +203,7 @@ public class StoredBlock
 			{
 				NBTTagCompound item = (NBTTagCompound)items.get(i);
 
-				au.com.mineauz.PlayerSpy.wrappers.minecraft.ItemStack nativeStack = new au.com.mineauz.PlayerSpy.wrappers.minecraft.ItemStack(0, 0, 0);
+				au.com.mineauz.PlayerSpy.wrappers.minecraft.ItemStack nativeStack = new au.com.mineauz.PlayerSpy.wrappers.minecraft.ItemStack(1, 0, 0);
 				nativeStack.readFromNBT(item);
 				
 				int slot = item.getInt("slot");

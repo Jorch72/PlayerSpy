@@ -63,16 +63,6 @@ public class BlockChangeRecord extends Record implements IRollbackable, ILocatio
 		mPlaced = place;
 		mIsRolledBack = false;
 	}
-	
-	@SuppressWarnings( "deprecation" )
-	public BlockChangeRecord(au.com.mineauz.PlayerSpy.legacy.v2.BlockChangeRecord old)
-	{
-		super(RecordType.BlockChange);
-		
-		mInitialBlock = old.getInitialBlock();
-		mFinalBlock = old.getFinalBlock();
-		mPlaced = old.wasPlaced();
-	}
 
 	@Override
 	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 

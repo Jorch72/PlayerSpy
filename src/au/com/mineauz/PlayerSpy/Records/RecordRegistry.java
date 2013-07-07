@@ -4,19 +4,6 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
-import au.com.mineauz.PlayerSpy.legacy.v2.BlockChangeRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.DropItemRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.InteractRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.InventoryRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.InventoryTransactionRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.ItemFrameChangeRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.ItemPickupRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.PaintingChangeRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.RightClickActionRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.UpdateInventoryRecord;
-
-
-@SuppressWarnings("deprecation")
 public class RecordRegistry 
 {
 	/**
@@ -114,7 +101,6 @@ public class RecordRegistry
 		// ===== Version 1 Records =====
 		registerRecordType(1, RecordType.ArmSwing, ArmSwingRecord.class);
 		registerRecordType(1, RecordType.Attack, AttackRecord.class);
-		registerRecordType(1, RecordType.BlockChange, au.com.mineauz.PlayerSpy.legacy.BlockChangeRecord.class);
 		registerRecordType(1, RecordType.ChatCommand, ChatCommandRecord.class);
 		registerRecordType(1, RecordType.Damage, DamageRecord.class);
 		registerRecordType(1, RecordType.Death, DeathRecord.class);
@@ -123,7 +109,6 @@ public class RecordRegistry
 		registerRecordType(1, RecordType.FullInventory, InventoryRecord.class);
 		registerRecordType(1, RecordType.GameMode, GameModeRecord.class);
 		registerRecordType(1, RecordType.HeldItemChange, HeldItemChangeRecord.class);
-		registerRecordType(1, RecordType.Interact, au.com.mineauz.PlayerSpy.legacy.InteractRecord.class);
 		registerRecordType(1, RecordType.ItemPickup, ItemPickupRecord.class);
 		registerRecordType(1, RecordType.Login, LoginRecord.class);
 		registerRecordType(1, RecordType.Logoff, LogoffRecord.class);
@@ -135,7 +120,6 @@ public class RecordRegistry
 		registerRecordType(1, RecordType.Sneak, SneakRecord.class);
 		registerRecordType(1, RecordType.Sprint, SprintRecord.class);
 		registerRecordType(1, RecordType.Teleport, TeleportRecord.class);
-		registerRecordType(1, RecordType.UpdateInventory, au.com.mineauz.PlayerSpy.legacy.UpdateInventoryRecord.class);
 		registerRecordType(1, RecordType.VehicleMount, VehicleMountRecord.class);
 		registerRecordType(1, RecordType.WorldChange, WorldChangeRecord.class);
 		

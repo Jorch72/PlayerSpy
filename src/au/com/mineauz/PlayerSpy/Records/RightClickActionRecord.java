@@ -45,14 +45,6 @@ public class RightClickActionRecord extends Record implements ILocationAware
 	{
 		super(RecordType.RClickAction);
 	}
-	@SuppressWarnings( "deprecation" )
-	public RightClickActionRecord(au.com.mineauz.PlayerSpy.legacy.v2.RightClickActionRecord old)
-	{
-		super(RecordType.RClickAction);
-		mAction = Action.values()[old.getAction().ordinal()];
-		mItem = new StoredItemStack(old.getItem());
-		mEntity = old.getEntity();
-	}
 
 	@Override
 	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 

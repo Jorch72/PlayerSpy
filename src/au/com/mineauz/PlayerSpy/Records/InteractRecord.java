@@ -48,21 +48,6 @@ public class InteractRecord extends Record implements ILocationAware
 		if(ent != null)
 			mEntity = ent;
 	}
-	
-	@SuppressWarnings( "deprecation" )
-	public InteractRecord(au.com.mineauz.PlayerSpy.legacy.v2.InteractRecord old)
-	{
-		super(RecordType.Interact);
-		
-		mType = old.getAction();
-		
-		if(old.getBlock() != null)
-			mBlock = old.getBlock();
-		if(old.getItem() != null)
-			mItem = new StoredItemStack(old.getItem());
-		if(old.getEntity() != null)
-			mEntity = old.getEntity();
-	}
 
 	public InteractRecord() 
 	{

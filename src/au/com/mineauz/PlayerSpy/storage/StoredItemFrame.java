@@ -23,14 +23,7 @@ public class StoredItemFrame
 		mFacing = frame.getFacing();
 		mLocation = new StoredLocation(frame.getLocation());
 	}
-	@SuppressWarnings( "deprecation" )
-	public StoredItemFrame(au.com.mineauz.PlayerSpy.legacy.v2.StoredItemFrame old)
-	{
-		mRotation = old.getRotation();
-		mItem = old.getItem();
-		mFacing = old.getBlockFace();
-		mLocation = new StoredLocation(old.getLocation());
-	}
+
 	private StoredItemFrame()
 	{
 		

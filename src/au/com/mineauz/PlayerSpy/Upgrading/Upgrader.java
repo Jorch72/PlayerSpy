@@ -10,22 +10,11 @@ import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.SessionInfoRecord;
-import au.com.mineauz.PlayerSpy.legacy.InteractRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.BlockChangeRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.DropItemRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.InventoryRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.InventoryTransactionRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.ItemFrameChangeRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.ItemPickupRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.PaintingChangeRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.RightClickActionRecord;
-import au.com.mineauz.PlayerSpy.legacy.v2.UpdateInventoryRecord;
 import au.com.mineauz.PlayerSpy.tracdata.FileHeader;
 import au.com.mineauz.PlayerSpy.tracdata.SessionEntry;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
-@SuppressWarnings( { "deprecation", "unchecked" } )
 public class Upgrader 
 {
 	public static void run()
@@ -165,6 +154,7 @@ public class Upgrader
 		return true;
 	}
 	
+	@SuppressWarnings( "unused" )
 	@SafeVarargs
 	private static void registerUpgradeMapping(int fromVersion, Class<? extends Record> oldType, Class<? extends Record>... newTypes)
 	{
@@ -198,21 +188,6 @@ public class Upgrader
 	{
 		mUpgraderMap = new HashMap<Integer, HashMap<Class<? extends Record>,List<Class<? extends Record>>>>();
 		
-		// ======= Version 1 =======
-		registerUpgradeMapping(1, au.com.mineauz.PlayerSpy.legacy.UpdateInventoryRecord.class, UpdateInventoryRecord.class);
-		registerUpgradeMapping(1, au.com.mineauz.PlayerSpy.legacy.BlockChangeRecord.class, BlockChangeRecord.class);
-		registerUpgradeMapping(1, InteractRecord.class, au.com.mineauz.PlayerSpy.legacy.v2.InteractRecord.class);
 		
-		// ======= Version 2 =======
-		registerUpgradeMapping(2, DropItemRecord.class, au.com.mineauz.PlayerSpy.Records.DropItemRecord.class);
-		registerUpgradeMapping(2, au.com.mineauz.PlayerSpy.legacy.v2.InteractRecord.class, au.com.mineauz.PlayerSpy.Records.InteractRecord.class);
-		registerUpgradeMapping(2, InventoryRecord.class, au.com.mineauz.PlayerSpy.Records.InventoryRecord.class);
-		registerUpgradeMapping(2, InventoryTransactionRecord.class, au.com.mineauz.PlayerSpy.Records.InventoryTransactionRecord.class);
-		registerUpgradeMapping(2, ItemPickupRecord.class, au.com.mineauz.PlayerSpy.Records.ItemPickupRecord.class);
-		registerUpgradeMapping(2, RightClickActionRecord.class, au.com.mineauz.PlayerSpy.Records.RightClickActionRecord.class);
-		registerUpgradeMapping(2, ItemFrameChangeRecord.class, au.com.mineauz.PlayerSpy.Records.ItemFrameChangeRecord.class);
-		registerUpgradeMapping(2, UpdateInventoryRecord.class, au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord.class);
-		registerUpgradeMapping(2, BlockChangeRecord.class, au.com.mineauz.PlayerSpy.Records.BlockChangeRecord.class);
-		registerUpgradeMapping(2, PaintingChangeRecord.class, au.com.mineauz.PlayerSpy.Records.PaintingChangeRecord.class);
 	}
 }

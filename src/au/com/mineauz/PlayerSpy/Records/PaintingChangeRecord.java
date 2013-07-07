@@ -35,13 +35,6 @@ public class PaintingChangeRecord extends Record implements IRollbackable, ILoca
 		super(RecordType.PaintingChange);
 		mIsRolledBack = false;
 	}
-	@SuppressWarnings( "deprecation" )
-	public PaintingChangeRecord(au.com.mineauz.PlayerSpy.legacy.v2.PaintingChangeRecord old)
-	{
-		super(RecordType.PaintingChange);
-		mPainting = old.getPainting();
-		mPlaced = old.getPlaced();
-	}
 
 	@Override
 	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 

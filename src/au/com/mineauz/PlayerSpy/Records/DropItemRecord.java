@@ -27,13 +27,6 @@ public class DropItemRecord extends Record
 	{
 		super(RecordType.DropItem);
 	}
-	
-	@SuppressWarnings( "deprecation" )
-	public DropItemRecord(au.com.mineauz.PlayerSpy.legacy.v2.DropItemRecord old)
-	{
-		super(RecordType.DropItem);
-		mStack = new StoredItemStack(old.getItem());
-	}
 
 	@Override
 	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 

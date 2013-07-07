@@ -58,16 +58,6 @@ public class InventoryTransactionRecord extends Record implements IRollbackable,
 		mIsRolledBack = false;
 	}
 	
-	@SuppressWarnings( "deprecation" )
-	public InventoryTransactionRecord(au.com.mineauz.PlayerSpy.legacy.v2.InventoryTransactionRecord old)
-	{
-		super(RecordType.ItemTransaction);
-		
-		mItem = old.getItem();
-		mInvInfo = old.getInventoryInfo();
-		mTake = old.isTaking();
-	}
-
 	/**
 	 * Gets the item involved
 	 */

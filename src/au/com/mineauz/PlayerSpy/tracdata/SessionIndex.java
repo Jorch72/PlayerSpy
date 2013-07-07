@@ -424,6 +424,10 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 				e.setSucceededRecords(records);
 				throw e;
 			}
+			finally
+			{
+				stream.close();
+			}
 			
 			// Load the rollback state info in
 			short[] indices = ((LogFile)mHostingFile).mRollbackIndex.getRolledBackRecords(mSession);

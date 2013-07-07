@@ -25,19 +25,6 @@ public class UpdateInventoryRecord extends Record
 		super(RecordType.UpdateInventory);
 		Slots = slots;
 	}
-	
-	@SuppressWarnings( "deprecation" )
-	public UpdateInventoryRecord(au.com.mineauz.PlayerSpy.legacy.v2.UpdateInventoryRecord old)
-	{
-		super(RecordType.UpdateInventory);
-
-		Slots = new ArrayList<InventorySlot>();
-		
-		for(au.com.mineauz.PlayerSpy.legacy.v2.InventorySlot oldSlot : old.Slots)
-		{
-			Slots.add(new InventorySlot(oldSlot.Item, oldSlot.Slot));
-		}
-	}
 
 	@Override
 	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 

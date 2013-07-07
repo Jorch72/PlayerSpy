@@ -49,7 +49,7 @@ public class Debug
 			OutputStream stream = new FileOutputStream(debugLogFile, true);
 
 			mDebugLog = Logger.getLogger("PlayerSpyDebug");
-			mDebugLog.setLevel(Level.FINEST);
+			mDebugLog.setLevel(Level.INFO); // TODO: NOTE: This level should be set to INFO for release versions 
 			mDebugLog.setUseParentHandlers(false);
 			
 			for(Handler handler : mDebugLog.getHandlers())
@@ -263,9 +263,11 @@ public class Debug
 	
 	public static void logLayout(StructuredFile log)
 	{
-		if(log instanceof LogFile)
-			logLayoutInt((LogFile)log);
+		// This is not to be used for release versions
+//		if(log instanceof LogFile)
+//			logLayoutInt((LogFile)log);
 	}
+	@SuppressWarnings( "unused" )
 	private static void logLayoutInt(LogFile log)
 	{
 		if(!log.getName().equals("Schmoller"))

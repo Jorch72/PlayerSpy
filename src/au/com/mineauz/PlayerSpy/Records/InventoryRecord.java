@@ -28,15 +28,6 @@ public class InventoryRecord extends Record
 	{
 		super(RecordType.FullInventory);
 	}
-	@SuppressWarnings( "deprecation" )
-	public InventoryRecord(au.com.mineauz.PlayerSpy.legacy.v2.InventoryRecord old)
-	{
-		super(RecordType.FullInventory);
-		
-		mItems = old.getItems();
-		mArmour = old.getArmour();
-		mSlot = old.getHeldSlot();
-	}
 
 	public InventoryRecord(PlayerInventory inventory) 
 	{

@@ -46,7 +46,12 @@ public class EntitySpawnRecord extends Record implements ILocationAware
 	@Override
 	protected void readContents(DataInputStream stream, World currentWorld, boolean absolute) throws IOException, RecordFormatException 
 	{
-		mType = SpawnType.values()[stream.readByte()];
+		int type = stream.readByte();
+		
+		if(type >= SpawnType.values().length || type < 0)
+			throw new RecordFormatException("Bad spawntype " + type);
+		
+		mType = SpawnType.values()[type];
 		mSpawned = StoredEntity.readEntity(stream);
 	}
 

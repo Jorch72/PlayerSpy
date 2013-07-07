@@ -32,14 +32,6 @@ public class ItemPickupRecord extends Record implements ILocationAware
 	{
 		super(RecordType.ItemPickup);
 	}
-	@SuppressWarnings( "deprecation" )
-	public ItemPickupRecord(au.com.mineauz.PlayerSpy.legacy.v2.ItemPickupRecord old)
-	{
-		super(RecordType.ItemPickup);
-		
-		mLocation = new StoredLocation(old.getLocation());
-		mItem = new StoredItemStack(old.getItemStack());
-	}
 
 	@Override
 	protected void writeContents(DataOutputStream stream, boolean absolute) throws IOException 
