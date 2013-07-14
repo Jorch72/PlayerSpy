@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.bukkit.Color;
+import org.bukkit.FireworkEffect;
 import org.bukkit.inventory.meta.*;
 
 import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
@@ -108,6 +109,33 @@ public class StoredItemMeta
 				
 				data = map;
 			}
+			else if(type.equals("firework"))
+			{
+				boolean trail = ((NBTTagCompound)tag).getByte("hasTrail") == 1;
+				boolean flicker = ((NBTTagCompound)tag).getByte("hasFlicker") == 1;
+				
+				FireworkEffect.Type effectType = FireworkEffect.Type.valueOf(((NBTTagCompound)tag).getString("fireworkType"));
+				
+				NBTTagList primary = ((NBTTagCompound)tag).getList("primary");
+				NBTTagList secondary = ((NBTTagCompound)tag).getList("fade");
+				
+				ArrayList<Color> colors = new ArrayList<Color>();
+				ArrayList<Color> fade = new ArrayList<Color>();
+				
+				if(primary != null)
+				{
+					for(int i = 0; i < primary.size(); ++i)
+						colors.add((Color)makeObjectFor(primary.get(i)));
+				}
+				
+				if(secondary != null)
+				{
+					for(int i = 0; i < secondary.size(); ++i)
+						fade.add((Color)makeObjectFor(secondary.get(i)));
+				}
+				
+				return FireworkEffect.builder().flicker(flicker).trail(trail).with(effectType).withColor(colors).withFade(fade).build();
+			}
 			else
 				throw new RuntimeException("Unsupported type: " + type);
 		}
@@ -185,6 +213,32 @@ public class StoredItemMeta
 			tag = new NBTTagCompound("");
 			((NBTTagCompound)tag).set("type", new NBTTagString("", "color"));
 			((NBTTagCompound)tag).set("value", new NBTTagInt("", ((Color)data).asRGB()));
+		}
+		else if(data instanceof FireworkEffect)
+		{
+			FireworkEffect effect = (FireworkEffect)data;
+			
+			tag = new NBTTagCompound("");
+			((NBTTagCompound)tag).set("type", new NBTTagString("", "firework"));
+			((NBTTagCompound)tag).set("hasTrail", new NBTTagByte("", (byte)(effect.hasTrail() ? 1 : 0)));
+			((NBTTagCompound)tag).set("hasFlicker", new NBTTagByte("", (byte)(effect.hasFlicker() ? 1 : 0)));
+			((NBTTagCompound)tag).set("fireworkType", new NBTTagString("", effect.getType().name()));
+			
+			if(effect.getColors() != null)
+			{
+				NBTTagList colours = new NBTTagList("");
+				for(Color col : effect.getColors())
+					colours.add(makeTagFor(col));
+				((NBTTagCompound)tag).set("primary", colours);
+			}
+			
+			if(effect.getFadeColors() != null)
+			{
+				NBTTagList colours = new NBTTagList("");
+				for(Color col : effect.getFadeColors())
+					colours.add(makeTagFor(col));
+				((NBTTagCompound)tag).set("fade", colours);
+			}
 		}
 		else
 			throw new RuntimeException("Invalid type " + data.getClass().getName() + " for making NBT tags");
