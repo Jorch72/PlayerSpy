@@ -264,13 +264,12 @@ public class Debug
 	public static void logLayout(StructuredFile log)
 	{
 		// This is not to be used for release versions
-//		if(log instanceof LogFile)
-//			logLayoutInt((LogFile)log);
+		if(log instanceof LogFile)
+			logLayoutInt((LogFile)log);
 	}
-	@SuppressWarnings( "unused" )
 	private static void logLayoutInt(LogFile log)
 	{
-		if(!log.getName().equals("Schmoller"))
+		if(!log.getName().equals("raven__quinn"))
 			return;
 		
 		try

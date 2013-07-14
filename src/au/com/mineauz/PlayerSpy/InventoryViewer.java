@@ -67,10 +67,10 @@ public class InventoryViewer
 			printItem(viewer, inventory.getItem(i), String.format("%d,%d", (i-9)%9, (i-9)/9));
 		
 		viewer.sendMessage("  Armour:");
-		printItem(viewer, inventory.getItem(36), "Helmet");
-		printItem(viewer, inventory.getItem(37), "Chestplate");
-		printItem(viewer, inventory.getItem(38), "Leggings");
-		printItem(viewer, inventory.getItem(39), "Boots");
+		printItem(viewer, inventory.getItem(39), "Helmet");
+		printItem(viewer, inventory.getItem(38), "Chestplate");
+		printItem(viewer, inventory.getItem(37), "Leggings");
+		printItem(viewer, inventory.getItem(36), "Boots");
 	}
 	
 	private static class EventHandler implements Listener
