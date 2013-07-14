@@ -337,7 +337,9 @@ public class LogFile extends StructuredFile
 	 */
 	public void close(boolean noTimeout)
 	{
-		Debug.loggedAssert(mIsLoaded && !mIsClosing && mTimeoutId == -1);
+		Debug.loggedAssert(mIsLoaded); // FIXME: Assertion thrown TASK: Assertion in LogFile.close
+		Debug.loggedAssert(!mIsClosing);
+		Debug.loggedAssert(mTimeoutId == -1);
 		
 		mReferenceLock.lock();
 		
@@ -394,7 +396,9 @@ public class LogFile extends StructuredFile
 	 */
 	public void closeAsync(boolean noTimeout)
 	{
-		Debug.loggedAssert(mIsLoaded && !mIsClosing && mTimeoutId == -1);
+		Debug.loggedAssert(mIsLoaded);
+		Debug.loggedAssert(!mIsClosing);
+		Debug.loggedAssert(mTimeoutId == -1);
 		
 		mReferenceLock.lock();
 		

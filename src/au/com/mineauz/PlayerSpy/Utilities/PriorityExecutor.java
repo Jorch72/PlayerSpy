@@ -249,6 +249,20 @@ public class PriorityExecutor
 		}
 	}
 	
+	public int getTaskCount()
+	{
+		int count = 0;
+		for(ThreadInfo thread : mThreadPool)
+		{
+			synchronized(thread.taskQueue)
+			{
+				count += thread.taskQueue.size() + (thread.isExecuting ? 1 : 0);
+			}
+		}
+		
+		return count;
+	}
+	
 	
 	private static class CallbackProxy<T> implements Callable<Void>
 	{

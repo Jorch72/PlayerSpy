@@ -197,6 +197,12 @@ public class ShallowMonitor
 	{
 		Debug.loggedAssert(mCurrentTransactionInventory != null);
 		
+		if(item.getAmount() < 0 && !take)
+		{
+			Debug.info("Got < 0 amount for transaction. Item: %s take: %s player: %s", item, take, mPlayer.getName());
+			return;
+		}
+		
 		// Total up transactions
 		for(ItemStack transaction : mCurrentTransactions)
 		{
@@ -213,7 +219,7 @@ public class ShallowMonitor
 		}
 		
 		// No match
-		ItemStack transaction = item.clone();
+		ItemStack transaction = item.clone(); // FIXME: item can be null
 		if(take)
 			transaction.setAmount(-transaction.getAmount());
 		mCurrentTransactions.add(transaction);

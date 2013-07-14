@@ -312,7 +312,7 @@ public class StoredBlock
 		{
 			stream.writeByte(1);
 			
-			NBTCompressedStreamTools.writeCompressed(mStateData, stream);
+			NBTCompressedStreamTools.write(mStateData, stream);
 		}
 	}
 	
@@ -332,7 +332,7 @@ public class StoredBlock
 		
 		if(stream.readByte() == 1)
 		{
-			mStateData = NBTCompressedStreamTools.readCompressed(stream);
+			mStateData = NBTCompressedStreamTools.read(stream);
 		}
 	}
 	
@@ -346,7 +346,7 @@ public class StoredBlock
 		ByteArrayOutputStream temp = new ByteArrayOutputStream();
 		try
 		{
-			NBTCompressedStreamTools.writeCompressed(mStateData, temp);
+			NBTCompressedStreamTools.write(mStateData, temp);
 		}
 		catch(IOException e)
 		{

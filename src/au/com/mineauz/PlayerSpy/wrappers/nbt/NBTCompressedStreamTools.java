@@ -25,7 +25,7 @@ public class NBTCompressedStreamTools extends AutoWrapper
 	@WrapperMethod(name="a", returnType=NBTTagCompound.class, parameterTypes=DataInput.class)
 	private static Method mReadInput;
 	
-	public static NBTTagCompound readCompressed(InputStream stream) throws IOException
+	public static NBTTagCompound read(InputStream stream) throws IOException
 	{
 		// NOTE: It turns out that the wrapped version closes the stream, this is not what I want, so I am replicating the functionality
 		DataInputStream dInput = new DataInputStream(new BufferedInputStream(stream));
@@ -36,11 +36,27 @@ public class NBTCompressedStreamTools extends AutoWrapper
 	@WrapperMethod(name="a", returnType=void.class, parameterTypes={NBTTagCompound.class, DataOutput.class})
 	private static Method mWriteOutput;
 	
-	public static void writeCompressed(NBTTagCompound tag, OutputStream stream) throws IOException
+	public static void write(NBTTagCompound tag, OutputStream stream) throws IOException
 	{
 		// NOTE: It turns out that the wrapped version closes the stream, this is not what I want, so I am replicating the functionality
 		DataOutputStream dOutput = new DataOutputStream(stream);
 
         callStaticMethod(mWriteOutput, tag, dOutput);
+	}
+	
+	@WrapperMethod(name="a", returnType=NBTTagCompound.class, parameterTypes=InputStream.class)
+	private static Method mReadCompressed;
+	
+	public static NBTTagCompound readCompressed(InputStream stream) throws IOException
+	{
+        return callStaticMethod(mReadCompressed, stream);
+	}
+	
+	@WrapperMethod(name="a", returnType=void.class, parameterTypes={NBTTagCompound.class, OutputStream.class})
+	private static Method mWriteCompressed;
+	
+	public static void writeCompressed(NBTTagCompound tag, OutputStream stream) throws IOException
+	{
+        callStaticMethod(mWriteCompressed, tag, stream);
 	}
 }

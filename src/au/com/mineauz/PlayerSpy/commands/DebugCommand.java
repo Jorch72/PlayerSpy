@@ -14,6 +14,7 @@ import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
@@ -269,6 +270,11 @@ public class DebugCommand implements ICommand
 				dayTime /= 1000;
 				sender.sendMessage("Your time: " + ((Player)sender).getPlayerTime() + " Offset: " + ((Player)sender).getPlayerTimeOffset() + "Sys time: " + dayTime);
 			}
+		}
+		else if(args[0].equalsIgnoreCase("state"))
+		{
+			int tasks = SpyPlugin.getExecutor().getTaskCount();
+			sender.sendMessage("There are " + tasks + " tasks in the queues");
 		}
 		else
 			return false;

@@ -548,7 +548,7 @@ public class ItemFlowTracker implements Listener
 				
 				if(current != null && !current.equals(mLastSlot)) // The slot has changed
 				{
-					if(Utility.areEqualIgnoreAmount(mLastCursor, mWho.getItemOnCursor()) && mLastCursor != null)
+					if(Utility.areEqualIgnoreAmount(mLastCursor, mWho.getItemOnCursor()) && mLastCursor != null && mCurrentTransactions.containsKey(mWho))
 					{
 						// Only some were put into the slot
 						int difference = mLastCursor.getAmount() - mWho.getItemOnCursor().getAmount();
@@ -568,7 +568,7 @@ public class ItemFlowTracker implements Listener
 						mCurrentTransactions.put(mWho, null);
 						mPlayerLastClick.put(mWho, -999);
 					}
-					else
+					else if(mLastCursor != null)
 					{
 						// Put all into the inventory, and picked up what was there
 						if(mon != null)
@@ -579,7 +579,7 @@ public class ItemFlowTracker implements Listener
 					}
 				}
 			}
-			else if(mInventory != null && mSlot == -2) // Inventory updates needed
+			else if(mInventory != null && mSlot == -2 && mCurrentTransactions.containsKey(mWho)) // Inventory updates needed
 			{
 				ArrayList<InventorySlot> changes = detectChanges(mInventory, true);
 				int totalToTake = 0;
@@ -605,7 +605,7 @@ public class ItemFlowTracker implements Listener
 			}
 			else
 			{
-				if(Utility.getStackOrNull(mWho.getItemOnCursor()) == null && mLastCursor != null)
+				if(Utility.getStackOrNull(mWho.getItemOnCursor()) == null && mLastCursor != null && mCurrentTransactions.containsKey(mWho))
 				{
 					Debug.finer("Threw out an item");
 					// Item thrown out
