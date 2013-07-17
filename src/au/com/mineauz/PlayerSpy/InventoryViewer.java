@@ -58,21 +58,30 @@ public class InventoryViewer
 	
 	public static void printInventory(Inventory inventory, CommandSender viewer)
 	{
-		viewer.sendMessage(inventory.getTitle());
-		viewer.sendMessage("  Hotbar:");
-		for(int i = 0; i < 9; ++i)
-			printItem(viewer, inventory.getItem(i), "" + i);
-
-		viewer.sendMessage("");
-		viewer.sendMessage("  Main Inventory:");
-		for(int i = 9; i < 36; ++i)
-			printItem(viewer, inventory.getItem(i), String.format("%d,%d", (i-9)%9, (i-9)/9));
-		
-		viewer.sendMessage("  Armour:");
-		printItem(viewer, inventory.getItem(39), "Helmet");
-		printItem(viewer, inventory.getItem(38), "Chestplate");
-		printItem(viewer, inventory.getItem(37), "Leggings");
-		printItem(viewer, inventory.getItem(36), "Boots");
+		if(inventory instanceof PlayerInventory)
+		{
+			viewer.sendMessage(inventory.getTitle());
+			viewer.sendMessage("  Hotbar:");
+			for(int i = 0; i < 9; ++i)
+				printItem(viewer, inventory.getItem(i), "" + i);
+	
+			viewer.sendMessage("");
+			viewer.sendMessage("  Main Inventory:");
+			for(int i = 9; i < 36; ++i)
+				printItem(viewer, inventory.getItem(i), String.format("%d,%d", (i-9)%9, (i-9)/9));
+			
+			viewer.sendMessage("  Armour:");
+			printItem(viewer, inventory.getItem(39), "Helmet");
+			printItem(viewer, inventory.getItem(38), "Chestplate");
+			printItem(viewer, inventory.getItem(37), "Leggings");
+			printItem(viewer, inventory.getItem(36), "Boots");
+		}
+		else
+		{
+			viewer.sendMessage(inventory.getTitle());
+			for(int i = 0; i < inventory.getSize(); ++i)
+				printItem(viewer, inventory.getItem(i), "" + i);
+		}
 	}
 	
 	private static class EventHandler implements Listener
@@ -153,10 +162,21 @@ public class InventoryViewer
 				if(state.offlineOwner != null)
 				{
 					Player onlinePlayer = state.offlineOwner.getPlayer();
-					if(onlinePlayer != null)
-						onlinePlayer.getInventory().setContents(state.inventory.getContents());
+					
+					if(state.inventory instanceof PlayerInventory)
+					{
+						if(onlinePlayer != null)
+							onlinePlayer.getInventory().setContents(state.inventory.getContents());
+						else
+							Utility.setOfflinePlayerInventory(state.offlineOwner, (PlayerInventory)state.inventory);
+					}
 					else
-						Utility.setOfflinePlayerInventory(state.offlineOwner, (PlayerInventory)state.inventory);
+					{
+						if(onlinePlayer != null)
+							onlinePlayer.getEnderChest().setContents(state.inventory.getContents());
+						else
+							Utility.setOfflinePlayerEnderChest(state.offlineOwner, state.inventory);
+					}
 					
 					ArrayList<InventorySlot> changes = GlobalMonitor.instance.getItemFlowTracker().detectChanges(state.inventory, false);
 					GlobalMonitor.instance.getItemFlowTracker().recordInventoryChanges(state.inventory, changes);

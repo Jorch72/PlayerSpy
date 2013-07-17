@@ -81,17 +81,18 @@ public class InventoryCommand implements ICommand
 		long current = System.currentTimeMillis(); 
 		long date = current;
 		
-		if(args.length == 2)
+		if(args.length >= 2)
 		{
-			Match m = Util.parseDate(args[1], 0, 0, 0);
-			if(m == null)
-				date = 0;
-			else
-				date = (Long)m.value;
-		}
-		else if(args.length == 3)
-		{
-			Match m = Util.parseDate(args[1] + " " + args[2], 0, 0, 0);
+			String dateStr = "";
+			
+			for(int i = 1; i < args.length; ++i)
+			{
+				if(!dateStr.isEmpty())
+					dateStr += " ";
+				dateStr += args[i];
+			}
+			
+			Match m = Util.parseDate(dateStr, 0, 0, 0);
 			if(m == null)
 				date = 0;
 			else

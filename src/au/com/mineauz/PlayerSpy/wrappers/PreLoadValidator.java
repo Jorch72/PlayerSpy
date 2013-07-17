@@ -35,6 +35,7 @@ public class PreLoadValidator
 			AutoWrapper.initialize(PotionBrewer.class);
 			AutoWrapper.initialize(World.class);
 			AutoWrapper.initialize(WorldServer.class);
+			AutoWrapper.initialize(InventoryEnderChest.class);
 			
 			AutoWrapper.initialize(NBTCompressedStreamTools.class);
 			AutoWrapper.initialize(NBTBase.class);

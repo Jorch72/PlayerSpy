@@ -21,6 +21,7 @@ permissions:
       playerspy.inspect: true
       playerspy.search: true
       playerspy.inventory: true
+      playerspy.enderchest: true
       playerspy.list: true
       playerspy.catchup: true
       
@@ -33,6 +34,7 @@ permissions:
       playerspy.rollback: true
       playerspy.restore: true
       playerspy.inventory.edit: true
+      playerspy.enderchest.edit: true
   
   playerspy.op:
     description: Provides every ability.
@@ -84,6 +86,14 @@ permissions:
   playerspy.inventory.edit:
     default: op
     description: Allows a player to modify another players inventory
+    children:
+      playerspy.inventory: true
+  playerspy.enderchest:
+    default: op
+    description: Allows a player to view another players enderchest
+  playerspy.enderchest.edit:
+    default: op
+    description: Allows a player to modify another players enderchest
     children:
       playerspy.inventory: true
   playerspy.catchup:

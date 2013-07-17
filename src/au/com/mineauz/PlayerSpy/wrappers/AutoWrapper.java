@@ -73,7 +73,7 @@ public abstract class AutoWrapper
 		return other;
 	}
 	
-	static Object wrapObjects(Object obj)
+	public static Object wrapObjects(Object obj)
 	{
 		if(obj == null)
 			return null;
@@ -90,13 +90,13 @@ public abstract class AutoWrapper
 		}
 		else if(obj.getClass().isArray())
 		{
+			Object arr = Array.newInstance(mClassReverse.get(obj.getClass().getComponentType()), ((Object[])obj).length);
+			
 			// Make safe all the items
-			Object[] copy = ((Object[])obj).clone();
+			for(int i = 0; i < ((Object[])obj).length; ++i)
+				Array.set(arr, i, wrapObjects(((Object[])obj)[i]));
 			
-			for(int i = 0; i < copy.length; ++i)
-				copy[i] = wrapObjects(copy[i]);
-			
-			return copy;
+			return arr;
 		}
 		else
 		{
@@ -117,7 +117,7 @@ public abstract class AutoWrapper
 		}
 	}
 	
-	static Object unwrapObjects(Object obj)
+	public static Object unwrapObjects(Object obj)
 	{
 		if(obj == null)
 			return null;

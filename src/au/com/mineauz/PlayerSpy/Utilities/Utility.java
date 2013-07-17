@@ -14,12 +14,14 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
 
+import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.PlayerInventory;
 
 import au.com.mineauz.PlayerSpy.SpyPlugin;
@@ -33,6 +35,7 @@ import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftWorld;
 import au.com.mineauz.PlayerSpy.wrappers.minecraft.Entity;
 import au.com.mineauz.PlayerSpy.wrappers.minecraft.EntityItem;
 import au.com.mineauz.PlayerSpy.wrappers.minecraft.EntityLiving;
+import au.com.mineauz.PlayerSpy.wrappers.minecraft.InventoryEnderChest;
 import au.com.mineauz.PlayerSpy.wrappers.minecraft.Item;
 import au.com.mineauz.PlayerSpy.wrappers.minecraft.ItemPotion;
 import au.com.mineauz.PlayerSpy.wrappers.minecraft.ItemStack;
@@ -488,6 +491,46 @@ public class Utility
 			return null;
 		}
 	}
+	
+	public static Inventory getOfflinePlayerEnderchest(OfflinePlayer player)
+	{
+		if(!player.hasPlayedBefore())
+			return null;
+		
+		World sourceWorld = Bukkit.getWorlds().get(0);
+		try
+		{
+			String path = sourceWorld.getName() + "/players/" + player.getName() + ".dat";
+			FileInputStream istream = new FileInputStream(path);
+			NBTTagCompound root = NBTCompressedStreamTools.readCompressed(istream);
+			
+			InventoryEnderChest inv = new InventoryEnderChest();
+			
+			NBTTagList items = root.getList("EnderItems");
+			inv.readFromNBT(items);
+			
+			istream.close();
+			
+			ItemStack[] contents = inv.getContents();
+			
+			Inventory ret = Bukkit.createInventory(null, contents.length, "Ender Chest");
+			for(int i = 0; i < contents.length; ++i)
+			{
+				if(contents[i] == null)
+					continue;
+				
+				ret.setItem(i, convertToBukkit(contents[i]));
+			}
+			
+			return ret;
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
 	public static boolean setOfflinePlayerInventory(OfflinePlayer player, PlayerInventory inventory)
 	{
 		if(!player.hasPlayedBefore())
@@ -514,7 +557,7 @@ public class Utility
 			FileOutputStream ostream = new FileOutputStream(path);
 			NBTCompressedStreamTools.writeCompressed(root, ostream);
 			
-			stream.close();
+			ostream.close();
 
 			return true;
 		}
@@ -525,6 +568,46 @@ public class Utility
 		}
 	}
 	
+	public static boolean setOfflinePlayerEnderChest(OfflinePlayer player, Inventory inventory)
+	{
+		if(!player.hasPlayedBefore())
+			return false;
+		
+		Validate.isTrue(inventory.getSize() == 27);
+		
+		World sourceWorld = Bukkit.getWorlds().get(0);
+		try
+		{
+			// Read it first
+			String path = sourceWorld.getName() + "/players/" + player.getName() + ".dat";
+			FileInputStream stream = new FileInputStream(path);
+			NBTTagCompound root = NBTCompressedStreamTools.readCompressed(stream);
+			stream.close();
+			
+			InventoryEnderChest enderChest = InventoryEnderChest.from(inventory);
+			
+			if(enderChest == null)
+				return false;
+			
+			// Update it
+			NBTTagList items = enderChest.writeToNBT();
+			
+			root.set("EnderItems", items);
+			
+			// Write it back
+			FileOutputStream ostream = new FileOutputStream(path);
+			NBTCompressedStreamTools.writeCompressed(root, ostream);
+			
+			ostream.close();
+
+			return true;
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+			return false;
+		}
+	}
 	
 	public static long getUnsignedInt(int x) {
 	    return x & 0x00000000ffffffffL;
