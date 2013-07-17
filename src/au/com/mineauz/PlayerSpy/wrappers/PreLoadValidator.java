@@ -17,6 +17,7 @@ public class PreLoadValidator
 			AutoWrapper.initialize(CraftPlayer.class);
 			AutoWrapper.initialize(CraftSound.class);
 			AutoWrapper.initialize(CraftWorld.class);
+			AutoWrapper.initialize(CraftInventoryView.class);
 			
 			AutoWrapper.initialize(DataWatcher.class);
 			AutoWrapper.initialize(Entity.class);
@@ -36,6 +37,8 @@ public class PreLoadValidator
 			AutoWrapper.initialize(World.class);
 			AutoWrapper.initialize(WorldServer.class);
 			AutoWrapper.initialize(InventoryEnderChest.class);
+			AutoWrapper.initialize(Container.class);
+			AutoWrapper.initialize(Slot.class);
 			
 			AutoWrapper.initialize(NBTCompressedStreamTools.class);
 			AutoWrapper.initialize(NBTBase.class);

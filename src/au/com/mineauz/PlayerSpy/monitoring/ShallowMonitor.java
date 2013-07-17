@@ -34,6 +34,7 @@ import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
+import au.com.mineauz.PlayerSpy.monitoring.trackers.ItemTracker;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
@@ -48,6 +49,7 @@ public class ShallowMonitor
 	private Location mCurrentTransactionInventoryLocation;
 	private ArrayList<ItemStack> mCurrentTransactions;
 	
+	private ItemTracker mTracker;
 	/**
 	 * The size in bytes at which the buffer will be appended to the log
 	 */
@@ -64,7 +66,7 @@ public class ShallowMonitor
 			throw new ExceptionInInitializerError(player.getName() + " has no log and it cannot be created.");
 		
 		mBuffers.put(null, new RecordList());
-		
+		mTracker = new ItemTracker(this);
 		logRecord(new SessionInfoRecord(this instanceof DeepMonitor));
 	}
 	@SuppressWarnings("unchecked")
@@ -380,5 +382,10 @@ public class ShallowMonitor
 	{
 		logRecord(new RightClickActionRecord(au.com.mineauz.PlayerSpy.Records.RightClickActionRecord.Action.Eat, item, null));
 		
+	}
+	
+	public ItemTracker getItemTracker()
+	{
+		return mTracker;
 	}
 }

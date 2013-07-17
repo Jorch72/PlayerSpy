@@ -3,6 +3,8 @@ package au.com.mineauz.PlayerSpy.monitoring;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -13,10 +15,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.ItemDespawnEvent;
-import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
@@ -28,9 +29,7 @@ import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Records.InventoryRecord;
 import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
-import au.com.mineauz.PlayerSpy.Utilities.Pair;
-import au.com.mineauz.PlayerSpy.Utilities.Utility;
-import au.com.mineauz.PlayerSpy.debugging.Debug;
+import au.com.mineauz.PlayerSpy.monitoring.trackers.ItemTracker;
 import au.com.mineauz.PlayerSpy.storage.InventorySlot;
 
 
@@ -39,18 +38,6 @@ import au.com.mineauz.PlayerSpy.storage.InventorySlot;
  */
 public class ItemFlowTracker implements Listener
 {
-	@EventHandler
-	private void onItemDespawn(ItemDespawnEvent event)
-	{
-		
-	}
-	
-	@EventHandler
-	private void onItemSpawn(ItemSpawnEvent event)
-	{
-		
-	}
-	
 	public void updateInventoryStates()
 	{
 		for(Player player : Bukkit.getOnlinePlayers())
@@ -81,8 +68,10 @@ public class ItemFlowTracker implements Listener
 		if(!(event.getWhoClicked() instanceof Player))
 			return;
 		
+		ShallowMonitor monitor = GlobalMonitor.instance.getMonitor((Player)event.getWhoClicked());
+		
 		// Only deep monitors do per click updates
-		if(GlobalMonitor.instance.getDeepMonitor((Player)event.getWhoClicked()) != null)
+		if(monitor instanceof DeepMonitor)
 			scheduleInventoryUpdate(event.getView().getBottomInventory());
 		
 		// There is no event for opening your own inventory, so this should be a good replacement
@@ -92,78 +81,128 @@ public class ItemFlowTracker implements Listener
 		if(event.getInventory().getType() == InventoryType.CRAFTING || event.getInventory().getType() == InventoryType.CREATIVE)
 			return;
 		
-		if(event.getInventory().getType() == InventoryType.PLAYER && event.getInventory().getHolder() == event.getWhoClicked())
+		// Dont know if they can fail, but just to be sure
+		if(event.getInventory().getHolder() == event.getWhoClicked())
 			return;
 		
+		ItemTracker tracker = monitor.getItemTracker();
 		
-		int lastClick = (mPlayerLastClick.containsKey((Player)event.getWhoClicked()) ? mPlayerLastClick.get((Player)event.getWhoClicked()) : -999);
-		int currentClick = event.getRawSlot();
-
-		Inventory source = (lastClick == -999 ? null : (lastClick < event.getView().getTopInventory().getSize() ? event.getView().getTopInventory() : event.getView().getBottomInventory()));
-		Inventory dest = (currentClick == -999 ? null : (currentClick < event.getView().getTopInventory().getSize() ? event.getView().getTopInventory() : event.getView().getBottomInventory()));
-
-		if(mCurrentTransactions.get((Player)event.getWhoClicked()) != null)
+		if(!tracker.isInventoryOpen()) // Inventory open event didnt fire
+			tracker.onOpenInventory(event.getView(), null);
+		
+		switch(event.getAction())
 		{
-			Inventory inv = mCurrentTransactions.get((Player)event.getWhoClicked()).getArg2();
-			source = inv;
-		}
+		// These ones affect the entire view
+		case COLLECT_TO_CURSOR:
+			tracker.collect();
+			break;
+		case MOVE_TO_OTHER_INVENTORY:
+			tracker.transfer(event.getRawSlot());
+			break;
+			
+		// These ones affect only the cursor
+		case DROP_ALL_CURSOR:
+			tracker.dropCursor(event.getCursor().getAmount());
+			break;
+		case DROP_ONE_CURSOR:
+			tracker.dropCursor(1);
+			break;
+		// These ones affect a slot
+		case DROP_ALL_SLOT:
+			tracker.dropSlot(event.getRawSlot(), event.getCurrentItem().getAmount());
+			break;
+		case DROP_ONE_SLOT:
+			tracker.dropSlot(event.getRawSlot(), 1);
+			break;
+
+		// These ones affect both slot and cursor
+		case PICKUP_ALL:
+			tracker.pickup(event.getRawSlot(), event.getCurrentItem().getAmount());
+			break;
+		case PICKUP_HALF:
+			tracker.pickup(event.getRawSlot(), (int)(event.getCurrentItem().getAmount() / 2D + 0.5));
+			break;
+		case PICKUP_ONE:
+			tracker.pickup(event.getRawSlot(), 1);
+			break;
+		case PICKUP_SOME:
+			tracker.pickup(event.getRawSlot(), Math.min((event.getCursor() != null ? event.getCursor().getMaxStackSize() - event.getCursor().getAmount() : 64), Math.min(event.getCurrentItem().getAmount(), event.getCurrentItem().getMaxStackSize())));
+			break;
+		case PLACE_ALL:
+			tracker.place(event.getRawSlot(), event.getCursor().getAmount());
+			break;
+		case PLACE_ONE:
+			tracker.place(event.getRawSlot(), 1);
+			break;
+		case PLACE_SOME:
+			tracker.place(event.getRawSlot(), Math.min((event.getCurrentItem() != null ? event.getCurrentItem().getMaxStackSize() - event.getCurrentItem().getAmount() : 64), Math.min(event.getCursor().getAmount(), event.getCursor().getMaxStackSize())));
+			break;
+		case SWAP_WITH_CURSOR:
+			tracker.swap(event.getRawSlot());
+			break;
+			
+		// These ones are special
+		case CLONE_STACK:
+			break;
+		case HOTBAR_MOVE_AND_READD:
+			tracker.pickup(event.getRawSlot(), event.getCurrentItem().getAmount());
+			tracker.transfer(27 + event.getHotbarButton() + event.getView().getTopInventory().getSize());
+			tracker.place(27 + event.getHotbarButton() + event.getView().getTopInventory().getSize(), event.getCurrentItem().getAmount());
+			break;
+		case HOTBAR_SWAP:
+			tracker.swap(event.getRawSlot(), event.getHotbarButton());
+			break;
 		
-		if(source == null && dest == null)
+		default:
 			return;
-
-		
-		
-		if(event.isShiftClick())
-		{
-			if(Utility.getStackOrNull(event.getCursor()) != null)
-				// Sideline the transaction
-				mAltTransactions.put((Player)event.getWhoClicked(), mCurrentTransactions.get((Player)event.getWhoClicked()));
-
-			// Create a new transaction
-			mCurrentTransactions.put((Player)event.getWhoClicked(),new Pair<ItemStack, Inventory>((event.getCurrentItem() == null ? null : event.getCurrentItem().clone()), dest));
-			if(dest == event.getView().getTopInventory())
-				scheduleTransactionInInventory((Player)event.getWhoClicked(), event.getView().getBottomInventory());
-			else
-				scheduleTransactionInInventory((Player)event.getWhoClicked(), event.getView().getTopInventory());
 		}
-		else
-		{
-			// Picking the item up from the inventory
-			if(source == null && dest != null) 
-			{
-				if(Utility.getStackOrNull(event.getCursor()) != null) // Still holding an item for some reason
-				{
-					Debug.fine("Already holding an item on open inventory: " + event.getCursor().toString());
-					scheduleTransactionInSlot((Player)event.getWhoClicked(), dest, event.getSlot());
-				}
-				else
-					scheduleTransactionInCursor((Player)event.getWhoClicked(), dest);
-				
-				mPlayerLastClick.put((Player)event.getWhoClicked(), currentClick);
-			}
-			// Throwing the item out
-			else if(source != null && dest == null)
-			{
-				if(source.getHolder() != event.getWhoClicked())
-					scheduleTransactionInCursor((Player)event.getWhoClicked(), null);
-				else
-				{
-					mPlayerLastClick.put((Player)event.getWhoClicked(), -999);
-					mCurrentTransactions.remove((Player)event.getWhoClicked());
-				}
-			}
-			// Transfering the item between inventories
-			else if(source != dest)
-			{
-				scheduleTransactionInSlot((Player)event.getWhoClicked(), dest, event.getSlot());
-			}
-			else
-			{
-				//mPlayerLastClick.put((Player)event.getWhoClicked(), -999);
-				mCurrentTransactions.remove((Player)event.getWhoClicked());
-			}
-		}
+		
 	}
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	private void onInventoryDrag(InventoryDragEvent event)
+	{
+		if(!(event.getWhoClicked() instanceof Player))
+			return;
+		
+		ShallowMonitor monitor = GlobalMonitor.instance.getMonitor((Player)event.getWhoClicked());
+		
+		// Only deep monitors do per click updates
+		if(monitor instanceof DeepMonitor)
+			scheduleInventoryUpdate(event.getView().getBottomInventory());
+		
+		// There is no event for opening your own inventory, so this should be a good replacement
+		else if(!mLastRecordedState.containsKey(event.getView().getBottomInventory()))
+			recordInventoryState(event.getView().getBottomInventory());
+		
+		if(event.getInventory().getType() == InventoryType.CRAFTING || event.getInventory().getType() == InventoryType.CREATIVE)
+			return;
+		
+		// Dont know if they can fail, but just to be sure
+		if(event.getInventory().getHolder() == event.getWhoClicked())
+			return;
+		
+		ItemTracker tracker = monitor.getItemTracker();
+		
+		if(!tracker.isInventoryOpen()) // Inventory open event didnt fire
+			tracker.onOpenInventory(event.getView(), null);
+		
+		Map<Integer, ItemStack> slots = event.getNewItems();
+		
+		ArrayList<InventorySlot> dragResult = new ArrayList<InventorySlot>();
+		for(Entry<Integer, ItemStack> changed : slots.entrySet())
+		{
+			ItemStack original = event.getView().getItem(changed.getKey());
+			ItemStack newStack = changed.getValue().clone();
+			
+			if(original.isSimilar(newStack))
+				newStack.setAmount(newStack.getAmount() - original.getAmount());
+			
+			dragResult.add(new InventorySlot(newStack, changed.getKey()));
+		}
+		
+		tracker.drag(dragResult);
+	}
+	
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onInventoryOpen(InventoryOpenEvent event)
 	{
@@ -182,19 +221,20 @@ public class ItemFlowTracker implements Listener
 			recordInventoryState(event.getView().getTopInventory());
 		
 		ShallowMonitor mon = GlobalMonitor.instance.getMonitor((Player)event.getPlayer());
-		if(mon != null)
-		{
-			Location enderChestLocation = null;
+		if(mon == null)
+			return;
+		
+		Location enderChestLocation = null;
 
-			if(event.getInventory().getType() == InventoryType.ENDER_CHEST)
-			{
-				Block block = event.getPlayer().getTargetBlock(null, 100);
-				if(block != null && block.getType() == Material.ENDER_CHEST && block.getLocation().distance(event.getPlayer().getLocation()) < 7)
-					enderChestLocation = block.getLocation();
-			}
-			
-			mon.beginTransaction(event.getInventory(),enderChestLocation);
+		if(event.getInventory().getType() == InventoryType.ENDER_CHEST)
+		{
+			Block block = event.getPlayer().getTargetBlock(null, 100);
+			if(block != null && block.getType() == Material.ENDER_CHEST && block.getLocation().distance(event.getPlayer().getLocation()) < 7)
+				enderChestLocation = block.getLocation();
 		}
+		
+		ItemTracker tracker = mon.getItemTracker();
+		tracker.onOpenInventory(event.getView(), enderChestLocation);
 	}
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	private void onInventoryClose(InventoryCloseEvent event)
@@ -224,17 +264,11 @@ public class ItemFlowTracker implements Listener
 		}
 		
 		ShallowMonitor mon = GlobalMonitor.instance.getMonitor((Player)event.getPlayer());
-		if(mon != null)
-		{
-			mon.endTransaction();
-			
-			ArrayList<InventorySlot> slots = detectChanges(event.getView().getBottomInventory(), false);
-			recordInventoryChanges(event.getView().getBottomInventory(), slots);
-			applyInventoryChanges(event.getView().getBottomInventory(), slots);
-		}
+		if(mon == null)
+			return;
 		
-		scheduleTransactionInCursor((Player)event.getPlayer(), null);
-		mPlayerLastClick.put((Player)event.getPlayer(), -999);
+		ItemTracker tracker = mon.getItemTracker();
+		tracker.onCloseInventory();
 	}
 	
 	public void recordInventoryState(Inventory inventory)
@@ -267,28 +301,7 @@ public class ItemFlowTracker implements Listener
 		else
 			applyInventoryChanges(inventory, detectChanges(inventory, mLastRecordedState.get(inventory), false));
 	}
-	private void scheduleTransactionInCursor(Player who, Inventory inventory)
-	{
-		if(!mTransactionUpdates.containsKey(who))
-		{
-			mTransactionUpdates.put(who, Bukkit.getScheduler().scheduleSyncDelayedTask(SpyPlugin.getInstance(),new TransactionUpdate(who, inventory)));
-		}
-	}
-	private void scheduleTransactionInSlot(Player who, Inventory inventory, int slot)
-	{
-		if(!mTransactionUpdates.containsKey(who))
-		{
-			mTransactionUpdates.put(who, Bukkit.getScheduler().scheduleSyncDelayedTask(SpyPlugin.getInstance(),new TransactionUpdate(who, inventory, slot)));
-		}
-	}
-	private void scheduleTransactionInInventory(Player who, Inventory inventory)
-	{
-		if(!mTransactionUpdates.containsKey(who))
-		{
-			recordInventoryState(inventory);
-			mTransactionUpdates.put(who, Bukkit.getScheduler().scheduleSyncDelayedTask(SpyPlugin.getInstance(),new TransactionUpdate(who, inventory, -2)));
-		}
-	}
+	
 	/**
 	 * Schedule an update to check the changes and record them for an inventory
 	 * @param inventory The inventory to check
@@ -451,10 +464,7 @@ public class ItemFlowTracker implements Listener
 				}
 			}
 			else
-			{
-				LogUtil.info("Logging inventory changes to " + holder.getName());
 				GlobalMonitor.instance.logRecord(new UpdateInventoryRecord(changes), Cause.playerCause(Bukkit.getOfflinePlayer(holder.getName())), null);
-			}
 		}
 		
 		if(handled)
@@ -467,12 +477,7 @@ public class ItemFlowTracker implements Listener
 		recordInventoryChanges(inventory, new ArrayList<InventorySlot>(Arrays.asList(changes)));
 	}
 
-	private HashMap<Player, Integer> mTransactionUpdates = new HashMap<Player, Integer>();
-	private HashMap<Player, Pair<ItemStack, Inventory>> mCurrentTransactions = new HashMap<Player, Pair<ItemStack, Inventory>>();
-	private HashMap<Player, Pair<ItemStack, Inventory>> mAltTransactions = new HashMap<Player, Pair<ItemStack, Inventory>>();
-	private HashMap<Player, Integer> mPlayerLastClick = new HashMap<Player, Integer>();
 	private HashMap<Inventory, Integer> mScheduledUpdates = new HashMap<Inventory, Integer>();
-	
 	private HashMap<Inventory, ItemStack[]> mLastRecordedState = new HashMap<Inventory, ItemStack[]>();
 	
 	/**
@@ -503,128 +508,6 @@ public class ItemFlowTracker implements Listener
 				
 			}
 			mScheduledUpdates.remove(mInventory);
-		}
-	}
-	
-	/**
-	 * Handles Processing transactions with inventories
-	 */
-	private class TransactionUpdate implements Runnable
-	{
-		private final Inventory mInventory;
-		private final int mSlot;
-		private final Player mWho;
-		
-		private ItemStack mLastCursor;
-		private ItemStack mLastSlot;
-		public TransactionUpdate(Player who, Inventory inventory, int slot)
-		{
-			mInventory = inventory;
-			mSlot = slot;
-			mWho = who;
-			
-			mLastCursor = who.getItemOnCursor().clone();
-			if(mLastCursor.getTypeId() == 0)
-				mLastCursor = null;
-			
-			if(mInventory != null && mSlot >= 0)
-				mLastSlot = (inventory.getItem(slot) == null ? null : inventory.getItem(slot).clone());
-			else
-				mLastSlot = null;
-		}
-		public TransactionUpdate(Player who, Inventory inventory)
-		{
-			this(who, inventory, -1);
-		}
-		
-		@Override
-		public void run() 
-		{
-			ShallowMonitor mon = GlobalMonitor.instance.getMonitor(mWho);
-			
-			if(mInventory != null && mSlot >= 0) // Slot updates needed
-			{
-				ItemStack current = (mInventory.getItem(mSlot) == null ? null : mInventory.getItem(mSlot).clone());
-				
-				if(current != null && !current.equals(mLastSlot)) // The slot has changed
-				{
-					if(Utility.areEqualIgnoreAmount(mLastCursor, mWho.getItemOnCursor()) && mLastCursor != null && mCurrentTransactions.containsKey(mWho))
-					{
-						// Only some were put into the slot
-						int difference = mLastCursor.getAmount() - mWho.getItemOnCursor().getAmount();
-						if(mon != null)
-							mon.doTransaction(new ItemStack(mLastCursor.getType(), difference, mLastCursor.getDurability()), mInventory == mWho.getInventory());
-
-						// Update the current transaction
-						mCurrentTransactions.get(mWho).getArg1().setAmount(mWho.getItemOnCursor().getAmount());
-					}
-					else if(Utility.getStackOrNull(mWho.getItemOnCursor()) == null)
-					{
-						// Put all into the inventory
-						if(mon != null)
-							mon.doTransaction(mLastCursor, mInventory == mWho.getInventory());
-						
-						// Update the current transaction
-						mCurrentTransactions.put(mWho, null);
-						mPlayerLastClick.put(mWho, -999);
-					}
-					else if(mLastCursor != null)
-					{
-						// Put all into the inventory, and picked up what was there
-						if(mon != null)
-							mon.doTransaction(mLastCursor, mInventory == mWho.getInventory());
-						
-						// Update the current transaction
-						mCurrentTransactions.put(mWho, new Pair<ItemStack, Inventory>(mWho.getItemOnCursor().clone(), mInventory));
-					}
-				}
-			}
-			else if(mInventory != null && mSlot == -2 && mCurrentTransactions.containsKey(mWho)) // Inventory updates needed
-			{
-				ArrayList<InventorySlot> changes = detectChanges(mInventory, true);
-				int totalToTake = 0;
-				for(InventorySlot change : changes)
-				{
-					if(change.Item == null)
-						continue;
-					
-					totalToTake += change.Item.getAmount();
-				}
-				
-				if(totalToTake != 0)
-				{
-					ItemStack transStack = mCurrentTransactions.get(mWho).getArg1();
-					transStack.setAmount(totalToTake);
-					// Log the transaction
-					if(mon != null)
-						mon.doTransaction(transStack, mInventory == mWho.getInventory());
-				}
-				
-				// Restore the last transaction
-				mCurrentTransactions.put(mWho, mAltTransactions.remove(mWho));
-			}
-			else
-			{
-				if(Utility.getStackOrNull(mWho.getItemOnCursor()) == null && mLastCursor != null && mCurrentTransactions.containsKey(mWho))
-				{
-					Debug.finer("Threw out an item");
-					// Item thrown out
-					if(mon != null)
-						mon.doTransaction(mLastCursor, mCurrentTransactions.get(mWho).getArg2() != mWho.getInventory());
-					
-					// Update the current transaction
-					mCurrentTransactions.put(mWho, null);
-					mPlayerLastClick.put(mWho, -999);
-				}
-				else if(mLastCursor == null && Utility.getStackOrNull(mWho.getItemOnCursor()) != null)
-				{
-					// Item picked up
-					mCurrentTransactions.put(mWho, new Pair<ItemStack, Inventory>(mWho.getItemOnCursor().clone(), mInventory));
-					Debug.finer("Picked up " + mWho.getItemOnCursor().toString());
-				}
-			}
-			
-			mTransactionUpdates.remove(mWho);
 		}
 	}
 }
