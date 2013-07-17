@@ -105,7 +105,7 @@ public class Searcher
 		}
 		
 		long lastDate = 0;
-		Pager pager = new Pager(title, (who instanceof Player ? 10 : 40));
+		Pager pager = new Pager(title, (who instanceof Player ? 16 : 40));
 		for(Pair<Record,Integer> result : results.allRecords)
 		{
 			String msg = result.getArg1().getDescription();

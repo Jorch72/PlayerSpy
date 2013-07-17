@@ -1,14 +1,19 @@
 package au.com.mineauz.PlayerSpy.inspect;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Chest;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
+import org.bukkit.entity.Tameable;
 import org.bukkit.event.Event.Result;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -192,8 +197,33 @@ public class Inspector implements Listener
 				event.setCancelled(true);
 				return;
 			}
-						
-			doInspectAtEntity(event.getEntity(), player);
+			// Check the information about this entity
+			ArrayList<String> output = new ArrayList<String>();
+			output.add(ChatColor.GOLD + "[PlayerSpy] " + ChatColor.WHITE + "Entity information " + event.getEntity().getType().getName() + " (" + event.getEntity().getEntityId() + ") WIP");
+			if(event.getEntity() instanceof Tameable)
+			{
+				output.add(ChatColor.DARK_AQUA + "Is Tamed: " + ChatColor.RED + ((Tameable)event.getEntity()).isTamed());
+				if(((Tameable)event.getEntity()).isTamed())
+					output.add(ChatColor.DARK_AQUA + "Owner: " + ChatColor.RED + ((Tameable)event.getEntity()).getOwner().getName());
+			}
+			
+			if(event.getEntity() instanceof LivingEntity)
+			{
+				LivingEntity ent = (LivingEntity)event.getEntity();
+				
+				if(ent.getLastDamageCause() instanceof EntityDamageByEntityEvent)
+				{
+					EntityDamageByEntityEvent damage = (EntityDamageByEntityEvent)ent.getLastDamageCause();
+					
+					if(damage.getDamager() instanceof Player)
+						output.add(ChatColor.DARK_AQUA + "Last Damager: " + ChatColor.RED + ((Player)damage.getDamager()).getName());
+					else if(damage.getDamager() instanceof Projectile && ((Projectile)damage.getDamager()).getShooter() instanceof Player)
+						output.add(ChatColor.DARK_AQUA + "Last Damager: " + ChatColor.RED + ((Player)((Projectile)damage.getDamager()).getShooter()).getName());
+				}
+			}
+			
+			for(String line : output)
+				player.sendMessage(line);
 			
 			event.setCancelled(true);
 		}

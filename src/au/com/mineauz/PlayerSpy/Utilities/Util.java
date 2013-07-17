@@ -188,22 +188,31 @@ public class Util
 			return null;
 		
 		// Mother of all regular expressions :S
-		Pattern datePattern = Pattern.compile("^(?:(?:(\\d{1,2})\\s*/\\s*(\\d{1,2})\\s*(?:/\\s*(\\d{2}|\\d{4}))?\\s+)?(\\d{1,2})\\s*:\\s*(\\d{1,2})\\s*(?::\\s*(\\d{1,2})\\s*)?(am|pm)?|(now|yesterday|current|today|start|end))(?:\\s*(\\-|\\+)\\s*(?:([0-9]+)y)?\\s*(?:([0-9]+)mo)?\\s*(?:([0-9]+)w)?\\s*(?:([0-9]+)d)?\\s*(?:([0-9]+)h)?\\s*(?:([0-9]+)m)?\\s*(?:([0-9]+)s)?\\s*)?");
+		Pattern datePattern = Pattern.compile("^(?:(?:(\\d{1,2})\\s*/\\s*(\\d{1,2})\\s*(?:/\\s*(\\d{4}|\\d{2}))?\\s+)?(\\d{1,2})\\s*:\\s*(\\d{1,2})\\s*(?::\\s*(\\d{1,2})\\s*)?(am|pm)?|(now|yesterday|current|today|start|end))(?:\\s*(\\-|\\+)\\s*(?:([0-9]+)y)?\\s*(?:([0-9]+)mo)?\\s*(?:([0-9]+)w)?\\s*(?:([0-9]+)d)?\\s*(?:([0-9]+)h)?\\s*(?:([0-9]+)m)?\\s*(?:([0-9]+)s)?\\s*)?");
+		Pattern datePattern2 = Pattern.compile("^(\\d{1,2})\\s*/\\s*(\\d{1,2})\\s*(?:/\\s*(\\d{4}|\\d{2}))?\\s*");
+		
 		date = date.toLowerCase();
 		
 		Matcher m = datePattern.matcher(date);
+		
+		boolean dateOnly = false;
+		if(!m.find())
+		{
+			m = datePattern2.matcher(date);
+			dateOnly = true;
+		}
 		
 		if(m.find())
 		{
 			long time = 0;
 			
 			int day,month,year;
-			int hour,minute,second;
+			int hour = 0,minute = 0,second = 0;
 			
 			GregorianCalendar cal = new GregorianCalendar();
 			cal.setTimeZone(SpyPlugin.getSettings().timezone);
 			
-			if(m.group(8) != null)
+			if(!dateOnly && m.group(8) != null)
 			{
 				if(m.group(8).equals("now"))
 				{
@@ -269,22 +278,25 @@ public class Util
 				else
 					year = cal.get(Calendar.YEAR);
 				
-				// Parse the time
-				if(m.group(4) != null)
-					hour = Integer.parseInt(m.group(4));
-				else
-					hour = 0;
+				if(!dateOnly)
+				{
+					// Parse the time
+					if(m.group(4) != null)
+						hour = Integer.parseInt(m.group(4));
+					else
+						hour = 0;
+					
+					if(m.group(5) != null)
+						minute = Integer.parseInt(m.group(5));
+					else
+						minute = 0;
+					
+					if(m.group(6) != null)
+						second = Integer.parseInt(m.group(6));
+					else
+						second = 0;
+				}
 				
-				if(m.group(5) != null)
-					minute = Integer.parseInt(m.group(5));
-				else
-					minute = 0;
-				
-				if(m.group(6) != null)
-					second = Integer.parseInt(m.group(6));
-				else
-					second = 0;
-	
 				// Validate the date
 				if(month > 12 || month == 0)
 					return null;
@@ -316,31 +328,33 @@ public class Util
 						return null;
 				}
 				
-				if(minute >= 60)
-					return null;
-				
-				if(second >= 60)
-					return null;
-				
-				// Validate time
-				if(m.group(7) != null)
+				if(!dateOnly)
 				{
-					if(hour > 12 || hour == 0)
+					if(minute >= 60)
 						return null;
 					
-					if(m.group(7).equals("pm"))
+					if(second >= 60)
+						return null;
+					
+					// Validate time
+					if(m.group(7) != null)
 					{
-						hour += 12;
-						if(hour == 24)
-							hour = 0;
+						if(hour > 12 || hour == 0)
+							return null;
+						
+						if(m.group(7).equals("pm"))
+						{
+							hour += 12;
+							if(hour == 24)
+								hour = 0;
+						}
+					}
+					else
+					{
+						if(hour >= 24)
+							return null;
 					}
 				}
-				else
-				{
-					if(hour >= 24)
-						return null;
-				}
-				
 				
 				//time = second * 1000 + minute * 60000 + hour * 360000 + day * 86400000 +
 				cal.setTimeZone(SpyPlugin.getSettings().timezone);
@@ -356,6 +370,7 @@ public class Util
 			}
 			
 			// Do modification to it
+			if(!dateOnly)
 			{
 				int years,months,weeks,days,hours,minutes,seconds;
 				boolean negative;

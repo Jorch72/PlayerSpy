@@ -245,7 +245,7 @@ public class InspectBlockTask implements Task<Void>
 		long lastDate = 0;
 		output.add(ChatColor.GOLD + "[PlayerSpy] " + ChatColor.WHITE + "Block changes " + Utility.locationToStringShort(mLocation));
 		if(mostRecent.size() == 0)
-			output.add(ChatColor.GREEN + "  No changes to the block detected");
+			output.add(ChatColor.GREEN + "  No changes detected");
 		else
 		{
 			for(int i = 0; i < mostRecent.size(); i++)

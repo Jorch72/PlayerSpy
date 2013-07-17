@@ -10,8 +10,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.Event.Result;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -87,11 +89,57 @@ public class InventoryViewer
 			{
 				InventoryState state = mOpenInventories.get(event.getWhoClicked());
 				
-				if(event.getRawSlot() < event.getView().getTopInventory().getSize() && !state.canEdit)
+				if(event.getRawSlot() < event.getView().getTopInventory().getSize())
+				{
+					if(!state.canEdit)
+					{
+						if(event.getClick() == ClickType.MIDDLE)
+						{
+							event.getWhoClicked().setItemOnCursor(event.getCurrentItem().clone());
+						}
+						else
+						{
+							event.setCancelled(true);
+							event.setResult(Result.DENY);
+						}
+						return;
+					}
+				}
+				else 
+				{
+					switch(event.getAction())
+					{
+					case COLLECT_TO_CURSOR:
+					case MOVE_TO_OTHER_INVENTORY:
+					case NOTHING:
+					case UNKNOWN:
+						event.setCancelled(true);
+						event.setResult(Result.DENY);
+						break;
+					default:
+						break;
+					}
+				}
+			}
+		}
+		@org.bukkit.event.EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
+		public void onInventoryDrag(InventoryDragEvent event)
+		{
+			if(mOpenInventories.containsKey(event.getWhoClicked()))
+			{
+				InventoryState state = mOpenInventories.get(event.getWhoClicked());
+			
+				boolean crosses = false;
+				for(int slot : event.getRawSlots())
+				{
+					if(slot < event.getView().getTopInventory().getSize())
+						crosses = true;
+				}
+				
+				if(!state.canEdit && crosses)
 				{
 					event.setCancelled(true);
 					event.setResult(Result.DENY);
-					return;
 				}
 			}
 		}
