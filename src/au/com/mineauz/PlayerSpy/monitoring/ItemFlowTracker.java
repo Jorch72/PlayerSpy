@@ -25,7 +25,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
 import au.com.mineauz.PlayerSpy.Cause;
-import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Records.InventoryRecord;
 import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
@@ -81,8 +80,7 @@ public class ItemFlowTracker implements Listener
 		if(event.getInventory().getType() == InventoryType.CRAFTING || event.getInventory().getType() == InventoryType.CREATIVE)
 			return;
 		
-		// Dont know if they can fail, but just to be sure
-		if(event.getInventory().getHolder() == event.getWhoClicked())
+		if(event.getView().getType() == InventoryType.PLAYER && event.getInventory().getHolder() == event.getWhoClicked())
 			return;
 		
 		ItemTracker tracker = monitor.getItemTracker();
@@ -174,11 +172,10 @@ public class ItemFlowTracker implements Listener
 		else if(!mLastRecordedState.containsKey(event.getView().getBottomInventory()))
 			recordInventoryState(event.getView().getBottomInventory());
 		
-		if(event.getInventory().getType() == InventoryType.CRAFTING || event.getInventory().getType() == InventoryType.CREATIVE)
+		if(event.getInventory().getType() == InventoryType.CREATIVE)
 			return;
 		
-		// Dont know if they can fail, but just to be sure
-		if(event.getInventory().getHolder() == event.getWhoClicked())
+		if(event.getView().getType() == InventoryType.PLAYER && event.getInventory().getHolder() == event.getWhoClicked())
 			return;
 		
 		ItemTracker tracker = monitor.getItemTracker();
@@ -211,7 +208,7 @@ public class ItemFlowTracker implements Listener
 
 		recordInventoryState(event.getView().getBottomInventory());
 		
-		if(event.getInventory().getType() == InventoryType.CRAFTING || event.getInventory().getType() == InventoryType.CREATIVE)
+		if(event.getInventory().getType() == InventoryType.CREATIVE)
 			return;
 		if(event.getInventory().getType() == InventoryType.PLAYER && event.getInventory().getHolder() == event.getPlayer())
 			return;
@@ -226,11 +223,34 @@ public class ItemFlowTracker implements Listener
 		
 		Location enderChestLocation = null;
 
-		if(event.getInventory().getType() == InventoryType.ENDER_CHEST)
+		Block block = event.getPlayer().getTargetBlock(null, 100);
+		if(block != null && block.getLocation().distance(event.getPlayer().getLocation()) >= 7)
+			block = null;
+		
+		if(block != null)
 		{
-			Block block = event.getPlayer().getTargetBlock(null, 100);
-			if(block != null && block.getType() == Material.ENDER_CHEST && block.getLocation().distance(event.getPlayer().getLocation()) < 7)
-				enderChestLocation = block.getLocation();
+			switch(event.getInventory().getType())
+			{
+			case ENDER_CHEST:
+				if(block.getType() == Material.ENDER_CHEST)
+					enderChestLocation = block.getLocation();
+				break;
+			case WORKBENCH:
+			case CRAFTING:
+				if(block.getType() == Material.WORKBENCH)
+					enderChestLocation = block.getLocation();
+				break;
+			case ENCHANTING:
+				if(block.getType() == Material.ENCHANTMENT_TABLE)
+					enderChestLocation = block.getLocation();
+				break;
+			case ANVIL:
+				if(block.getType() == Material.ANVIL)
+					enderChestLocation = block.getLocation();
+				break;
+			default:
+				break;
+			}
 		}
 		
 		ItemTracker tracker = mon.getItemTracker();

@@ -34,7 +34,10 @@ public class StoredInventoryInformation
 		Chest,
 		Entity,
 		None,
-		Unknown
+		Unknown,
+		Anvil,
+		EnchantingTable,
+		Crafting
 	}
 	
 	private String mPlayerName;
@@ -77,6 +80,27 @@ public class StoredInventoryInformation
 			{
 				mType = InventoryType.Player;
 				
+				mPlayerName = ((Player)inventory.getHolder()).getName();
+			}
+			else if(inventory.getType() == org.bukkit.event.inventory.InventoryType.ANVIL)
+			{
+				mType = InventoryType.Anvil;
+				if(enderChestLocation != null)
+					mBlock = new StoredBlock(enderChestLocation.getBlock());
+				mPlayerName = ((Player)inventory.getHolder()).getName();
+			}
+			else if(inventory.getType() == org.bukkit.event.inventory.InventoryType.ENCHANTING)
+			{
+				mType = InventoryType.EnchantingTable;
+				if(enderChestLocation != null)
+					mBlock = new StoredBlock(enderChestLocation.getBlock());
+				mPlayerName = ((Player)inventory.getHolder()).getName();
+			}
+			else if(inventory.getType() == org.bukkit.event.inventory.InventoryType.CRAFTING || inventory.getType() == org.bukkit.event.inventory.InventoryType.WORKBENCH)
+			{
+				mType = InventoryType.Crafting;
+				if(enderChestLocation != null)
+					mBlock = new StoredBlock(enderChestLocation.getBlock());
 				mPlayerName = ((Player)inventory.getHolder()).getName();
 			}
 			else
@@ -148,6 +172,18 @@ public class StoredInventoryInformation
 		case Chest:
 			mBlock.write(stream, absolute, false);
 			break;
+		case Entity:
+			mEntity.write(stream);
+			break;
+		case Player:
+			stream.writeUTF(mPlayerName);
+			break;
+		case None:
+		case Unknown:
+			break;
+		case Anvil:
+		case EnchantingTable:
+		case Crafting:
 		case Enderchest:
 			stream.writeUTF(mPlayerName);
 			if(mBlock == null)
@@ -157,15 +193,6 @@ public class StoredInventoryInformation
 				stream.writeBoolean(true);
 				mBlock.write(stream, absolute, false);
 			}
-			break;
-		case Entity:
-			mEntity.write(stream);
-			break;
-		case Player:
-			stream.writeUTF(mPlayerName);
-			break;
-		case None:
-		case Unknown:
 			break;
 		}
 	}
@@ -186,6 +213,9 @@ public class StoredInventoryInformation
 				mBlock = new StoredBlock();
 				mBlock.read(stream, currentWorld, absolute);
 				break;
+			case Anvil:
+			case EnchantingTable:
+			case Crafting:
 			case Enderchest:
 				mPlayerName = stream.readUTF();
 				if(stream.readBoolean())
@@ -220,6 +250,9 @@ public class StoredInventoryInformation
 		case Chest:
 			size += mBlock.getSize(absolute, false);
 			break;
+		case Anvil:
+		case EnchantingTable:
+		case Crafting:
 		case Enderchest:
 			size += Utility.getUTFLength(mPlayerName) + 1;
 			if(mBlock != null)
@@ -247,6 +280,9 @@ public class StoredInventoryInformation
 		case Chest:
 			result += mBlock.getType().toString() + " at:" + mBlock.getLocation().toString();
 			break;
+		case Anvil:
+		case EnchantingTable:
+		case Crafting:
 		case Enderchest:
 		case Player:
 			result += mPlayerName;

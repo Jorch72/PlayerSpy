@@ -28,7 +28,7 @@ public class ItemTracker implements Tracker, Listener
 	private InventoryView mCurrentView;
 	
 	private Inventory mCurrentInventory;
-	private Location mInventoryLocation; // Enderchests need this
+	private Location mInventoryLocation; // Player dependent inventories need this
 	
 	private ArrayList<ItemStack> mTransactions;
 	
@@ -50,8 +50,6 @@ public class ItemTracker implements Tracker, Listener
 		mCurrentInventory = inventory;
 		mTransactions = new ArrayList<ItemStack>();
 		mInventoryLocation = enderChestLocation;
-		
-		Debug.finer("Beginning Transaction");
 	}
 	
 	private void doTransaction(ItemStack item, boolean take)
@@ -74,7 +72,7 @@ public class ItemTracker implements Tracker, Listener
 		}
 		
 		// No match
-		ItemStack transaction = item.clone(); // FIXME: item can be null
+		ItemStack transaction = item.clone();
 		if(take)
 			transaction.setAmount(-transaction.getAmount());
 		mTransactions.add(transaction);
@@ -82,13 +80,13 @@ public class ItemTracker implements Tracker, Listener
 	private void endTransaction()
 	{
 		Debug.loggedAssert(mCurrentInventory != null);
+		
 		// Log what ever is left
 		for(ItemStack transaction : mTransactions)
 		{
 			if(transaction.getAmount() != 0)
 			{
 				InventoryTransactionRecord record = null;
-				
 				if(transaction.getAmount() < 0)
 				{
 					transaction.setAmount(-transaction.getAmount());
@@ -101,7 +99,6 @@ public class ItemTracker implements Tracker, Listener
 			}
 		}
 		
-		Debug.finer("Ended Transaction");
 		mCurrentInventory = null;
 		mInventoryLocation = null;
 		mTransactions.clear();
