@@ -200,241 +200,238 @@ public class Util
 		{
 			m = datePattern2.matcher(date);
 			dateOnly = true;
+			if(!m.find())
+				return null;
 		}
 		
-		if(m.find())
+		long time = 0;
+		
+		int day,month,year;
+		int hour = 0,minute = 0,second = 0;
+		
+		GregorianCalendar cal = new GregorianCalendar();
+		cal.setTimeZone(SpyPlugin.getSettings().timezone);
+		
+		if(!dateOnly && m.group(8) != null)
 		{
-			long time = 0;
-			
-			int day,month,year;
-			int hour = 0,minute = 0,second = 0;
-			
-			GregorianCalendar cal = new GregorianCalendar();
-			cal.setTimeZone(SpyPlugin.getSettings().timezone);
-			
-			if(!dateOnly && m.group(8) != null)
+			if(m.group(8).equals("now"))
 			{
-				if(m.group(8).equals("now"))
+				// The date and time of now
+				time = Calendar.getInstance().getTimeInMillis();
+			}
+			else if(m.group(8).equals("current"))
+			{
+				if(current == 0)
+					return null;
+				
+				time = current;
+			}
+			else if(m.group(8).equals("today"))
+			{
+				// Only the date part of now
+				GregorianCalendar temp = new GregorianCalendar(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
+				temp.setTimeZone(SpyPlugin.getSettings().timezone);
+				time = temp.getTimeInMillis();
+			}
+			else if(m.group(8).equals("yesterday"))
+			{
+				// today - 1 day
+				GregorianCalendar temp = new GregorianCalendar(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
+				temp.setTimeZone(SpyPlugin.getSettings().timezone);
+				temp.add(Calendar.DAY_OF_MONTH, -1);
+				time = temp.getTimeInMillis();
+			}
+			else if(m.group(8).equals("start"))
+			{
+				if(start == 0)
+					return null;
+				
+				time = start;
+			}
+			else if(m.group(8).equals("end"))
+			{
+				if(end == 0)
+					return null;
+				
+				time = end;
+			}
+		}
+		else
+		{
+			// Parse the date
+			if(m.group(1) != null)
+				day = Integer.parseInt(m.group(1));
+			else
+				day = cal.get(Calendar.DAY_OF_MONTH);
+			
+			if(m.group(2) != null)
+				month = Integer.parseInt(m.group(2));
+			else
+				month = cal.get(Calendar.MONTH) + 1;
+			
+			if(m.group(3) != null)
+			{
+				year = Integer.parseInt(m.group(3));
+				if(year < 100)
+					year += 2000;
+			}
+			else
+				year = cal.get(Calendar.YEAR);
+			
+			if(!dateOnly)
+			{
+				// Parse the time
+				if(m.group(4) != null)
+					hour = Integer.parseInt(m.group(4));
+				else
+					hour = 0;
+				
+				if(m.group(5) != null)
+					minute = Integer.parseInt(m.group(5));
+				else
+					minute = 0;
+				
+				if(m.group(6) != null)
+					second = Integer.parseInt(m.group(6));
+				else
+					second = 0;
+			}
+			
+			// Validate the date
+			if(month > 12 || month == 0)
+				return null;
+			
+			// Validate day of month
+			if(month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12)
+			{
+				if(day == 0 || day > 31)
+					return null;
+			}
+			else if(month == 2)
+			{
+				if(day == 0)
+					return null;
+				if(year % 4 == 0 && year % 400 != 0)
 				{
-					// The date and time of now
-					time = Calendar.getInstance().getTimeInMillis();
+					 if(day > 29)
+						 return null;
 				}
-				else if(m.group(8).equals("current"))
+				else
 				{
-					if(current == 0)
-						return null;
-					
-					time = current;
-				}
-				else if(m.group(8).equals("today"))
-				{
-					// Only the date part of now
-					GregorianCalendar temp = new GregorianCalendar(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
-					temp.setTimeZone(SpyPlugin.getSettings().timezone);
-					time = temp.getTimeInMillis();
-				}
-				else if(m.group(8).equals("yesterday"))
-				{
-					// today - 1 day
-					GregorianCalendar temp = new GregorianCalendar(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
-					temp.setTimeZone(SpyPlugin.getSettings().timezone);
-					temp.add(Calendar.DAY_OF_MONTH, -1);
-					time = temp.getTimeInMillis();
-				}
-				else if(m.group(8).equals("start"))
-				{
-					if(start == 0)
-						return null;
-					
-					time = start;
-				}
-				else if(m.group(8).equals("end"))
-				{
-					if(end == 0)
-						return null;
-					
-					time = end;
+					if(day > 28)
+						 return null;
 				}
 			}
 			else
 			{
-				// Parse the date
-				if(m.group(1) != null)
-					day = Integer.parseInt(m.group(1));
-				else
-					day = cal.get(Calendar.DAY_OF_MONTH);
-				
-				if(m.group(2) != null)
-					month = Integer.parseInt(m.group(2));
-				else
-					month = cal.get(Calendar.MONTH) + 1;
-				
-				if(m.group(3) != null)
-				{
-					year = Integer.parseInt(m.group(3));
-					if(year < 100)
-						year += 2000;
-				}
-				else
-					year = cal.get(Calendar.YEAR);
-				
-				if(!dateOnly)
-				{
-					// Parse the time
-					if(m.group(4) != null)
-						hour = Integer.parseInt(m.group(4));
-					else
-						hour = 0;
-					
-					if(m.group(5) != null)
-						minute = Integer.parseInt(m.group(5));
-					else
-						minute = 0;
-					
-					if(m.group(6) != null)
-						second = Integer.parseInt(m.group(6));
-					else
-						second = 0;
-				}
-				
-				// Validate the date
-				if(month > 12 || month == 0)
+				if(day == 0 || day > 30)
 					return null;
-				
-				// Validate day of month
-				if(month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12)
-				{
-					if(day == 0 || day > 31)
-						return null;
-				}
-				else if(month == 2)
-				{
-					if(day == 0)
-						return null;
-					if(year % 4 == 0 && year % 400 != 0)
-					{
-						 if(day > 29)
-							 return null;
-					}
-					else
-					{
-						if(day > 28)
-							 return null;
-					}
-				}
-				else
-				{
-					if(day == 0 || day > 30)
-						return null;
-				}
-				
-				if(!dateOnly)
-				{
-					if(minute >= 60)
-						return null;
-					
-					if(second >= 60)
-						return null;
-					
-					// Validate time
-					if(m.group(7) != null)
-					{
-						if(hour > 12 || hour == 0)
-							return null;
-						
-						if(m.group(7).equals("pm"))
-						{
-							hour += 12;
-							if(hour == 24)
-								hour = 0;
-						}
-					}
-					else
-					{
-						if(hour >= 24)
-							return null;
-					}
-				}
-				
-				//time = second * 1000 + minute * 60000 + hour * 360000 + day * 86400000 +
-				cal.setTimeZone(SpyPlugin.getSettings().timezone);
-				cal.set(Calendar.YEAR, year);
-				cal.set(Calendar.MONTH, month-1);
-				cal.set(Calendar.DAY_OF_MONTH, day);
-				cal.set(Calendar.HOUR_OF_DAY, hour);
-				cal.set(Calendar.MINUTE, minute);
-				cal.set(Calendar.SECOND, second);
-				cal.set(Calendar.MILLISECOND, 0);
-
-				time = cal.getTimeInMillis();
 			}
 			
-			// Do modification to it
 			if(!dateOnly)
 			{
-				int years,months,weeks,days,hours,minutes,seconds;
-				boolean negative;
+				if(minute >= 60)
+					return null;
 				
-				if(m.group(9) != null)
-					negative = (m.group(9).compareTo("-") == 0);
+				if(second >= 60)
+					return null;
+				
+				// Validate time
+				if(m.group(7) != null)
+				{
+					if(hour > 12 || hour == 0)
+						return null;
+					
+					if(m.group(7).equals("pm"))
+					{
+						hour += 12;
+						if(hour == 24)
+							hour = 0;
+					}
+				}
 				else
-					negative = false;
-
-				if(m.group(10) != null)
-					years = Integer.parseInt(m.group(10));
-				else
-					years = 0;
-				
-				if(m.group(11) != null)
-					months = Integer.parseInt(m.group(11));
-				else
-					months = 0;
-				
-				if(m.group(12) != null)
-					weeks = Integer.parseInt(m.group(12));
-				else
-					weeks = 0;
-				
-				if(m.group(13) != null)
-					days = Integer.parseInt(m.group(13));
-				else
-					days = 0;
-				
-				if(m.group(14) != null)
-					hours = Integer.parseInt(m.group(14));
-				else
-					hours = 0;
-				
-				if(m.group(15) != null)
-					minutes = Integer.parseInt(m.group(15));
-				else
-					minutes = 0;
-				
-				if(m.group(16) != null)
-					seconds = Integer.parseInt(m.group(16));
-				else
-					seconds = 0;
-				
-				// Now calculate the time
-				long temp = 0;
-				temp += seconds * 1000L;
-				temp += minutes * 60000L;
-				temp += hours * 3600000L;
-				temp += days * 72000000L;
-				temp += weeks * 504000000L;
-				temp += months * 2191500000L;
-				temp += years * 26298000000L;
-				
-				if(negative)
-					temp *= -1;
-				
-				time += temp;
+				{
+					if(hour >= 24)
+						return null;
+				}
 			}
 			
-			return new Match(0, m.end(), time, null);
+			//time = second * 1000 + minute * 60000 + hour * 360000 + day * 86400000 +
+			cal.setTimeZone(SpyPlugin.getSettings().timezone);
+			cal.set(Calendar.YEAR, year);
+			cal.set(Calendar.MONTH, month-1);
+			cal.set(Calendar.DAY_OF_MONTH, day);
+			cal.set(Calendar.HOUR_OF_DAY, hour);
+			cal.set(Calendar.MINUTE, minute);
+			cal.set(Calendar.SECOND, second);
+			cal.set(Calendar.MILLISECOND, 0);
+
+			time = cal.getTimeInMillis();
 		}
 		
-		return null;
+		// Do modification to it
+		if(!dateOnly)
+		{
+			int years,months,weeks,days,hours,minutes,seconds;
+			boolean negative;
+			
+			if(m.group(9) != null)
+				negative = (m.group(9).compareTo("-") == 0);
+			else
+				negative = false;
+
+			if(m.group(10) != null)
+				years = Integer.parseInt(m.group(10));
+			else
+				years = 0;
+			
+			if(m.group(11) != null)
+				months = Integer.parseInt(m.group(11));
+			else
+				months = 0;
+			
+			if(m.group(12) != null)
+				weeks = Integer.parseInt(m.group(12));
+			else
+				weeks = 0;
+			
+			if(m.group(13) != null)
+				days = Integer.parseInt(m.group(13));
+			else
+				days = 0;
+			
+			if(m.group(14) != null)
+				hours = Integer.parseInt(m.group(14));
+			else
+				hours = 0;
+			
+			if(m.group(15) != null)
+				minutes = Integer.parseInt(m.group(15));
+			else
+				minutes = 0;
+			
+			if(m.group(16) != null)
+				seconds = Integer.parseInt(m.group(16));
+			else
+				seconds = 0;
+			
+			// Now calculate the time
+			long temp = 0;
+			temp += seconds * 1000L;
+			temp += minutes * 60000L;
+			temp += hours * 3600000L;
+			temp += days * 72000000L;
+			temp += weeks * 504000000L;
+			temp += months * 2191500000L;
+			temp += years * 26298000000L;
+			
+			if(negative)
+				temp *= -1;
+			
+			time += temp;
+		}
+		
+		return new Match(0, m.end(), time, null);
 	}
 
 	public static EntityType parseEntity(String entity)
