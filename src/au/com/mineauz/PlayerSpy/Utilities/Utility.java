@@ -5,7 +5,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Date;
@@ -25,9 +24,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.PlayerInventory;
 
 import au.com.mineauz.PlayerSpy.SpyPlugin;
-import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
-import au.com.mineauz.PlayerSpy.storage.InventorySlot;
 import au.com.mineauz.PlayerSpy.storage.StoredBlock;
 import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftInventoryPlayer;
 import au.com.mineauz.PlayerSpy.wrappers.craftbukkit.CraftItemStack;
@@ -132,98 +129,6 @@ public class Utility
 		
 		stack.setAmount(stack.getAmount() - amount);
 		return result;
-	}
-	public static UpdateInventoryRecord createUpdateRecordFor(int slot, boolean leftButton, boolean shift, org.bukkit.inventory.ItemStack cursor, org.bukkit.inventory.ItemStack existing)
-	{
-		org.bukkit.inventory.ItemStack result = null;
-		boolean changed = false;
-		if(existing != null)
-		{
-			if(existing.getTypeId() == 0)
-				existing = null;
-			else
-				existing = existing.clone();
-		}
-		
-		if(cursor != null)
-		{
-			if(cursor.getTypeId() == 0)
-				cursor = null;
-			else
-				cursor = cursor.clone();
-		}
-		
-		// Place into slot
-		if(existing == null)
-		{
-			if(cursor != null)
-			{
-				int placeCount = (leftButton ? cursor.getAmount() : 1);
-				
-				// Check that it is valid
-				if((slot == 36 && (cursor.getType() == Material.LEATHER_BOOTS || cursor.getType() == Material.IRON_BOOTS || cursor.getType() == Material.CHAINMAIL_BOOTS || cursor.getType() == Material.GOLD_BOOTS || cursor.getType() == Material.DIAMOND_BOOTS)) ||
-					(slot == 37 && (cursor.getType() == Material.LEATHER_LEGGINGS || cursor.getType() == Material.IRON_LEGGINGS || cursor.getType() == Material.CHAINMAIL_LEGGINGS || cursor.getType() == Material.GOLD_LEGGINGS || cursor.getType() == Material.DIAMOND_LEGGINGS)) ||
-					(slot == 38 && (cursor.getType() == Material.LEATHER_CHESTPLATE || cursor.getType() == Material.IRON_CHESTPLATE || cursor.getType() == Material.CHAINMAIL_CHESTPLATE || cursor.getType() == Material.GOLD_CHESTPLATE || cursor.getType() == Material.DIAMOND_CHESTPLATE)) ||
-					(slot == 39 && (cursor.getType() == Material.LEATHER_HELMET || cursor.getType() == Material.IRON_HELMET || cursor.getType() == Material.CHAINMAIL_HELMET || cursor.getType() == Material.GOLD_HELMET || cursor.getType() == Material.DIAMOND_HELMET)) ||
-					slot < 36)
-				{
-					if(cursor.getAmount() >= placeCount)
-					{
-						result = splitStack(cursor, placeCount);
-						changed = true;
-					}
-				}
-			}
-		}
-		// Pickup from slot
-		else if(cursor == null)
-		{
-			int amount = (leftButton ? existing.getAmount() : (existing.getAmount() + 1) / 2);
-			splitStack(existing,amount);
-			
-			if(existing.getAmount() == 0)
-				existing = null;
-			
-			changed = true;
-			result = existing;
-		}
-		// Add to slot if valid
-		else if((slot == 36 && (cursor.getType() == Material.LEATHER_BOOTS || cursor.getType() == Material.IRON_BOOTS || cursor.getType() == Material.CHAINMAIL_BOOTS || cursor.getType() == Material.GOLD_BOOTS || cursor.getType() == Material.DIAMOND_BOOTS)) ||
-			(slot == 37 && (cursor.getType() == Material.LEATHER_LEGGINGS || cursor.getType() == Material.IRON_LEGGINGS || cursor.getType() == Material.CHAINMAIL_LEGGINGS || cursor.getType() == Material.GOLD_LEGGINGS || cursor.getType() == Material.DIAMOND_LEGGINGS)) ||
-			(slot == 38 && (cursor.getType() == Material.LEATHER_CHESTPLATE || cursor.getType() == Material.IRON_CHESTPLATE || cursor.getType() == Material.CHAINMAIL_CHESTPLATE || cursor.getType() == Material.GOLD_CHESTPLATE || cursor.getType() == Material.DIAMOND_CHESTPLATE)) ||
-			(slot == 39 && (cursor.getType() == Material.LEATHER_HELMET || cursor.getType() == Material.IRON_HELMET || cursor.getType() == Material.CHAINMAIL_HELMET || cursor.getType() == Material.GOLD_HELMET || cursor.getType() == Material.DIAMOND_HELMET)) ||
-			slot < 36)
-		{
-			// They are the same type
-			if(existing.getData().equals(cursor.getData()))
-			{
-				int amount = (leftButton ? cursor.getAmount() : 1);
-				if(amount > cursor.getMaxStackSize() - existing.getAmount())
-				{
-					amount = cursor.getMaxStackSize() - existing.getAmount();
-				}
-				
-				existing.setAmount(existing.getAmount() + amount);
-				
-				changed = true;
-				result = existing;
-			}
-			// They are different types
-			else
-			{
-				existing = cursor;
-				result = existing;
-				changed = true;
-			}
-		}
-		
-		if(changed)
-		{
-			ArrayList<InventorySlot> updates = new ArrayList<InventorySlot>();
-			updates.add(new InventorySlot(result, slot));
-			return new UpdateInventoryRecord(updates);
-		}
-		return null;
 	}
 	
 	public static Location getLocation(Entity ent)

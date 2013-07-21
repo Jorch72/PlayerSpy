@@ -1,5 +1,6 @@
 package au.com.mineauz.PlayerSpy.commands;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.util.BitSet;
 import java.util.List;
@@ -12,6 +13,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.SpyPlugin;
@@ -19,7 +21,9 @@ import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.debugging.Profiler;
+import au.com.mineauz.PlayerSpy.globalreference.GlobalReferenceFile;
 import au.com.mineauz.PlayerSpy.structurefile.HoleEntry;
+import au.com.mineauz.PlayerSpy.structurefile.StructuredFile;
 import au.com.mineauz.PlayerSpy.tracdata.FileHeader;
 import au.com.mineauz.PlayerSpy.tracdata.HoleIndex;
 import au.com.mineauz.PlayerSpy.tracdata.RollbackEntry;
@@ -72,6 +76,33 @@ public class DebugCommand implements ICommand
 		return false;
 	}
 
+	private void showLog(String logName)
+	{
+		StructuredFile file;
+		
+		if(logName.equalsIgnoreCase("reference"))
+		{
+			file = new GlobalReferenceFile();
+			((GlobalReferenceFile)file).load(new File(SpyPlugin.getInstance().getDataFolder(), "data/reference"));
+		}
+		else
+		{
+			file = LogFileRegistry.getLogFile(Bukkit.getOfflinePlayer(logName));
+		}
+		
+		Debug.showLayout(file);
+		
+		
+		if(file instanceof LogFile)
+		{
+			LogFileRegistry.unloadLogFile(Bukkit.getOfflinePlayer(logName));
+		}
+		else
+		{
+			((GlobalReferenceFile)file).close();
+		}
+		
+	}
 	private void analyseLog(CommandSender sender, String logName, String focus)
 	{
 		LogFile log = LogFileRegistry.getLogFile(Bukkit.getOfflinePlayer(logName));
@@ -241,6 +272,14 @@ public class DebugCommand implements ICommand
 			
 			Debug.clearLog();
 			sender.sendMessage("Cleared log");
+		}
+		else if(args[0].equalsIgnoreCase("showlayout"))
+		{
+			if(args.length != 2 || !(sender instanceof ConsoleCommandSender))
+				return false;
+			
+			String logName = args[1];
+			showLog(logName);
 		}
 		else if(args[0].equalsIgnoreCase("test"))
 		{

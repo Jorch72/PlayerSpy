@@ -132,10 +132,17 @@ public class TestLogFile
 			
 			for(int i = 0; i < loaded.size(); ++i)
 			{
-				if(!loaded.get(i).equals(store.get(i)))
-				{
-					fail("Record Mismatch in session " + count + ". Expected Record " + store.get(i).toString() + " got " + loaded.get(i).toString());
-				}
+				if(loaded.get(i).getType() != store.get(i).getType())
+					fail(String.format("Type Mismatch in %d:%d/%d - ", count, i, loaded.size()) + "Expected Record " + store.get(i).toString() + " got " + loaded.get(i).toString());
+				
+				if(loaded.get(i).getTimestamp() != store.get(i).getTimestamp())
+					fail(String.format("Timestamp Mismatch in %d:%d/%d - ", count, i, loaded.size()) + "Expected timestamp " + store.get(i).getTimestamp() + " got " + loaded.get(i).getTimestamp() + " Record: " + store.get(i).toString());
+				
+				if(loaded.get(i).getSize(true) != store.get(i).getSize(true))
+					fail(String.format("Size(ABS) Mismatch in %d:%d/%d - ", count, i, loaded.size()) + "Expected size " + store.get(i).getSize(true) + " got " + loaded.get(i).getSize(true) + " Record: " + store.get(i).toString());
+				
+				if(loaded.get(i).getSize(false) != store.get(i).getSize(false))
+					fail(String.format("Size(REL) Mismatch in %d:%d/%d - ", count, i, loaded.size()) + "Expected size " + store.get(i).getSize(false) + " got " + loaded.get(i).getSize(false) + " Record: " + store.get(i).toString());
 			}
 			
 			count++;

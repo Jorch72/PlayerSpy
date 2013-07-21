@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 import au.com.mineauz.PlayerSpy.structurefile.IndexEntry;
 
-class OwnerMapEntry extends IndexEntry
+public class OwnerMapEntry extends IndexEntry
 {
 	public static final int cMaxOwnerLength = 16;
 	public static final int cSize = 4 + cMaxOwnerLength;

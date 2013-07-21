@@ -799,8 +799,8 @@ public class LogFile extends StructuredFile
 			reporter.addVariable("Session", session.Id);
 			reporter.addVariable("Count", session.RecordCount);
 			reporter.addVariable("Is Compressed?", session.Compressed);
-			reporter.addVariable("Successful Records", records);
 			reporter.addVariable("Success Count", records.size());
+			reporter.addVariable("Source Type", e.getSourceType());
 			
 			if(!mKnownBadSessions.contains(session.Id))
 				Debug.logCrash(reporter);

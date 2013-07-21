@@ -15,17 +15,30 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.StreamHandler;
 
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTree;
+import javax.swing.tree.DefaultMutableTreeNode;
+
 import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.LogUtil;
+import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
+import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
+import au.com.mineauz.PlayerSpy.Utilities.Util;
+import au.com.mineauz.PlayerSpy.globalreference.GlobalReferenceFile;
+import au.com.mineauz.PlayerSpy.structurefile.AbstractHoleIndex;
 import au.com.mineauz.PlayerSpy.structurefile.HoleEntry;
+import au.com.mineauz.PlayerSpy.structurefile.Index;
+import au.com.mineauz.PlayerSpy.structurefile.IndexEntry;
 import au.com.mineauz.PlayerSpy.structurefile.StructuredFile;
 import au.com.mineauz.PlayerSpy.tracdata.FileHeader;
 import au.com.mineauz.PlayerSpy.tracdata.HoleIndex;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
+import au.com.mineauz.PlayerSpy.tracdata.OwnerMapEntry;
 import au.com.mineauz.PlayerSpy.tracdata.RollbackEntry;
 import au.com.mineauz.PlayerSpy.tracdata.RollbackIndex;
 import au.com.mineauz.PlayerSpy.tracdata.SessionEntry;
@@ -369,5 +382,132 @@ public class Debug
 		{
 			
 		}
+	}
+	
+	private static void buildNodes(LogFile log, DefaultMutableTreeNode root)
+	{
+		Index<?>[] indexes = null;
+		FileHeader header = null;
+		try
+		{
+			Field field = StructuredFile.class.getDeclaredField("mIndexes");
+			field.setAccessible(true);
+			
+			indexes = (Index<?>[]) field.get(log);
+			
+			field = LogFile.class.getDeclaredField("mHeader");
+			field.setAccessible(true);
+			
+			header = (FileHeader)field.get(log);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			root.add(new DefaultMutableTreeNode("Error: " + e.getMessage()));
+			return;
+		}
+		
+		
+		root.add(new DefaultMutableTreeNode("Version: " + header.VersionMajor + "." + header.VersionMinor));
+		root.add(new DefaultMutableTreeNode("Owner: " + header.PlayerName));
+		root.add(new DefaultMutableTreeNode("OwnerTags Required: " + header.RequiresOwnerTags));
+		
+		for(Index<?> index : indexes)
+		{
+			DefaultMutableTreeNode node = new DefaultMutableTreeNode(index.getIndexName());
+			for(int i = 0; i < index.getCount(); ++i)
+			{
+				IndexEntry entry = index.get(i);
+				
+				DefaultMutableTreeNode entryNode = new DefaultMutableTreeNode();
+				
+				if(entry instanceof HoleEntry)
+				{
+					entryNode.setUserObject("Hole " + String.format("%X -> %X", ((HoleEntry)entry).Location, ((HoleEntry)entry).Location + ((HoleEntry)entry).Size - 1));
+				}
+				else if(entry instanceof OwnerMapEntry)
+				{
+					entryNode.setUserObject("Tag: " + ((OwnerMapEntry)entry).Id + ": " + ((OwnerMapEntry)entry).Owner);
+				}
+				else if(entry instanceof SessionEntry)
+				{
+					String name = "Session ";
+					SessionEntry session = (SessionEntry)entry;
+					
+					if(session.OwnerTagId == -1)
+						name += session.Id;
+					else
+						name += log.getOwnerTag(session) + "-" + session.Id;
+
+					if(session.Compressed)
+						name += " (C)";
+					
+					entryNode.setUserObject(name);
+					
+					entryNode.add(new DefaultMutableTreeNode("ID: " + session.Id));
+					entryNode.add(new DefaultMutableTreeNode("Record Count: " + session.RecordCount));
+					entryNode.add(new DefaultMutableTreeNode("Compressed: " + session.Compressed));
+					entryNode.add(new DefaultMutableTreeNode("OwnerTag Id: " + session.OwnerTagId));
+					entryNode.add(new DefaultMutableTreeNode("Location: " + String.format("%X -> %X", session.Location, session.Location + session.TotalSize - 1)));
+					entryNode.add(new DefaultMutableTreeNode("Padding: " + String.format("%X", session.Padding)));
+					entryNode.add(new DefaultMutableTreeNode("Start Date: " + Util.dateToString(session.StartTimestamp)));
+					entryNode.add(new DefaultMutableTreeNode("End Date: " + Util.dateToString(session.EndTimestamp)));
+					
+					DefaultMutableTreeNode recordNode = new DefaultMutableTreeNode("Records");
+					
+					RecordList records = log.loadSession(session);
+					
+					int remaining = session.RecordCount;
+					
+					if(records != null)
+					{
+						for(Record record : records)
+						{
+							recordNode.add(new DefaultMutableTreeNode(record));
+						}
+						
+						remaining -= records.size();
+					}
+
+					if(remaining > 0)
+						recordNode.add(new DefaultMutableTreeNode("ERROR. " + remaining + " records not read."));
+					
+					entryNode.add(recordNode);
+				}
+				else
+					entryNode.setUserObject(entry);
+
+				node.add(entryNode);
+			}
+			root.add(node);
+		}
+	
+	}
+	
+	private static void buildNodes(GlobalReferenceFile ref, DefaultMutableTreeNode root)
+	{
+		
+	}
+	
+	public static void showLayout(StructuredFile file)
+	{
+		JFrame window = new JFrame("Log Layout");
+		
+		DefaultMutableTreeNode top = new DefaultMutableTreeNode(file.getFile().getName());
+		
+		if(file instanceof LogFile)
+			buildNodes((LogFile)file, top);
+		else
+			buildNodes((GlobalReferenceFile)file, top);
+		
+		JTree tree = new JTree(top);
+		JScrollPane treeView = new JScrollPane(tree);
+		
+		window.getContentPane().add(treeView);
+		
+		window.pack();
+		window.setVisible(true);
+		window.setSize(500, 500);
+		
 	}
 }

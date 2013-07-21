@@ -48,8 +48,9 @@ public class StoredItemStack
 		if(itemId < 0 || itemId > Short.MAX_VALUE)
 			throw new RecordFormatException("Bad item id " + itemId);
 		
-		if(amount < 0)
-			throw new RecordFormatException("Bad amount " + amount);
+		// TODO: I dont know yet why there are amounts less than 0 in transactions, but this is not a corrupting thing so it shall be allowed until a fix is found
+//		if(amount < 0)
+//			throw new RecordFormatException("Bad amount " + amount);
 		
 		ItemStack item = new ItemStack(itemId,amount,durability);
 		

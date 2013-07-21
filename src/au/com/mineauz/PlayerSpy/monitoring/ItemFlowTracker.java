@@ -515,6 +515,9 @@ public class ItemFlowTracker implements Listener
 		{
 			ArrayList<InventorySlot> changes = detectChanges(mInventory, false);
 			
+			if(changes.isEmpty())
+				return;
+			
 			UpdateInventoryRecord record = new UpdateInventoryRecord(changes);
 			if(mInventory instanceof PlayerInventory)
 			{
