@@ -1,11 +1,9 @@
 package test.au.com.mineauz.PlayerSpy.runtime;
 
-import java.io.ByteArrayOutputStream;
 import java.util.List;
 
 import org.bukkit.command.CommandSender;
 
-import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
 import au.com.mineauz.PlayerSpy.commands.ICommand;
 
 public class TestCommand implements ICommand

@@ -1,6 +1,5 @@
 package au.com.mineauz.PlayerSpy.wrappers.nbt;
 
-import java.io.BufferedInputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.DataOutput;
