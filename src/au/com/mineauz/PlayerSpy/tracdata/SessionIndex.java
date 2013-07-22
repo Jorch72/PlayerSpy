@@ -424,6 +424,12 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 				e.setSucceededRecords(records);
 				throw e;
 			}
+			catch(IOException e)
+			{
+				RecordFormatException ex = new RecordFormatException(e);
+				ex.setSucceededRecords(records);
+				throw ex;
+			}
 			finally
 			{
 				stream.close();
@@ -478,6 +484,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 				long oldSize = mSession.TotalSize;
 				
 				mSession.TotalSize = ostream.size();
+				mSession.Padding = 0;
 				mSession.Compressed = true;
 				
 				set(indexOf(mSession), mSession);
@@ -531,6 +538,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 					{
 						// Split
 						splitSession = records.splitRecords(cutoffIndex, true);
+						Debug.loggedAssert(records.size() == cutoffIndex, "Records were not cutoff correctly. Req: " + cutoffIndex + " Act: " + records.size());
 						break;
 					}
 					totalSize += size;
@@ -573,7 +581,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 			
 					// ensure i havent messed up the implementation of getSize()
 					Debug.loggedAssert(totalSize == bstream.size(), "Get size returned bad size");
-					
+					Debug.loggedAssert(totalSize <= mSession.Padding, "Attempting to write " + (totalSize - mSession.Padding) + " bytes over the limit");
 					// Work out where to write from and how much padding will be left
 					long startLocation = mSession.Location + mSession.TotalSize - mSession.Padding;
 					

@@ -168,7 +168,7 @@ public class RecordList extends ArrayList<Record>
 	/// if keep lower is not set, every record >= splitIndex, will be kept in this list, and the rest will be returned.
 	public RecordList splitRecords(int splitIndex, boolean keepLower)
 	{
-		Debug.loggedAssert( splitIndex >= 0 && splitIndex < size());
+		Debug.loggedAssert( splitIndex >= 0 && splitIndex <= size());
 		
 		// Handle cases where there is no need for splitting
 		if(splitIndex == 0)
@@ -186,7 +186,7 @@ public class RecordList extends ArrayList<Record>
 				return new RecordList();
 			}
 		}
-		else if(splitIndex == size() - 1)
+		else if(splitIndex == size())
 		{
 			if(keepLower)
 				// Return an empty list

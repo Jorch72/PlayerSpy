@@ -72,6 +72,12 @@ public abstract class Record
 			e.setSourceType(record.getType());
 			throw e;
 		}
+		catch(IOException e)
+		{
+			RecordFormatException ex = new RecordFormatException(e);
+			ex.setSourceType(record.getType());
+			throw ex;
+		}
 		
 		return record;
 	}

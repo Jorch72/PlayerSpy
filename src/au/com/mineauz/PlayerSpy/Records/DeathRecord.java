@@ -85,4 +85,9 @@ public class DeathRecord extends Record implements IPlayerLocationAware
 		
 	}
 
+	@Override
+	public String toString()
+	{
+		return "Death {reason: " + mReason + " loc: " + mLocation + "}";
+	}
 }

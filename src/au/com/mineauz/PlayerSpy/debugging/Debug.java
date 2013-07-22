@@ -282,13 +282,17 @@ public class Debug
 	}
 	private static void logLayoutInt(LogFile log)
 	{
-		if(!log.getName().equals("raven__quinn"))
+		if(!log.getName().equals("testAppend"))
 			return;
 		
 		try
 		{
+			File f = new File("plugins/PlayerSpy/layout.txt");
+			if(!f.exists())
+				f.getParentFile().mkdirs();
+			
 			if(mLayoutWriter == null)
-				mLayoutWriter = new OutputStreamWriter(new FileOutputStream(new File(SpyPlugin.getInstance().getDataFolder(), "layout.txt")));
+				mLayoutWriter = new OutputStreamWriter(new FileOutputStream(f));
 			
 			HoleIndex holeIndex;
 			RollbackIndex rollbackIndex;

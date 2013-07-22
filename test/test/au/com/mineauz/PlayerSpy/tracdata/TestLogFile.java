@@ -1,5 +1,6 @@
 package test.au.com.mineauz.PlayerSpy.tracdata;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Random;
@@ -87,8 +88,14 @@ public class TestLogFile
 	@Test
 	public void testAppend() throws IOException, RecordFormatException
 	{
-		LogFile log = LogFile.create("testAppend", folder.newFile().getAbsolutePath());
+		File f = new File("test.trackdata");
+		if(f.exists())
+			f.delete();
+		
+		LogFile log = LogFile.create("test", f.getAbsolutePath());
 		log.testOverride = true;
+		
+		System.out.println(new File("plugins/PlayerSpy/layout.txt").getAbsolutePath());
 		
 		SessionIndex index = (SessionIndex)ReflectionHelper.readField(log.getClass(), "mSessionIndex", log);
 		ACIDRandomAccessFile file = (ACIDRandomAccessFile) ReflectionHelper.readField(StructuredFile.class, "mFile", log);
@@ -96,11 +103,14 @@ public class TestLogFile
 		HashMap<Integer, RecordList> stored = new HashMap<Integer, RecordList>();
 		
 		// Simulate heavy appends
-		for(int section = 0; section < 500; ++section)
+		int toAdd = 200;
+		for(int section = 0; section < toAdd; ++section)
 		{
 			file.beginTransaction();
 			
 			SessionData data = index.addEmptySession();
+			data.getIndexEntry().OwnerTagId = 1;
+			System.out.println("Writing Session " + data.getIndexEntry().toString() + " " + section + "/" + toAdd);
 			// Fill it with data
 			RecordList total = new RecordList();
 			while (true)
@@ -124,6 +134,7 @@ public class TestLogFile
 		for(SessionEntry session : index)
 		{
 			// Now read it back to confirm its there
+			System.out.println("Reading Session " + session.toString() + " " + count + "/" + index.getCount());
 			RecordList loaded = index.getDataFor(session).read();
 			RecordList store = stored.get(session.Id);
 			
@@ -139,10 +150,10 @@ public class TestLogFile
 					fail(String.format("Timestamp Mismatch in %d:%d/%d - ", count, i, loaded.size()) + "Expected timestamp " + store.get(i).getTimestamp() + " got " + loaded.get(i).getTimestamp() + " Record: " + store.get(i).toString());
 				
 				if(loaded.get(i).getSize(true) != store.get(i).getSize(true))
-					fail(String.format("Size(ABS) Mismatch in %d:%d/%d - ", count, i, loaded.size()) + "Expected size " + store.get(i).getSize(true) + " got " + loaded.get(i).getSize(true) + " Record: " + store.get(i).toString());
+					fail(String.format("Size(ABS) Mismatch in %d:%d/%d - ", count, i, loaded.size()) + "Expected size " + store.get(i).getSize(true) + " got " + loaded.get(i).getSize(true) + " Stored: " + store.get(i).toString() + " Loaded: " + loaded.get(i).toString());
 				
 				if(loaded.get(i).getSize(false) != store.get(i).getSize(false))
-					fail(String.format("Size(REL) Mismatch in %d:%d/%d - ", count, i, loaded.size()) + "Expected size " + store.get(i).getSize(false) + " got " + loaded.get(i).getSize(false) + " Record: " + store.get(i).toString());
+					fail(String.format("Size(REL) Mismatch in %d:%d/%d - ", count, i, loaded.size()) + "Expected size " + store.get(i).getSize(false) + " got " + loaded.get(i).getSize(false) + " Stored: " + store.get(i).toString() + " Loaded: " + loaded.get(i).toString());
 			}
 			
 			count++;
@@ -151,5 +162,84 @@ public class TestLogFile
 		log.close(true);
 		
 	}
-
+	@Test
+	public void testAppendWithCompress() throws IOException, RecordFormatException
+	{
+		File f = new File("test.trackdata");
+		if(f.exists())
+			f.delete();
+		
+		LogFile log = LogFile.create("test", f.getAbsolutePath());
+		log.testOverride = true;
+		
+		System.out.println(new File("plugins/PlayerSpy/layout.txt").getAbsolutePath());
+		
+		SessionIndex index = (SessionIndex)ReflectionHelper.readField(log.getClass(), "mSessionIndex", log);
+		ACIDRandomAccessFile file = (ACIDRandomAccessFile) ReflectionHelper.readField(StructuredFile.class, "mFile", log);
+		
+		HashMap<Integer, RecordList> stored = new HashMap<Integer, RecordList>();
+		
+		// Simulate heavy appends
+		int toAdd = 200;
+		for(int section = 0; section < toAdd; ++section)
+		{
+			file.beginTransaction();
+			
+			SessionData data = index.addEmptySession();
+			data.getIndexEntry().OwnerTagId = 1;
+			System.out.println("Writing Session " + data.getIndexEntry().toString() + " " + section + "/" + toAdd);
+			// Fill it with data
+			RecordList total = new RecordList();
+			while (true)
+			{
+				RecordList list = new RecordList();
+				for (int i = 0; i < mRand.nextInt(100) + 30; ++i)
+					list.add(createRandomRecord());
+				
+				RecordList result = data.append(list);
+				total.addAll(list);
+				
+				if(result != null)
+				{
+					data.compress();
+					break;
+				}
+			}
+			stored.put(data.getIndexEntry().Id, total);
+			
+			file.commit();
+		}
+		
+		int count = 0;
+		for(SessionEntry session : index)
+		{
+			// Now read it back to confirm its there
+			System.out.println("Reading Session " + session.toString() + " " + count + "/" + index.getCount());
+			RecordList loaded = index.getDataFor(session).read();
+			RecordList store = stored.get(session.Id);
+			
+			if(loaded.size() != store.size())
+				fail("Size Mismatch in session " + count + ". Loaded: " + loaded.size() + " Stored: " + store.size());
+			
+			for(int i = 0; i < loaded.size(); ++i)
+			{
+				if(loaded.get(i).getType() != store.get(i).getType())
+					fail(String.format("Type Mismatch in %d:%d/%d - ", count, i, loaded.size()) + "Expected Record " + store.get(i).toString() + " got " + loaded.get(i).toString());
+				
+				if(loaded.get(i).getTimestamp() != store.get(i).getTimestamp())
+					fail(String.format("Timestamp Mismatch in %d:%d/%d - ", count, i, loaded.size()) + "Expected timestamp " + store.get(i).getTimestamp() + " got " + loaded.get(i).getTimestamp() + " Record: " + store.get(i).toString());
+				
+				if(loaded.get(i).getSize(true) != store.get(i).getSize(true))
+					fail(String.format("Size(ABS) Mismatch in %d:%d/%d - ", count, i, loaded.size()) + "Expected size " + store.get(i).getSize(true) + " got " + loaded.get(i).getSize(true) + " Stored: " + store.get(i).toString() + " Loaded: " + loaded.get(i).toString());
+				
+				if(loaded.get(i).getSize(false) != store.get(i).getSize(false))
+					fail(String.format("Size(REL) Mismatch in %d:%d/%d - ", count, i, loaded.size()) + "Expected size " + store.get(i).getSize(false) + " got " + loaded.get(i).getSize(false) + " Stored: " + store.get(i).toString() + " Loaded: " + loaded.get(i).toString());
+			}
+			
+			count++;
+		}
+		
+		log.close(true);
+		
+	}
 }
