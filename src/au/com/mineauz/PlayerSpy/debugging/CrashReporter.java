@@ -1,6 +1,7 @@
 package au.com.mineauz.PlayerSpy.debugging;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -25,6 +26,13 @@ public class CrashReporter
 	public void addVariable(String name, Object value)
 	{
 		mVariables.put(name, value);
+	}
+	
+	public void addVariables(Map<String, Object> variables)
+	{
+		if(variables == null)
+			return;
+		mVariables.putAll(variables);
 	}
 	
 	public void log(Logger logger)

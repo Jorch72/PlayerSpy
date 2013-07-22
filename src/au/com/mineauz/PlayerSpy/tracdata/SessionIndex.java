@@ -370,13 +370,17 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 			boolean isAbsolute = mSession.OwnerTagId != -1;
 			
 			DataInputStream stream = getRawStream();
-			
+			long streamPos = 0;
 			// Load the records
 			try
 			{
 				for(short i = 0; i < mSession.RecordCount; i++)
 				{
+					Debug.recordVariable("RecordIndex", i);
+					Debug.recordVariable("Approx Ptr", streamPos + mSession.Location);
+					
 					Record record = Record.readRecord(stream, lastWorld, mHeader.VersionMajor, isAbsolute);
+					streamPos += record.getSize(isAbsolute);
 					
 					record.sourceFile = (LogFile)mHostingFile; 
 					record.sourceEntry = mSession;

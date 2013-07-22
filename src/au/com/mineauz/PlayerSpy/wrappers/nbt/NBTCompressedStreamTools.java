@@ -28,7 +28,7 @@ public class NBTCompressedStreamTools extends AutoWrapper
 	public static NBTTagCompound read(InputStream stream) throws IOException
 	{
 		// NOTE: It turns out that the wrapped version closes the stream, this is not what I want, so I am replicating the functionality
-		DataInputStream dInput = new DataInputStream(new BufferedInputStream(stream));
+		DataInputStream dInput = new DataInputStream(stream);
 
         return callStaticMethod(mReadInput, dInput);
 	}

@@ -756,6 +756,7 @@ public class LogFile extends StructuredFile
 		Debug.loggedAssert(mIsLoaded);
 		
 		Profiler.beginTimingSection("loadSession");
+		Debug.startSection();
 		
 		// We will hold the write lock because accessing the file concurrently through the same object with have issues i think.
 		lockWrite();
@@ -801,6 +802,15 @@ public class LogFile extends StructuredFile
 			reporter.addVariable("Is Compressed?", session.Compressed);
 			reporter.addVariable("Success Count", records.size());
 			reporter.addVariable("Source Type", e.getSourceType());
+			reporter.addVariables(Debug.getVariables());
+			try
+			{
+				reporter.addVariable("PTR", mFile.getFilePointer());
+			}
+			catch ( IOException e1 )
+			{
+				e1.printStackTrace();
+			}
 			
 			if(!mKnownBadSessions.contains(session.Id))
 				Debug.logCrash(reporter);
@@ -818,6 +828,15 @@ public class LogFile extends StructuredFile
 			reporter.addVariable("LogFile", mPlayerName);
 			reporter.addVariable("Session", session.Id);
 			reporter.addVariable("Is Compressed?", session.Compressed);
+			reporter.addVariables(Debug.getVariables());
+			try
+			{
+				reporter.addVariable("PTR", mFile.getFilePointer());
+			}
+			catch ( IOException e1 )
+			{
+				e1.printStackTrace();
+			}
 			
 			if(!mKnownBadSessions.contains(session.Id))
 				Debug.logCrash(reporter);
@@ -830,6 +849,7 @@ public class LogFile extends StructuredFile
 		{
 			unlockWrite();
 			Profiler.endTimingSection();
+			Debug.stopSection();
 		}
 		
 		return null;

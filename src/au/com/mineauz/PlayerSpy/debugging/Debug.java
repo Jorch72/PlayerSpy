@@ -8,6 +8,7 @@ import java.io.OutputStreamWriter;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 import java.util.logging.Handler;
@@ -30,7 +31,6 @@ import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
 import au.com.mineauz.PlayerSpy.globalreference.GlobalReferenceFile;
-import au.com.mineauz.PlayerSpy.structurefile.AbstractHoleIndex;
 import au.com.mineauz.PlayerSpy.structurefile.HoleEntry;
 import au.com.mineauz.PlayerSpy.structurefile.Index;
 import au.com.mineauz.PlayerSpy.structurefile.IndexEntry;
@@ -53,6 +53,8 @@ public class Debug
 	
 	private static OutputStreamWriter mLayoutWriter;
 	private static HashMap<Long, String> mLastMessage = new HashMap<Long, String>();
+	
+	private static HashMap<Long, HashMap<String, Object>> mVariables = new HashMap<Long, HashMap<String,Object>>();
 	
 	public static synchronized void init(File debugLogFile)
 	{
@@ -513,5 +515,28 @@ public class Debug
 		window.setVisible(true);
 		window.setSize(500, 500);
 		
+	}
+	
+	public static void startSection()
+	{
+		mVariables.put(Thread.currentThread().getId(), new HashMap<String, Object>());
+	}
+	public static void stopSection()
+	{
+		mVariables.remove(Thread.currentThread().getId());
+	}
+	
+	public static void recordVariable(String name, Object data)
+	{
+		HashMap<String, Object> varList = mVariables.get(Thread.currentThread().getId());
+		if(varList == null)
+			return;
+		
+		varList.put(name, data);
+	}
+	
+	public static Map<String, Object> getVariables()
+	{
+		return mVariables.get(Thread.currentThread().getId());
 	}
 }

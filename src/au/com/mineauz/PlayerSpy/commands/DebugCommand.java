@@ -1,8 +1,13 @@
 package au.com.mineauz.PlayerSpy.commands;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.util.BitSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.TreeMap;
@@ -12,11 +17,15 @@ import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.SpyPlugin;
+import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
+import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
@@ -303,11 +312,39 @@ public class DebugCommand implements ICommand
 		{
 			if(sender instanceof Player)
 			{
-				long dayTime = System.currentTimeMillis() / 86400000L * 86400000L;
-				dayTime = System.currentTimeMillis() - dayTime;
-				dayTime *= 20;
-				dayTime /= 1000;
-				sender.sendMessage("Your time: " + ((Player)sender).getPlayerTime() + " Offset: " + ((Player)sender).getPlayerTimeOffset() + "Sys time: " + dayTime);
+				Player player = (Player)sender;
+				HashSet<Byte> transparent = new HashSet<Byte>();
+				transparent.add((byte)0);
+				
+				Block hit = player.getTargetBlock(transparent, 10);
+				
+				if(hit != null)
+				{
+					BlockState blank = hit.getState();
+					blank.setTypeId(0);
+					blank.setRawData((byte)0);
+					
+					BlockChangeRecord record = new BlockChangeRecord(blank, hit.getState(), true);
+					ByteArrayOutputStream ostream = new ByteArrayOutputStream();
+					DataOutputStream output = new DataOutputStream(ostream);
+					
+					record.write(output, true);
+					
+					// Now read it back
+					ByteArrayInputStream istream = new ByteArrayInputStream(ostream.toByteArray());
+					DataInputStream input = new DataInputStream(istream);
+					
+					try
+					{
+						Record read = Record.readRecord(input, null, 3, true);
+						if(!read.equals(record))
+							throw new Exception("Not equal");
+					}
+					catch(Exception e)
+					{
+						e.printStackTrace();
+					}
+				}
 			}
 		}
 		else if(args[0].equalsIgnoreCase("state"))

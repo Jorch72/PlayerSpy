@@ -376,6 +376,9 @@ public class StoredBlock
 		if(!mLocation.equals(block.mLocation))
 			return false;
 		
+		if(mStateData == null)
+			return block.mStateData == null;
+		
 		return mStateData.equals(block.mStateData);
 	}
 }
