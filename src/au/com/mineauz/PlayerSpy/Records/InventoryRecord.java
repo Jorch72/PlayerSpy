@@ -160,4 +160,10 @@ public class InventoryRecord extends Record
 		
 		return true;
 	}
+	
+	@Override
+	public String toString()
+	{
+		return String.format("Inventory: {held: %d armour: {%s} inv: {%s}}", mSlot, Arrays.toString(mArmour), Arrays.toString(mItems)); 
+	}
 }

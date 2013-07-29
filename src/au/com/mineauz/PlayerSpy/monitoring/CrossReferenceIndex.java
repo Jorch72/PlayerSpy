@@ -56,15 +56,19 @@ public class CrossReferenceIndex
 		
 		try
 		{
+			instance.beginTransaction();
 			instance.removeLog(logFile);
+			instance.commitTransaction();
 		}
 		catch(IOException e)
 		{
+			instance.rollbackTransaction();
 			Debug.logException(e);
 			return false;
 		}
 		catch(IllegalArgumentException e)
 		{
+			instance.rollbackTransaction();
 			Debug.logException(e);
 			return false;
 		}
@@ -77,10 +81,13 @@ public class CrossReferenceIndex
 		
 		try
 		{
+			instance.beginTransaction();
 			instance.removeLog(log);
+			instance.commitTransaction();
 		}
 		catch(IOException e)
 		{
+			instance.rollbackTransaction();
 			Debug.logException(e);
 			return false;
 		}
@@ -98,10 +105,13 @@ public class CrossReferenceIndex
 		
 		try
 		{
+			instance.beginTransaction();
 			instance.addSession(entry, log);
+			instance.commitTransaction();
 		}
 		catch(IOException e)
 		{
+			instance.rollbackTransaction();
 			Debug.logException(e);
 			return false;
 		}
@@ -119,10 +129,13 @@ public class CrossReferenceIndex
 		
 		try
 		{
+			instance.beginTransaction();
 			instance.removeSession(entry, log);
+			instance.commitTransaction();
 		}
 		catch(IOException e)
 		{
+			instance.rollbackTransaction();
 			Debug.logException(e);
 			return false;
 		}
@@ -140,10 +153,13 @@ public class CrossReferenceIndex
 		
 		try
 		{
+			instance.beginTransaction();
 			instance.updateSession(entry, log);
+			instance.commitTransaction();
 		}
 		catch(IOException e)
 		{
+			instance.rollbackTransaction();
 			Debug.logException(e);
 			return false;
 		}

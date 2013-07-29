@@ -41,13 +41,15 @@ public class SessionIndex extends Index<SessionEntry>
 	@Override
 	protected int getEntrySize()
 	{
-		return SessionEntry.getByteSize();
+		return SessionEntry.getByteSize(mHeader.VersionMajor);
 	}
 
 	@Override
 	protected SessionEntry createNewEntry()
 	{
-		return new SessionEntry();
+		SessionEntry ent = new SessionEntry();
+		ent.version = mHeader.VersionMajor;
+		return ent;
 	}
 
 	@Override
@@ -81,6 +83,13 @@ public class SessionIndex extends Index<SessionEntry>
 		mHeader.write(mFile);
 	}
 
+	@Override
+	public int add( SessionEntry entry ) throws IOException
+	{
+		entry.version = mHeader.VersionMajor;
+		return super.add(entry);
+	}
+	
 	public SessionEntry get(UUID fileId, int sessionId)
 	{
 		int index = 0;
@@ -106,6 +115,12 @@ public class SessionIndex extends Index<SessionEntry>
 			}
 			++index;
 		}
+	}
+	
+	@Override
+	protected void onRemove( SessionEntry entry )
+	{
+		entry.version = mHeader.VersionMajor;
 	}
 	
 	public int getCount(UUID fileId)

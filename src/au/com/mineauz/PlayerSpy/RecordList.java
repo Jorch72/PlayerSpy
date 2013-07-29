@@ -10,6 +10,7 @@ import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.storage.InventorySlot;
 
@@ -123,8 +124,8 @@ public class RecordList extends ArrayList<Record>
 		{
 			if(get(i).getType() == RecordType.FullInventory)
 			{
-				items = ((InventoryRecord)get(i)).getItems();
-				armour = ((InventoryRecord)get(i)).getArmour();
+				items = Utility.copy(((InventoryRecord)get(i)).getItems());
+				armour = Utility.copy(((InventoryRecord)get(i)).getArmour());
 				held = ((InventoryRecord)get(i)).getHeldSlot();
 				
 				break;

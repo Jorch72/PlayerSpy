@@ -476,4 +476,29 @@ public class GlobalReferenceFile extends StructuredFile
 		
 		return sessions;
 	}
+	
+	public void beginTransaction() throws IOException
+	{
+		mFile.beginTransaction();
+	}
+	
+	public void commitTransaction() throws IOException
+	{
+		mFile.commit();
+	}
+	
+	public void rollbackTransaction()
+	{
+		mFile.rollback();
+	}
+	
+	public int getVersionMajor()
+	{
+		return mHeader.VersionMajor;
+	}
+	
+	public int getVersionMinor()
+	{
+		return mHeader.VersionMinor;
+	}
 }

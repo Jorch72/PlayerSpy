@@ -826,4 +826,9 @@ public class Utility
 		
 		return block.getLocation().clone().add(face.getModX(), face.getModY(), face.getModZ());
 	}
+	
+	public static <T> T[] copy(T[] array)
+	{
+		return Arrays.copyOf(array, array.length);
+	}
 }

@@ -5,14 +5,22 @@ import java.io.RandomAccessFile;
 import java.util.UUID;
 
 import au.com.mineauz.PlayerSpy.Utilities.BoundingBox;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.structurefile.IndexEntry;
 
 public class SessionEntry extends IndexEntry
 {
-	public static int getByteSize()
+	public static int getByteSize(int version)
 	{
-		return 84;
+		if(version == 1)
+			return 36 + 2*(Utility.cBitSetSize/8);
+		else if(version == 2)
+			return 84;
+		else
+			throw new IllegalArgumentException();
 	}
+	
+	public int version;
 	
 	public int sessionId;
 	public UUID fileId;
@@ -31,15 +39,28 @@ public class SessionEntry extends IndexEntry
 		startTime = file.readLong();
 		endTime = file.readLong();
 		
-		playerBB = new BoundingBox();
-		playerBB.read(file);
-		otherBB = new BoundingBox();
-		otherBB.read(file);
+		if(version == 1)
+		{
+			// Deprecated data. Just consume it
+			byte[] bytes = new byte[Utility.cBitSetSize/8];
+			file.readFully(bytes);
+			file.readFully(bytes);
+		}
+		else if(version >= 2)
+		{
+			playerBB = new BoundingBox();
+			playerBB.read(file);
+			otherBB = new BoundingBox();
+			otherBB.read(file);
+		}
 	}
 
 	@Override
 	public void write( RandomAccessFile file ) throws IOException
 	{
+		if(version != GRFileHeader.currentVersion)
+			throw new RuntimeException("Attempted to write an old version. Only the current version can be written");
+		
 		file.writeInt(sessionId);
 		
 		file.writeLong(fileId.getMostSignificantBits());

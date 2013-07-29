@@ -88,6 +88,7 @@ public class SpyPlugin extends JavaPlugin
 
 		LogFileRegistry.setLogFileDirectory(new File(getDataFolder(),"data"));
 
+		Upgrader.upgradeIndex();
 		CrossReferenceIndex.initialize();
 		Upgrader.run();
 		

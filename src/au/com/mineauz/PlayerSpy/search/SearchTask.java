@@ -15,7 +15,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 
 import au.com.mineauz.PlayerSpy.Cause;
-import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.LogTasks.Task;
@@ -310,12 +309,6 @@ public class SearchTask implements Task<SearchResults>
 			sessionsToSearch = CrossReferenceIndex.getSessionsFor(startTime, endTime);
 		
 		Debug.finer("**%d possible sessions found", sessionsToSearch.foundSessions.size());
-		LogUtil.info(sessionsToSearch.foundSessions.size() + " possible sessions found");
-		
-		int count = 0;
-		int causeFail = 0;
-		int timeFail = 0;
-		
 		for(SessionInFile fileSession : sessionsToSearch.foundSessions)
 		{
 			Cause cause;
@@ -356,27 +349,19 @@ public class SearchTask implements Task<SearchResults>
 				}
 				
 				if(!constraintOk)
-				{
-					causeFail++;
 					continue;
-				}
 			}
 			
 			// Dont bother loading up ones that dont add anything
 			if(fileSession.Session.EndTimestamp < minDate && (!mFilter.noLimit && results.allRecords.size() >= SpyPlugin.getSettings().maxSearchResults))
-			{
-				timeFail++;
 				continue;
-			}
 			
-			count++;
 			// Load up the records for the session
 			RecordList records = fileSession.Log.loadSession(fileSession.Session);
 			
 			processRecords(records, cause);
 		}
 		
-		LogUtil.info("Checked " + count + "/" + sessionsToSearch.foundSessions.size() + " sessions CF:" + causeFail + " TF:" + timeFail);
 		Debug.info("Search completed. Logs opened: %d, Sessions Searched: %d, Records found in active buffers: %d, Total Searched Records: %d, Matching Records: %d", sessionsToSearch.getLogCount(), sessionCount, bufferedCount, totalRecords, results.allRecords.size());
 		sessionsToSearch.release();
 		

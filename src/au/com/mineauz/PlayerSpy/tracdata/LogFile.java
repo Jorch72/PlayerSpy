@@ -806,10 +806,7 @@ public class LogFile extends StructuredFile
 				e1.printStackTrace();
 			}
 			
-			if(!mKnownBadSessions.contains(session.Id))
-				Debug.logCrash(reporter);
-			else
-				Debug.logCrashDebugOnly(reporter);
+			Debug.logCrashDebugOnly(reporter);
 			
 			mKnownBadSessions.add(session.Id);
 			
@@ -832,10 +829,7 @@ public class LogFile extends StructuredFile
 				e1.printStackTrace();
 			}
 			
-			if(!mKnownBadSessions.contains(session.Id))
-				Debug.logCrash(reporter);
-			else
-				Debug.logCrashDebugOnly(reporter);
+			Debug.logCrashDebugOnly(reporter);
 			
 			mKnownBadSessions.add(session.Id);
 		}
@@ -939,7 +933,6 @@ public class LogFile extends StructuredFile
 				reporter.addVariable("LogFile", mPlayerName);
 				reporter.addVariable("Session", chosenSession);
 				reporter.addVariable("owner", owner);
-				reporter.addVariable("Adding records", records.toString());
 				
 				Debug.logCrash(reporter);
 				StructuredFile.rollbackJointTransaction(CrossReferenceIndex.getInstance(), this);
@@ -1093,10 +1086,13 @@ public class LogFile extends StructuredFile
 									{
 										Location location = ((ILocationAware)record).getLocation();
 										
-										if(record instanceof IPlayerLocationAware)
-											entry.playerBB.addPoint(location);
-										else
-											entry.otherBB.addPoint(location);
+										if(location != null)
+										{
+											if(record instanceof IPlayerLocationAware)
+												entry.playerBB.addPoint(location);
+											else
+												entry.otherBB.addPoint(location);
+										}
 									}
 								}
 								

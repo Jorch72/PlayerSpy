@@ -8,8 +8,10 @@ import au.com.mineauz.PlayerSpy.structurefile.IndexEntry;
 
 public class GRFileHeader implements IData<IndexEntry>
 {
-	public byte VersionMajor = 1;
-	public byte VersionMinor = 0;
+	public static final byte currentVersion = 2;
+	public static final byte currentVersionMinor = 0;
+	public byte VersionMajor = currentVersion;
+	public byte VersionMinor = currentVersionMinor;
 	
 	public long HolesIndexLocation;
 	public long HolesIndexSize;
@@ -73,7 +75,7 @@ public class GRFileHeader implements IData<IndexEntry>
 		VersionMajor = file.readByte();
 		VersionMinor = file.readByte();
 		
-		if(VersionMajor != 1)
+		if(VersionMajor != 1 && VersionMajor != 2)
 			throw new IOException("Unsupported file version " + VersionMajor + "." + VersionMinor + "!");
 		
 		HolesIndexLocation = (long) file.readInt();

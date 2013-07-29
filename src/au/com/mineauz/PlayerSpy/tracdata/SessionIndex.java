@@ -15,6 +15,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
+
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.Records.ILocationAware;
 import au.com.mineauz.PlayerSpy.Records.IPlayerLocationAware;
@@ -196,12 +197,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 		add(session);
 		
 		if(!((LogFile)mHostingFile).testOverride)
-		{
-			if(!CrossReferenceIndex.addSession((LogFile)mHostingFile, session))
-				Debug.warning("Failed to add session to xreference");
-			else
-				Debug.finer("Added session to cross reference");
-		}
+			CrossReferenceIndex.getInstance().addSession(session, (LogFile)mHostingFile);
 		return getDataFor(session);
 	}
 	
@@ -528,6 +524,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 						Debug.loggedAssert(records.size() == cutoffIndex, "Records were not cutoff correctly. Req: " + cutoffIndex + " Act: " + records.size());
 						break;
 					}
+					
 					totalSize += size;
 					cutoffIndex++;
 					
@@ -542,15 +539,20 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 					{
 						Location location = ((ILocationAware)record).getLocation();
 						
-						if(record instanceof IPlayerLocationAware)
-							mSession.playerBB.addPoint(location);
-						else
-							mSession.otherBB.addPoint(location);
+						if(location != null)
+						{
+							if(record instanceof IPlayerLocationAware)
+								mSession.playerBB.addPoint(location);
+							else
+								mSession.otherBB.addPoint(location);
+						}
 					}
 					
 					++index;
 				}
 				
+				Debug.loggedAssert(totalSize <= mSession.Padding, "Attempting to write " + (totalSize - mSession.Padding) + " bytes over the limit");
+				Debug.loggedAssert(totalSize == records.getDataSize(isAbsolute));
 				Debug.fine("*Total size to write: " + totalSize);
 				if(splitSession != null)
 					Debug.fine("*Cutoff at: " + cutoffIndex);
@@ -584,7 +586,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 					set(indexOf(mSession), mSession);
 
 					if(!((LogFile)mHostingFile).testOverride)
-						CrossReferenceIndex.updateSession(((LogFile)mHostingFile), mSession);
+						CrossReferenceIndex.getInstance().updateSession(mSession, ((LogFile)mHostingFile));
 					
 					Debug.info("Completed append to Session %d", mSession.Id);
 					Debug.logLayout(mHostingFile);
