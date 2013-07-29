@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,8 +11,6 @@ import org.bukkit.Location;
 
 import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
-import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
-import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.structurefile.Index;
 import au.com.mineauz.PlayerSpy.structurefile.SpaceLocator;
@@ -223,8 +220,6 @@ public class GlobalReferenceFile extends StructuredFile
 		entry.timeBegin = log.getStartDate();
 		entry.timeEnd = log.getEndDate();
 		
-		entry.chunkFilter = log.getChunkFilter();
-		
 		mFileIndex.add(entry);
 		
 		return entry.fileId;
@@ -255,8 +250,8 @@ public class GlobalReferenceFile extends StructuredFile
 		// Add a new session
 		SessionEntry entry = new SessionEntry();
 		entry.fileId = fileId;
-		entry.chunkFilter = session.ChunkLocationFilter;
-		entry.locationFilter = session.LocationFilter;
+		entry.otherBB = session.otherBB;
+		entry.playerBB = session.playerBB;
 		
 		entry.startTime = session.StartTimestamp;
 		entry.endTime = session.EndTimestamp;
@@ -269,7 +264,6 @@ public class GlobalReferenceFile extends StructuredFile
 		FileEntry fileEntry = mFileIndex.get(fileId);
 		fileEntry.timeBegin = Math.min(fileEntry.timeBegin, session.StartTimestamp);
 		fileEntry.timeEnd = Math.max(fileEntry.timeEnd, session.EndTimestamp);
-		fileEntry.chunkFilter = log.getChunkFilter();
 		
 		mFileIndex.set(fileId, fileEntry);
 	}
@@ -286,8 +280,8 @@ public class GlobalReferenceFile extends StructuredFile
 			return;
 		}
 		
-		entry.chunkFilter = session.ChunkLocationFilter;
-		entry.locationFilter = session.LocationFilter;
+		entry.otherBB = session.otherBB;
+		entry.playerBB = session.playerBB;
 		
 		entry.startTime = session.StartTimestamp;
 		entry.endTime = session.EndTimestamp;
@@ -298,7 +292,6 @@ public class GlobalReferenceFile extends StructuredFile
 		FileEntry fileEntry = mFileIndex.get(fileId);
 		fileEntry.timeBegin = Math.min(fileEntry.timeBegin, session.StartTimestamp);
 		fileEntry.timeEnd = Math.max(fileEntry.timeEnd, session.EndTimestamp);
-		fileEntry.chunkFilter = log.getChunkFilter();
 		
 		mFileIndex.set(fileId, fileEntry);
 	}
@@ -318,17 +311,14 @@ public class GlobalReferenceFile extends StructuredFile
 			
 			long timeBegin = Long.MAX_VALUE;
 			long timeEnd = Long.MIN_VALUE;
-			BitSet chunkFilter = new BitSet(Utility.cBitSetSize);
 			
 			for(SessionEntry entry : mSessionIndex.subset(fileId))
 			{
 				timeBegin = Math.min(timeBegin, entry.startTime);
 				timeEnd = Math.max(timeEnd, entry.endTime);
-				chunkFilter.or(entry.chunkFilter);
 			}
 			fileEntry.timeBegin = timeBegin;
 			fileEntry.timeEnd = timeEnd;
-			fileEntry.chunkFilter = chunkFilter;
 			
 			mFileIndex.set(fileId, fileEntry);
 		}
@@ -371,28 +361,28 @@ public class GlobalReferenceFile extends StructuredFile
 	
 	public List<SessionEntry> getSessionsFor(Location location)
 	{
-		BitSet locationHash = Utility.hashLocation(location);
-		BitSet chunkHash = Utility.hashChunk(new SafeChunk(location));
-		
-//		Debug.finer("Finding sessions for %s.", location.toString());
-//		Debug.finer("Location hash: %s.", Utility.bitSetToString(locationHash));
-//		Debug.finer("Chunk hash: %s.", Utility.bitSetToString(chunkHash));
-		
 		ArrayList<SessionEntry> sessions = new ArrayList<SessionEntry>();
 		
 		for(FileEntry file : mFileIndex)
 		{
-			if(Utility.bitSetIsPresent(file.chunkFilter, chunkHash))
+			for(SessionEntry entry : mSessionIndex.subset(file.fileId))
 			{
-				//Debug.finest("File %s contains chunk. File filter: %s.", file.fileName, Utility.bitSetToString(file.chunkFilter));
-				
-				for(SessionEntry session : mSessionIndex.subset(file.fileId))
+				if(entry.otherBB.isContained(location))
 				{
-					if(Utility.bitSetIsPresent(session.chunkFilter, chunkHash) && Utility.bitSetIsPresent(session.locationFilter, locationHash))
+					// Order in decending time
+					boolean add = false;
+					for(int i = 0; i < sessions.size(); ++i)
 					{
-						//Debug.finest("Session %s contains location. ChunkFilter: %s LocationFilter: %s.", session.sessionId, Utility.bitSetToString(session.chunkFilter), Utility.bitSetToString(session.locationFilter));
-						sessions.add(session);
+						if(sessions.get(i).endTime < entry.endTime)
+						{
+							sessions.add(i, entry);
+							add = true;
+							break;
+						}
 					}
+					
+					if(!add)
+						sessions.add(entry);
 				}
 			}
 		}
@@ -415,7 +405,71 @@ public class GlobalReferenceFile extends StructuredFile
 					// Is the specified time range within that of the session
 					if((session.startTime >= timeBegin && session.startTime <= timeEnd) || (session.endTime >= timeBegin && session.endTime <= timeEnd) ||
 						(session.startTime < timeBegin && session.endTime > timeBegin) || (session.startTime < timeEnd && session.endTime > timeEnd))
-						sessions.add(session);
+					{
+						// Order in decending time
+						boolean add = false;
+						for(int i = 0; i < sessions.size(); ++i)
+						{
+							if(sessions.get(i).endTime < session.endTime)
+							{
+								sessions.add(i, session);
+								add = true;
+								break;
+							}
+						}
+						
+						if(!add)
+							sessions.add(session);
+					}
+				}
+			}
+		}
+		
+		return sessions;
+	}
+	
+	/**
+	 * Gets all the sessions that contains something withing the time range within the radius of the specified location
+	 * @param position The center point to check
+	 * @param radius The radius to check in
+	 * @param allowPlayer Allow player locations to be included
+	 * @return
+	 */
+	public List<SessionEntry> getSessionsIn(long timeBegin, long timeEnd, Location position, double radius, boolean allowPlayer)
+	{
+		ArrayList<SessionEntry> sessions = new ArrayList<SessionEntry>();
+		
+		for(FileEntry file : mFileIndex)
+		{
+			// Is the specified time range within that of the file 
+			if((file.timeBegin >= timeBegin && file.timeBegin <= timeEnd) || (file.timeEnd >= timeBegin && file.timeEnd <= timeEnd) ||
+				(file.timeBegin < timeBegin && file.timeEnd > timeBegin) || (file.timeBegin < timeEnd && file.timeEnd > timeEnd))
+			{
+				for(SessionEntry session : mSessionIndex.subset(file.fileId))
+				{
+					// Is the specified time range within that of the session
+					if((session.startTime >= timeBegin && session.startTime <= timeEnd) || (session.endTime >= timeBegin && session.endTime <= timeEnd) ||
+						(session.startTime < timeBegin && session.endTime > timeBegin) || (session.startTime < timeEnd && session.endTime > timeEnd))
+					{
+						// Check the distance
+						if(session.otherBB.intersects(position, radius))
+						{
+							// Order in decending time
+							boolean add = false;
+							for(int i = 0; i < sessions.size(); ++i)
+							{
+								if(sessions.get(i).endTime < session.endTime)
+								{
+									sessions.add(i, session);
+									add = true;
+									break;
+								}
+							}
+							
+							if(!add)
+								sessions.add(session);
+						}
+					}
 				}
 			}
 		}

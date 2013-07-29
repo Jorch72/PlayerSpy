@@ -2,27 +2,25 @@ package au.com.mineauz.PlayerSpy.globalreference;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.BitSet;
 import java.util.UUID;
 
-import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.Utilities.BoundingBox;
 import au.com.mineauz.PlayerSpy.structurefile.IndexEntry;
 
 public class SessionEntry extends IndexEntry
 {
 	public static int getByteSize()
 	{
-		return 36 + 2*(Utility.cBitSetSize/8);
+		return 84;
 	}
 	
 	public int sessionId;
 	public UUID fileId;
 	public long startTime;
 	public long endTime;
-	public BitSet chunkFilter;
-	public BitSet locationFilter;
+	public BoundingBox playerBB;
+	public BoundingBox otherBB;
 	
-
 	@Override
 	public void read( RandomAccessFile file ) throws IOException
 	{
@@ -33,11 +31,10 @@ public class SessionEntry extends IndexEntry
 		startTime = file.readLong();
 		endTime = file.readLong();
 		
-		byte[] bytes = new byte[Utility.cBitSetSize/8];
-		file.readFully(bytes);
-		chunkFilter = BitSet.valueOf(bytes);
-		file.readFully(bytes);
-		locationFilter = BitSet.valueOf(bytes);
+		playerBB = new BoundingBox();
+		playerBB.read(file);
+		otherBB = new BoundingBox();
+		otherBB.read(file);
 	}
 
 	@Override
@@ -51,8 +48,8 @@ public class SessionEntry extends IndexEntry
 		file.writeLong(startTime);
 		file.writeLong(endTime);
 		
-		file.write(Utility.bitSetToBytes(chunkFilter));
-		file.write(Utility.bitSetToBytes(locationFilter));
+		playerBB.write(file);
+		otherBB.write(file);
 	}
 
 }

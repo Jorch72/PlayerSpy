@@ -16,6 +16,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 import au.com.mineauz.PlayerSpy.Cause;
+import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.LogTasks.Task;
@@ -208,11 +209,15 @@ public class InspectBlockTask implements Task<Void>
 		
 		// Check stuff saved to disk
 		CrossReferenceIndex.Results allSessions = CrossReferenceIndex.getSessionsFor(mLocation);
+		LogUtil.info("Checking up to " + allSessions.foundSessions.size() + " sessions");
+		int count = 0;
 		for(SessionInFile fileSession : allSessions.foundSessions)
 		{
 			// Dont check ones that clearly have nothing of interest 
 			if(mostRecent.size() >= mSettings.itemCount && fileSession.Session.EndTimestamp < mostRecent.get(mostRecent.size()-1).getArg2().getTimestamp())
 				continue;
+			
+			count++;
 			
 			Cause cause;
 			String ownerTag = fileSession.Log.getOwnerTag(fileSession.Session);
@@ -238,6 +243,8 @@ public class InspectBlockTask implements Task<Void>
 			processRecords(cause, source);
 		}
 		allSessions.release();
+		
+		LogUtil.info("Checked " + count + "/" + allSessions.foundSessions.size() + " sessions");
 		
 		// Format the results into a neat list and display
 		ArrayList<String> output = new ArrayList<String>();

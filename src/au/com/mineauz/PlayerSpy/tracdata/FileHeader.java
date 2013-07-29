@@ -2,7 +2,6 @@ package au.com.mineauz.PlayerSpy.tracdata;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.BitSet;
 
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.structurefile.IData;
@@ -10,8 +9,10 @@ import au.com.mineauz.PlayerSpy.structurefile.IndexEntry;
 
 public class FileHeader implements IData<IndexEntry>
 {
-	public byte VersionMajor = 3;
-	public byte VersionMinor = 0;
+	public static final byte currentVersion = 4;
+	public static final byte currentVersionMinor = 0;
+	public byte VersionMajor = currentVersion;
+	public byte VersionMinor = currentVersionMinor;
 	public String PlayerName;
 	public long IndexLocation;
 	public long IndexSize;
@@ -27,13 +28,15 @@ public class FileHeader implements IData<IndexEntry>
 	public long RollbackIndexLocation;
 	public long RollbackIndexSize;
 	public int RollbackIndexCount;
-	public BitSet TotalLocationFilter = new BitSet(Utility.cBitSetSize);
 	public long TagLocation;
 	public long TagSize;
 	public byte[] Reserved = new byte[22];
 	
 	public void write(RandomAccessFile file) throws IOException
 	{
+		if(VersionMajor != currentVersion || VersionMinor != currentVersionMinor)
+			throw new RuntimeException("Attempted to write an old version. Only the current version can be written");
+		
 		file.writeByte(VersionMajor);
 		file.writeByte(VersionMinor);
 
@@ -47,29 +50,19 @@ public class FileHeader implements IData<IndexEntry>
 		file.writeShort((short)HolesIndexCount);
 		file.writeShort(HolesIndexPadding);
 		
-		if(VersionMajor == 2 || VersionMajor == 3)
-		{
-			file.writeBoolean(RequiresOwnerTags);
-			file.writeInt((int)OwnerMapLocation);
-			file.writeInt((int)OwnerMapSize);
-			file.writeShort((short)OwnerMapCount);
-		}
+		file.writeBoolean(RequiresOwnerTags);
+		file.writeInt((int)OwnerMapLocation);
+		file.writeInt((int)OwnerMapSize);
+		file.writeShort((short)OwnerMapCount);
 		
-		if(VersionMajor == 3)
-		{
-			file.writeInt((int)RollbackIndexLocation);
-			file.writeInt((int)RollbackIndexSize);
-			file.writeShort((int)RollbackIndexCount);
-			
-			file.write(Utility.bitSetToBytes(TotalLocationFilter));
-			
-			file.writeInt((int)TagLocation);
-			file.writeInt((int)TagSize);
-			
-			file.write(Reserved);
-		}
-		else if(VersionMajor != 1)
-			file.write(new byte[14]);
+		file.writeInt((int)RollbackIndexLocation);
+		file.writeInt((int)RollbackIndexSize);
+		file.writeShort((int)RollbackIndexCount);
+		
+		file.writeInt((int)TagLocation);
+		file.writeInt((int)TagSize);
+		
+		file.write(Reserved);
 	}
 	
 	public void read(RandomAccessFile file) throws IOException
@@ -79,7 +72,7 @@ public class FileHeader implements IData<IndexEntry>
 		
 		// Check the version
 		// The minor version can be different since minor versions dont change what fields are present or the type but may change the contents of them
-		if(VersionMajor != 1 && VersionMajor != 2 && VersionMajor != 3)
+		if(VersionMajor != 1 && VersionMajor != 2 && VersionMajor != 3 && VersionMajor != 4)
 			throw new RuntimeException("Unsupported file version!");
 		
 		PlayerName = file.readUTF();
@@ -93,7 +86,7 @@ public class FileHeader implements IData<IndexEntry>
 		HolesIndexCount = (int)file.readShort();
 		HolesIndexPadding = file.readShort();
 		
-		if(VersionMajor == 2 || VersionMajor == 3)
+		if(VersionMajor >= 2)
 		{
 			RequiresOwnerTags = file.readBoolean();
 			OwnerMapLocation = file.readInt();
@@ -101,23 +94,25 @@ public class FileHeader implements IData<IndexEntry>
 			OwnerMapCount = file.readShort();
 		}
 		
-		if(VersionMajor == 3)
+		if(VersionMajor >= 3)
 		{
 			RollbackIndexLocation = file.readInt();
 			RollbackIndexSize = file.readInt();
 			RollbackIndexCount = file.readShort();
-			
-			byte[] bytes = new byte[Utility.cBitSetSize/8];
-			file.readFully(bytes);
-			
-			TotalLocationFilter = BitSet.valueOf(bytes);
+
+			if(VersionMajor == 3)
+			{
+				// This data has been deprecated
+				byte[] bytes = new byte[Utility.cBitSetSize/8];
+				file.readFully(bytes);
+			}
 			
 			TagLocation = file.readInt();
 			TagSize = file.readInt();
 			
 			file.readFully(Reserved);
 		}
-		else if(VersionMajor != 1)
+		else if(VersionMajor == 2)
 			file.readFully(new byte[14]);
 	}
 	
@@ -129,6 +124,8 @@ public class FileHeader implements IData<IndexEntry>
 			return 49 +  + Utility.getUTFLength(PlayerName);
 		else if(VersionMajor == 3)
 			return 75 + Utility.getUTFLength(PlayerName) + (Utility.cBitSetSize/8);
+		else if(VersionMajor == 4)
+			return 75 + Utility.getUTFLength(PlayerName);
 		else
 			throw new IllegalArgumentException("Invalid Version " + VersionMajor);
 	}

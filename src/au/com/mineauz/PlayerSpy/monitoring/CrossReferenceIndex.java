@@ -254,6 +254,52 @@ public class CrossReferenceIndex
 		return new Results(results, openedLogs.values());
 	}
 	
+	public static Results getSessionsIn(long startTime, long endTime, Location loc, double range, boolean includePlayer)
+	{
+		Validate.notNull(instance, "Reference is not initialized");
+		
+		List<au.com.mineauz.PlayerSpy.globalreference.SessionEntry> foundSessions = instance.getSessionsIn(startTime, endTime, loc, range, includePlayer);
+		ArrayList<SessionInFile> results = new ArrayList<CrossReferenceIndex.SessionInFile>();
+		
+		HashMap<UUID, LogFile> openedLogs = new HashMap<UUID, LogFile>();
+		HashSet<String> failedLogs = new HashSet<String>();
+
+		for(au.com.mineauz.PlayerSpy.globalreference.SessionEntry session : foundSessions)
+		{
+			LogFile log = null;
+			if(openedLogs.containsKey(session.fileId))
+			{
+				log = openedLogs.get(session.fileId);
+			}
+			else
+			{
+				// Load it
+				String name = instance.getFileName(session.fileId);
+				
+				if(!failedLogs.contains(name))
+				{
+					log = LogFileRegistry.getLogFile(name);
+
+					if(log == null)
+						failedLogs.add(name);
+					else
+						openedLogs.put(session.fileId, log);
+				}
+				
+			}
+			
+			if(log == null)
+				continue;
+			
+			SessionInFile res = new SessionInFile();
+			res.Log = log;
+			res.Session = log.getSessionById(session.sessionId);
+			if(res.Session != null)
+				results.add(res);
+		}
+		
+		return new Results(results, openedLogs.values());
+	}
 	public static class SessionInFile
 	{
 		public SessionEntry Session;

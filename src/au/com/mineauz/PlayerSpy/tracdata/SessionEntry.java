@@ -2,8 +2,8 @@ package au.com.mineauz.PlayerSpy.tracdata;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.BitSet;
 
+import au.com.mineauz.PlayerSpy.Utilities.BoundingBox;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.structurefile.IndexEntry;
 
@@ -20,6 +20,8 @@ public class SessionEntry extends IndexEntry
 			return 35;
 		case 3:
 			return 39 + 2*(Utility.cBitSetSize/8);
+		case 4:
+			return 87;
 		default:
 			throw new IllegalArgumentException("Invalid version number " + version);
 		}
@@ -33,8 +35,8 @@ public class SessionEntry extends IndexEntry
 	public long TotalSize;
 	public long Padding;
 	
-	public BitSet LocationFilter = new BitSet(Utility.cBitSetSize);
-	public BitSet ChunkLocationFilter = new BitSet(Utility.cBitSetSize);
+	public BoundingBox playerBB;
+	public BoundingBox otherBB;
 	
 	public boolean Compressed;
 	public int Id;
@@ -42,24 +44,22 @@ public class SessionEntry extends IndexEntry
 	
 	public void write(RandomAccessFile file) throws IOException
 	{
+		if(version != FileHeader.currentVersion)
+			throw new RuntimeException("Attempted to write an old version. Only the current version can be written");
+		
 		file.writeLong(StartTimestamp);
 		file.writeLong(EndTimestamp);
 		file.writeShort(RecordCount);
 		file.writeInt((int)Location);
 		file.writeInt((int)TotalSize);
 		file.writeByte(Compressed == true ? 1 : 0);
-		if(version == 2 || version == 3)
-		{
-			file.writeInt(Id);
-			file.writeInt(OwnerTagId);
-		}
+		file.writeInt(Id);
+		file.writeInt(OwnerTagId);
 		
-		if(version == 3)
-		{
-			file.writeInt((int)Padding);
-			file.write(Utility.bitSetToBytes(LocationFilter));
-			file.write(Utility.bitSetToBytes(ChunkLocationFilter));
-		}
+		file.writeInt((int)Padding);
+		
+		playerBB.write(file);
+		otherBB.write(file);
 	}
 	public void read(RandomAccessFile file) throws IOException
 	{
@@ -70,20 +70,30 @@ public class SessionEntry extends IndexEntry
 		TotalSize = (long)file.readInt();
 		Compressed = (file.readByte() == 0 ? false : true);
 		
-		if(version == 2 || version == 3)
+		if(version >= 2)
 		{
 			Id = file.readInt();
 			OwnerTagId = file.readInt();
 		}
 		
-		if(version == 3)
+		if(version >= 3)
 		{
 			Padding = (long)file.readInt();
-			byte[] bytes = new byte[Utility.cBitSetSize/8];
-			file.readFully(bytes);
-			LocationFilter = BitSet.valueOf(bytes);
-			file.readFully(bytes);
-			ChunkLocationFilter = BitSet.valueOf(bytes);
+			if(version == 3)
+			{
+				byte[] bytes = new byte[Utility.cBitSetSize/8];
+				// This data is obsolete, just read the bytes and discard it
+				file.readFully(bytes);
+				file.readFully(bytes);
+			}
+		}
+		
+		if(version >= 4)
+		{
+			playerBB = new BoundingBox();
+			playerBB.read(file);
+			otherBB = new BoundingBox();
+			otherBB.read(file);
 		}
 	}
 	

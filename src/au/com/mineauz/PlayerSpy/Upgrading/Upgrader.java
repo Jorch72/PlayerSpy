@@ -32,7 +32,7 @@ public class Upgrader
 			// Check versions
 			FileHeader header = LogFile.scrapeHeader(file.getAbsolutePath());
 			
-			if(header != null && header.VersionMajor != 3)
+			if(header != null && header.VersionMajor < FileHeader.currentVersion)
 			{
 				LogFile log = new LogFile();
 				if(log.load(file.getAbsolutePath()))
@@ -52,7 +52,7 @@ public class Upgrader
 	 */
 	private static boolean upgradeLog(LogFile log)
 	{
-		if(log.getVersionMajor() == 3)
+		if(log.getVersionMajor() == FileHeader.currentVersion)
 			return false;
 		
 		LogUtil.info("Upgrading " + log.getFile().getName() + " From version " + log.getVersionMajor() + "." + log.getVersionMinor() + " to 3.0");

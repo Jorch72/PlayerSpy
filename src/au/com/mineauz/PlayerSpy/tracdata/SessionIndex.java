@@ -15,7 +15,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
-
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.Records.ILocationAware;
 import au.com.mineauz.PlayerSpy.Records.IPlayerLocationAware;
@@ -27,8 +26,7 @@ import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.Records.SessionInfoRecord;
 import au.com.mineauz.PlayerSpy.Records.TeleportRecord;
 import au.com.mineauz.PlayerSpy.Records.WorldChangeRecord;
-import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
-import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.Utilities.BoundingBox;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.debugging.Profiler;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
@@ -164,8 +162,6 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 		
 		rebuildSessionMap();
 		
-		// Update the location filter for the file
-		mHeader.TotalLocationFilter.or(entry.ChunkLocationFilter);
 		mFile.seek(0);
 		mHeader.write(mFile);
 		
@@ -183,6 +179,8 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 		session.TotalSize = mInitialSessionSize;
 		session.Padding = mInitialSessionSize;
 		session.Compressed = false;
+		session.playerBB = new BoundingBox();
+		session.otherBB = new BoundingBox();
 		
 		session.StartTimestamp = 0;
 		session.EndTimestamp = 0;
@@ -221,8 +219,6 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 		super.remove(index);
 		
 		rebuildSessionMap();
-		
-		rebuildChunkFilters();
 	}
 	
 	@Override
@@ -241,19 +237,6 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 	public void set( int index, SessionEntry entry ) throws IOException
 	{
 		super.set(index, entry);
-		
-		// Update the location filter for the file
-		mHeader.TotalLocationFilter.or(entry.ChunkLocationFilter);
-		mFile.seek(0);
-		mHeader.write(mFile);
-	}
-	
-	public void rebuildChunkFilters() throws IOException
-	{
-		mHeader.TotalLocationFilter.clear();
-		
-		for(SessionEntry session : this)
-			mHeader.TotalLocationFilter.or(session.ChunkLocationFilter);
 		
 		mFile.seek(0);
 		mHeader.write(mFile);
@@ -555,16 +538,14 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 					}
 					
 					// Add any location to the location filter 
-					if(record instanceof ILocationAware && !(record instanceof IPlayerLocationAware))
+					if(record instanceof ILocationAware)
 					{
 						Location location = ((ILocationAware)record).getLocation();
 						
-						if(location != null)
-						{
-							mSession.LocationFilter.or(Utility.hashLocation(location));
-							SafeChunk chunk = new SafeChunk(((ILocationAware)record).getLocation());
-							mSession.ChunkLocationFilter.or(Utility.hashChunk(chunk));
-						}
+						if(record instanceof IPlayerLocationAware)
+							mSession.playerBB.addPoint(location);
+						else
+							mSession.otherBB.addPoint(location);
 					}
 					
 					++index;

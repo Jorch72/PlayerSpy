@@ -1,7 +1,6 @@
 package au.com.mineauz.PlayerSpy.tracdata;
 
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -10,6 +9,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.io.*;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 
 import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.RecordList;
@@ -17,9 +17,8 @@ import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.LogTasks.*;
 import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
-import au.com.mineauz.PlayerSpy.Utilities.SafeChunk;
+import au.com.mineauz.PlayerSpy.Utilities.BoundingBox;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
-import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.CrashReporter;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.debugging.Profiler;
@@ -98,11 +97,6 @@ public class LogFile extends StructuredFile
 		unlockRead();
 		
 		return result;
-	}
-	
-	public BitSet getChunkFilter()
-	{
-		return (BitSet)mHeader.TotalLocationFilter.clone();
 	}
 	
 	void pullDataExposed( long location ) throws IOException
@@ -1073,8 +1067,8 @@ public class LogFile extends StructuredFile
 								for(Record record : sessionData)
 									totalSize += record.getSize(isAbsolute);
 								
-								entry.ChunkLocationFilter.clear();
-								entry.LocationFilter.clear();
+								entry.playerBB = new BoundingBox();
+								entry.otherBB = new BoundingBox();
 								
 								ByteArrayOutputStream bstream = new ByteArrayOutputStream(totalSize);
 								DataOutputStream stream = new DataOutputStream(bstream);
@@ -1095,11 +1089,14 @@ public class LogFile extends StructuredFile
 									lastSize = stream.size();
 									
 									// Add any location to the location filter 
-									if(record instanceof ILocationAware && !(record instanceof IPlayerLocationAware))
+									if(record instanceof ILocationAware)
 									{
-										entry.LocationFilter.or(Utility.hashLocation(((ILocationAware)record).getLocation()));
-										SafeChunk chunk = new SafeChunk(((ILocationAware)record).getLocation());
-										entry.ChunkLocationFilter.or(Utility.hashChunk(chunk));
+										Location location = ((ILocationAware)record).getLocation();
+										
+										if(record instanceof IPlayerLocationAware)
+											entry.playerBB.addPoint(location);
+										else
+											entry.otherBB.addPoint(location);
 									}
 								}
 								
@@ -1166,8 +1163,6 @@ public class LogFile extends StructuredFile
 						entry.OwnerTagId = -1;
 					}
 				}
-				// Make sure the filters are accurate again
-				mSessionIndex.rebuildChunkFilters();
 				
 				result = true;
 				
