@@ -468,6 +468,8 @@ public class SearchTask extends Task<SearchResults>
 			if(!causeMatches(cause))
 				continue;
 			
+			LogUtil.info("Checking session " + cause.friendlyName());
+			
 			// Dont bother loading up ones that dont add anything
 			if(!mFilter.noLimit && results.allRecords.size() >= SpyPlugin.getSettings().maxSearchResults)
 			{

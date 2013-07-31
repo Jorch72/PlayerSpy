@@ -117,15 +117,19 @@ public class HistoryCommand implements ICommand
 		{
 			List<ParsedAttribute> attributes = mParser.parse(inputString);
 			
+			ArrayList<Constraint> recordTypeConstraints = null;
 			ArrayList<Constraint> constraints = new ArrayList<Constraint>();
-			ArrayList<CauseConstraint> causeConstraints = new ArrayList<CauseConstraint>();
+			ArrayList<CauseConstraint> causes = new ArrayList<CauseConstraint>();
 			
 			for(ParsedAttribute res : attributes)
 			{
 				IConstraint<?> constraint = null;
 				
 				if(res.source.getName().equals("type"))
-					constraint = new CompoundConstraint(false,(ArrayList<Constraint>)res.value);
+				{
+					recordTypeConstraints = (ArrayList<Constraint>)res.value;
+					constraint = new CompoundConstraint(false, recordTypeConstraints);
+				}
 				else if(res.source.getName().equals("dist"))
 				{
 					Location loc = null;
@@ -162,14 +166,22 @@ public class HistoryCommand implements ICommand
 				if(constraint instanceof Constraint)
 					constraints.add((Constraint)constraint);
 				if(constraint instanceof CauseConstraint)
-					causeConstraints.add((CauseConstraint)constraint);
+					causes.add((CauseConstraint)constraint);
 			}
+			
+			ArrayList<CauseConstraint> causeConstraints = new ArrayList<CauseConstraint>();
+			if(!causes.isEmpty())
+				causeConstraints.add(new OrCauseConstraint(causes));
+			
+			if(recordTypeConstraints != null)
+				causeConstraints.add(new RecordTypeCauseConstraint(recordTypeConstraints));
 			
 			SearchFilter filter = new SearchFilter();
 			filter.andConstraints = constraints;
 			filter.andConstraints.add(new DistanceConstraint(0.55, Inspector.instance.getSelectedBlock((Player)sender).clone().add(0.5,0.5,0.5)));
 			filter.causes = causeConstraints;
 			
+			sender.sendMessage(ChatColor.GOLD + "[PlayerSpy] " + ChatColor.WHITE + "Searching, please wait...");
 			Searcher.instance.getBlockHistory(sender, filter);
 		}
 		catch(IllegalArgumentException e)
