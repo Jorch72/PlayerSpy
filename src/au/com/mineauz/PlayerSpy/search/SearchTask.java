@@ -15,7 +15,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 
 import au.com.mineauz.PlayerSpy.Cause;
-import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.LogTasks.Task;
@@ -468,8 +467,6 @@ public class SearchTask extends Task<SearchResults>
 			if(!causeMatches(cause))
 				continue;
 			
-			LogUtil.info("Checking session " + cause.friendlyName());
-			
 			// Dont bother loading up ones that dont add anything
 			if(!mFilter.noLimit && results.allRecords.size() >= SpyPlugin.getSettings().maxSearchResults)
 			{
@@ -498,11 +495,10 @@ public class SearchTask extends Task<SearchResults>
 			
 			// Load up the records for the session
 			RecordList records = fileSession.Log.loadSession(fileSession.Session);
-			
 			processRecords(records, cause);
 		}
 		
-		LogUtil.info(String.format("Search completed. Logs opened: %d, Sessions Searched: %d, Records found in active buffers: %d, Total Searched Records: %d, Matching Records: %d", sessionsToSearch.getLogCount(), sessionCount, bufferedCount, totalRecords, results.allRecords.size()));
+		Debug.info("Search completed. Logs opened: %d, Sessions Searched: %d, Records found in active buffers: %d, Total Searched Records: %d, Matching Records: %d", sessionsToSearch.getLogCount(), sessionCount, bufferedCount, totalRecords, results.allRecords.size());
 		sessionsToSearch.release();
 		
 		for(Modifier modifier : mFilter.modifiers)

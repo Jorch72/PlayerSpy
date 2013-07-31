@@ -14,26 +14,33 @@ import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 public class FilterConstraint extends Constraint
 {
 	private Pattern mPattern;
+	private String mPlain;
+	
 	public FilterConstraint(String pattern)
 	{
 		pattern = pattern.toLowerCase();
-		// Escape all symbols
-		for(int i = 0; i < pattern.length(); ++i)
+		mPlain = pattern;
+		
+		if(pattern.contains("."))
 		{
-			char ch = pattern.charAt(i);
-			if(CharType.get(ch) == CharType.Symbol)
+			// Escape all symbols
+			for(int i = 0; i < pattern.length(); ++i)
 			{
-				if(ch != '.')
+				char ch = pattern.charAt(i);
+				if(CharType.get(ch) == CharType.Symbol)
 				{
-					pattern = pattern.substring(0,i) + "\\" + pattern.substring(i);
-					++i;
+					if(ch != '.')
+					{
+						pattern = pattern.substring(0,i) + "\\" + pattern.substring(i);
+						++i;
+					}
 				}
 			}
+			
+			pattern = pattern.replaceAll("\\.", ".+?");
+			
+			mPattern = Pattern.compile(pattern);
 		}
-		
-		pattern = pattern.replaceAll("\\.", ".+?");
-		
-		mPattern = Pattern.compile(pattern);
 	}
 	@Override
 	public boolean matches( Record record )
@@ -98,8 +105,13 @@ public class FilterConstraint extends Constraint
 		if(matchString == null)
 			return false;
 		
-		Matcher m = mPattern.matcher(matchString.toLowerCase());
-		return m.find(); 
+		if(mPattern != null)
+		{
+			Matcher m = mPattern.matcher(matchString.toLowerCase());
+			return m.find();
+		}
+		else
+			return matchString.toLowerCase().contains(mPlain);
 	}
 
 	@Override
