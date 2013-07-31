@@ -70,7 +70,7 @@ public class DeathRecord extends Record implements IPlayerLocationAware
 	@Override
 	public String getDescription()
 	{
-		return "%s Died '" + mReason + "'";
+		return "%s Died '" + mReason.replaceAll("%", "%%") + "'";
 	}
 	
 	@Override

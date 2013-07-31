@@ -58,7 +58,7 @@ public class ChatCommandRecord extends Record
 	@Override
 	public String getDescription()
 	{
-		return "%s: " + (mPrevented ? ChatColor.STRIKETHROUGH : "") + mMessage + (mPrevented ? ChatColor.RESET : "");
+		return "%s: " + (mPrevented ? ChatColor.STRIKETHROUGH : "") + mMessage.replaceAll("%", "%%") + (mPrevented ? ChatColor.RESET : "");
 	}
 	
 	@Override

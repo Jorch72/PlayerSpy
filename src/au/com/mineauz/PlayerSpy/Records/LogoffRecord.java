@@ -75,9 +75,9 @@ public class LogoffRecord extends Record
 	public String getDescription()
 	{
 		if(mLogoffType == LogoffType.Ban)
-			return "%s was banned for '" + mReason + "'";
+			return "%s was banned for '" + mReason.replaceAll("%", "%%") + "'";
 		else if(mLogoffType == LogoffType.Kick)
-			return "%s was kicked for '" + mReason + "'";
+			return "%s was kicked for '" + mReason.replaceAll("%", "%%") + "'";
 		else
 			return "%s logged off";
 	}
