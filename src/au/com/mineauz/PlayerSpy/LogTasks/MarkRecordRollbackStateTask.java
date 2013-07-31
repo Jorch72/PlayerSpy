@@ -11,7 +11,7 @@ import au.com.mineauz.PlayerSpy.tracdata.SessionEntry;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
-public class MarkRecordRollbackStateTask implements Task<Void>
+public class MarkRecordRollbackStateTask extends Task<Void>
 {
 	private ArrayList<Record> mToMark;
 	private boolean mState;

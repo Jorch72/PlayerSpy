@@ -11,7 +11,7 @@ import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.tracdata.FileHeader;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 
-public class LogLoadTask implements Task<Boolean>
+public class LogLoadTask extends Task<Boolean>
 {
 	private LogFile mLog;
 	private String mFilename;

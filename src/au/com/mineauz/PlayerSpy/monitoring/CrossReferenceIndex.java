@@ -129,13 +129,13 @@ public class CrossReferenceIndex
 		
 		try
 		{
-			instance.beginTransaction();
+			//instance.beginTransaction();
 			instance.removeSession(entry, log);
-			instance.commitTransaction();
+			//instance.commitTransaction();
 		}
 		catch(IOException e)
 		{
-			instance.rollbackTransaction();
+			//instance.rollbackTransaction();
 			Debug.logException(e);
 			return false;
 		}

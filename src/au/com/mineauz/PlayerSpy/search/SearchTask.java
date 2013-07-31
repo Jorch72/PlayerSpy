@@ -15,6 +15,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 
 import au.com.mineauz.PlayerSpy.Cause;
+import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.LogTasks.Task;
@@ -31,7 +32,7 @@ import au.com.mineauz.PlayerSpy.search.interfaces.FormatterModifier;
 import au.com.mineauz.PlayerSpy.search.interfaces.Modifier;
 import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
-public class SearchTask implements Task<SearchResults>
+public class SearchTask extends Task<SearchResults>
 {
 	private SearchFilter mFilter;
 	
@@ -39,10 +40,15 @@ public class SearchTask implements Task<SearchResults>
 	private SearchResults results;
 	private HashMap<Cause, Integer> reverseCauseMap = new HashMap<Cause, Integer>();
 	private int nextCauseId = 0;
+	private Comparator<Pair<Record,Integer>> comparator = sForwardComparator;
 	
 	private static final Comparator<Pair<Record,Integer>> sForwardComparator;
+	private static final Comparator<Pair<Record,Integer>> sReverseComparator;
 	
 	private long minDate = 0;
+	private boolean reversed = false;
+	
+	private int lastProgress = 0;
 	
 	// debug data
 	private int totalRecords = 0;
@@ -63,6 +69,20 @@ public class SearchTask implements Task<SearchResults>
 				return 0;
 			}
 		};
+		sReverseComparator = new Comparator<Pair<Record,Integer>>() 
+		{
+
+			@Override
+			public int compare(Pair<Record, Integer> a, Pair<Record, Integer> b) 
+			{
+				if(a.getArg1().getTimestamp() < b.getArg1().getTimestamp())
+					return -1;
+				if(a.getArg1().getTimestamp() > b.getArg1().getTimestamp())
+					return 1;
+				
+				return 0;
+			}
+		};
 	}
 	
 	public SearchTask(SearchFilter filter)
@@ -76,7 +96,7 @@ public class SearchTask implements Task<SearchResults>
 		
 		if(results.allRecords.size() != 0)
 		{
-			int index = Collections.binarySearch(results.allRecords,toInsert,sForwardComparator);
+			int index = Collections.binarySearch(results.allRecords,toInsert,comparator);
 			if(index < 0)
 				index = -index - 1;
 			
@@ -93,22 +113,23 @@ public class SearchTask implements Task<SearchResults>
 		minDate = results.allRecords.get(results.allRecords.size()-1).getArg1().getTimestamp();
 	}
 	
-	private void processRecords(RecordList records, Cause cause)
+	private boolean causeMatches(Cause cause)
 	{
-        if(records == null || records.size() == 0)
-            return;
-		// Get the cause id
-		int id;
-		boolean addedRecords = false;
-		if(reverseCauseMap.containsKey(cause))
-			id = reverseCauseMap.get(cause);
-		else
+		if(mFilter.causes.isEmpty())
+			return true;
+		
+		for(CauseConstraint constraint : mFilter.causes)
 		{
-			id = nextCauseId++;
-			reverseCauseMap.put(cause, id);
+			if(!constraint.matches(cause))
+				return false;
 		}
 		
-		// Filter out the records we want
+		return true;
+	}
+	
+	private boolean processForward(RecordList records, int id)
+	{
+		boolean addedRecords = false;
 		ListIterator<Record> it = records.listIterator(records.size()-1);
 		
 		while(it.hasPrevious())
@@ -146,8 +167,76 @@ public class SearchTask implements Task<SearchResults>
 			addedRecords = true;
 		}
 		
-		if(addedRecords)
-			results.causes.put(id, cause);
+		return addedRecords;
+	}
+	private boolean processBackward(RecordList records, int id)
+	{
+		boolean addedRecords = false;
+		ListIterator<Record> it = records.listIterator(0);
+		
+		while(it.hasNext())
+		{
+			Record record = it.next();
+			totalRecords++;
+			
+			// First, time
+			if(record.getTimestamp() > endTime)
+				break;
+			if(!mFilter.noLimit && results.allRecords.size() >= SpyPlugin.getSettings().maxSearchResults && record.getTimestamp() > minDate)
+				break;
+			
+			if(record.getTimestamp() < startTime)
+				continue;
+			
+			boolean ok = true;
+			// Do the and constraints
+			if(!mFilter.andConstraints.isEmpty())
+			{
+				for(Constraint constraint : mFilter.andConstraints)
+				{
+					if(!constraint.matches(record))
+					{
+						ok = false;
+						break;
+					}
+				}
+				if(!ok)
+					continue;
+			}
+			
+			// Passed all the constraints
+			insertRecord(record, id);
+			addedRecords = true;
+		}
+		
+		return addedRecords;
+	}
+	
+	private void processRecords(RecordList records, Cause cause)
+	{
+        if(records == null || records.size() == 0)
+            return;
+		// Get the cause id
+		int id;
+		if(reverseCauseMap.containsKey(cause))
+			id = reverseCauseMap.get(cause);
+		else
+		{
+			id = nextCauseId++;
+			reverseCauseMap.put(cause, id);
+		}
+		
+		// Filter out the records we want
+		if(reversed)
+		{
+			if(processBackward(records, id))
+				results.causes.put(id, cause);
+		}
+		else
+		{
+			if(processForward(records, id))
+				results.causes.put(id, cause);
+		}
 	}
 	
 	@Override
@@ -178,6 +267,20 @@ public class SearchTask implements Task<SearchResults>
 		
 		mFilter.andConstraints.removeAll(toRemove);
 		
+		Set<Modifier> toRemoveMods = new HashSet<Modifier>();
+		
+		for(Modifier mod : mFilter.modifiers)
+		{
+			if(mod instanceof ReverserFormatter)
+			{
+				comparator = sReverseComparator;
+				reversed = true;
+				toRemoveMods.add(mod);
+			}
+		}
+		
+		mFilter.modifiers.removeAll(toRemoveMods);
+		
 		results = new SearchResults();
 		results.causes = new HashMap<Integer, Cause>();
 		results.allRecords = new ArrayList<Pair<Record,Integer>>();
@@ -204,21 +307,9 @@ public class SearchTask implements Task<SearchResults>
 						cause = Cause.playerCause(mon.getMonitorTarget());
 					
 					// Check the constraints
-					if(mFilter.causes.size() != 0)
-					{
-						boolean constraintOk = true;
-						for(CauseConstraint constraint : mFilter.causes)
-						{
-							if(!constraint.matches(cause))
-							{
-								constraintOk = false;
-								break;
-							}
-						}
-						
-						if(!constraintOk)
-							continue;
-					}
+					if(!causeMatches(cause))
+						continue;
+					
 					bufferedCount++;
 					sessionCount++;
 					// Load up the records in the session
@@ -242,21 +333,9 @@ public class SearchTask implements Task<SearchResults>
 					Cause cause = Cause.globalCause(world, buffer.getKey());
 					
 					// Check the constraints
-					if(mFilter.causes.size() != 0)
-					{
-						boolean constraintOk = true;
-						for(CauseConstraint constraint : mFilter.causes)
-						{
-							if(!constraint.matches(cause))
-							{
-								constraintOk = false;
-								break;
-							}
-						}
-						
-						if(!constraintOk)
-							continue;
-					}
+					if(!causeMatches(cause))
+						continue;
+					
 					bufferedCount++;
 					sessionCount++;
 					// Load up the records in the session
@@ -277,21 +356,8 @@ public class SearchTask implements Task<SearchResults>
 				Debug.fine("Iteration %d", i++);
 				
 				// Check the constraints
-				if(mFilter.causes.size() != 0)
-				{
-					boolean constraintOk = true;
-					for(CauseConstraint constraint : mFilter.causes)
-					{
-						if(!constraint.matches(pending.getArg2()))
-						{
-							constraintOk = false;
-							break;
-						}
-					}
-					
-					if(!constraintOk)
-						continue;
-				}
+				if(!causeMatches(pending.getArg2()))
+					continue;
 				
 				bufferedCount++;
 				sessionCount++;
@@ -304,12 +370,75 @@ public class SearchTask implements Task<SearchResults>
 		Debug.fine("*Searching index for possibles");
 		
 		if(distConstraint != null)
-			sessionsToSearch = CrossReferenceIndex.getSessionsIn(startTime, endTime, distConstraint.location, distConstraint.distance, false);
+			sessionsToSearch = CrossReferenceIndex.getSessionsIn(startTime, endTime, distConstraint.location, distConstraint.distance, true);
 		else
 			sessionsToSearch = CrossReferenceIndex.getSessionsFor(startTime, endTime);
 		
-		Debug.finer("**%d possible sessions found", sessionsToSearch.foundSessions.size());
+		ArrayList<SessionInFile> orderedSessions = new ArrayList<SessionInFile>();
+		
 		for(SessionInFile fileSession : sessionsToSearch.foundSessions)
+		{
+			if(orderedSessions.isEmpty())
+			{
+				orderedSessions.add(fileSession);
+				continue;
+			}
+			
+			int index = 0;
+			if(reversed)
+			{
+				index = Collections.binarySearch(orderedSessions,fileSession, new Comparator<SessionInFile>()
+				{
+					@Override
+					public int compare( SessionInFile o1, SessionInFile o2 )
+					{
+						if(o1.Session.StartTimestamp > o2.Session.StartTimestamp)
+							return 1;
+						else if(o1.Session.StartTimestamp < o2.Session.StartTimestamp)
+							return -1;
+						else
+						{
+							if(o1.Session.EndTimestamp > o2.Session.EndTimestamp)
+								return 1;
+							else if(o1.Session.EndTimestamp < o2.Session.EndTimestamp)
+								return -1;
+							return 0;
+						}
+					}
+				});
+				if(index < 0)
+					index = -index - 1;
+			}
+			else
+			{
+				index = Collections.binarySearch(orderedSessions,fileSession, new Comparator<SessionInFile>()
+				{
+					@Override
+					public int compare( SessionInFile o1, SessionInFile o2 )
+					{
+						if(o1.Session.EndTimestamp > o2.Session.EndTimestamp)
+							return -1;
+						else if(o1.Session.EndTimestamp < o2.Session.EndTimestamp)
+							return 1;
+						else
+						{
+							if(o1.Session.StartTimestamp > o2.Session.StartTimestamp)
+								return -1;
+							else if(o1.Session.StartTimestamp < o2.Session.StartTimestamp)
+								return 1;
+							return 0;
+						}
+					}
+				});
+				if(index < 0)
+					index = -index - 1;
+			}
+			
+			orderedSessions.add(index, fileSession);
+		}
+		
+		Debug.finer("**%d possible sessions found", sessionsToSearch.foundSessions.size());
+		for(SessionInFile fileSession : orderedSessions)
 		{
 			Cause cause;
 			
@@ -336,25 +465,34 @@ public class SearchTask implements Task<SearchResults>
 			
 			sessionCount++;
 			// Check the constraints
-			if(mFilter.causes.size() != 0)
+			if(!causeMatches(cause))
+				continue;
+			
+			// Dont bother loading up ones that dont add anything
+			if(!mFilter.noLimit && results.allRecords.size() >= SpyPlugin.getSettings().maxSearchResults)
 			{
-				boolean constraintOk = true;
-				for(CauseConstraint constraint : mFilter.causes)
-				{
-					if(!constraint.matches(cause))
-					{
-						constraintOk = false;
-						break;
-					}
-				}
-				
-				if(!constraintOk)
+				if ((reversed && fileSession.Session.StartTimestamp > minDate) || 
+					(!reversed && fileSession.Session.EndTimestamp < minDate))
 					continue;
 			}
 			
-			// Dont bother loading up ones that dont add anything
-			if(fileSession.Session.EndTimestamp < minDate && (!mFilter.noLimit && results.allRecords.size() >= SpyPlugin.getSettings().maxSearchResults))
-				continue;
+			// Progress reporting
+			if(results.allRecords.size() > lastProgress + 40)
+			{
+				long date = results.allRecords.get(lastProgress + 40).getArg1().getTimestamp();
+				
+				// check that the records being added now are beyond that of that area
+				if(reversed && fileSession.Session.StartTimestamp > date)
+				{
+					lastProgress = results.allRecords.size();
+					reportProgress(results);
+				}
+				else if(!reversed && fileSession.Session.EndTimestamp < date)
+				{
+					lastProgress = results.allRecords.size();
+					reportProgress(results);
+				}
+			}
 			
 			// Load up the records for the session
 			RecordList records = fileSession.Log.loadSession(fileSession.Session);
@@ -362,15 +500,13 @@ public class SearchTask implements Task<SearchResults>
 			processRecords(records, cause);
 		}
 		
-		Debug.info("Search completed. Logs opened: %d, Sessions Searched: %d, Records found in active buffers: %d, Total Searched Records: %d, Matching Records: %d", sessionsToSearch.getLogCount(), sessionCount, bufferedCount, totalRecords, results.allRecords.size());
+		LogUtil.info(String.format("Search completed. Logs opened: %d, Sessions Searched: %d, Records found in active buffers: %d, Total Searched Records: %d, Matching Records: %d", sessionsToSearch.getLogCount(), sessionCount, bufferedCount, totalRecords, results.allRecords.size()));
 		sessionsToSearch.release();
 		
 		for(Modifier modifier : mFilter.modifiers)
 		{
 			if(modifier instanceof FormatterModifier)
-			{
 				((FormatterModifier)modifier).format(results);
-			}
 		}
 		
 		return results;

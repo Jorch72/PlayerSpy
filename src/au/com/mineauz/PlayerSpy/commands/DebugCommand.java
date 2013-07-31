@@ -6,17 +6,14 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.lang.reflect.Field;
-import java.util.BitSet;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.command.CommandSender;
@@ -27,7 +24,6 @@ import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Records.BlockChangeRecord;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
-import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.debugging.Profiler;
 import au.com.mineauz.PlayerSpy.globalreference.GlobalReferenceFile;
@@ -293,21 +289,6 @@ public class DebugCommand implements ICommand
 		}
 		else if(args[0].equalsIgnoreCase("test"))
 		{
-			Random r = new Random(123456778);
-			
-			Location loc = new Location(Bukkit.getWorlds().get(0), r.nextInt(10000)-5000, r.nextInt(10000)-5000, r.nextInt(10000)-5000);
-			
-			if(args.length > 1)
-			{
-				int times = Integer.parseInt(args[1]) - 1;
-				
-				for(int i = 0; i < times; ++i)
-					loc = new Location(Bukkit.getWorlds().get(0), r.nextInt(10000)-5000, r.nextInt(10000)-5000, r.nextInt(10000)-5000);
-			}
-			
-			BitSet set = Utility.hashLocation(loc);
-			
-			sender.sendMessage(Utility.bitSetToString(set));
 		}
 		else if(args[0].equalsIgnoreCase("test2"))
 		{

@@ -4,7 +4,7 @@ import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 
-public class AppendRecordsTask implements Task<Boolean> 
+public class AppendRecordsTask extends Task<Boolean> 
 {
 	private final RecordList mRecords;
 	private final LogFile mLog;

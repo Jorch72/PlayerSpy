@@ -4,7 +4,7 @@ import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 
-public class LoadRecordsAsyncTask implements Task<RecordList>
+public class LoadRecordsAsyncTask extends Task<RecordList>
 {
 	private final LogFile mLogFile;
 	private final long mStartDate;

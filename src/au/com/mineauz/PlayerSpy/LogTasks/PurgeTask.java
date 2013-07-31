@@ -13,7 +13,7 @@ import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
 
-public class PurgeTask  implements Task<Boolean>
+public class PurgeTask  extends Task<Boolean>
 {
 	private final String mLogOwner;
 	private final boolean mAllLogs;

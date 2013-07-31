@@ -10,7 +10,7 @@ import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 
-public class SearchForDamageTask implements Task<Long>
+public class SearchForDamageTask extends Task<Long>
 {
 	private final EntityType mEntityType;
 	private final boolean mAttack;

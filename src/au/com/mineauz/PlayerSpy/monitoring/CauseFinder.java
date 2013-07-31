@@ -208,7 +208,7 @@ public class CauseFinder
 			
 		}
 	}
-	private static class BlockSearchTask implements Task<Cause>
+	private static class BlockSearchTask extends Task<Cause>
 	{
 		private Location mSearchLocation;
 		

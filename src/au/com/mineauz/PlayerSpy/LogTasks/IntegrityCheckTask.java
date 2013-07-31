@@ -10,7 +10,7 @@ import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 import au.com.mineauz.PlayerSpy.tracdata.SessionEntry;
 
-public class IntegrityCheckTask implements Task<IntegrityStats>
+public class IntegrityCheckTask extends Task<IntegrityStats>
 {
 	//private boolean mCleanErrors;
 	

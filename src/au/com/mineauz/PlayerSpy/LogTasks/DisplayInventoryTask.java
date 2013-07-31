@@ -24,7 +24,7 @@ import au.com.mineauz.PlayerSpy.search.SearchResults;
 import au.com.mineauz.PlayerSpy.search.SearchTask;
 import au.com.mineauz.PlayerSpy.search.TimeConstraint;
 
-public class DisplayInventoryTask implements Task<Void>
+public class DisplayInventoryTask extends Task<Void>
 {
 	private OfflinePlayer mInvOwner;
 	private CommandSender mSender;

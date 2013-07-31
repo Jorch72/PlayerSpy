@@ -37,7 +37,7 @@ import au.com.mineauz.PlayerSpy.storage.StoredBlock;
 import au.com.mineauz.PlayerSpy.storage.StoredEntity;
 import au.com.mineauz.PlayerSpy.tracdata.LogFileRegistry;
 
-public class InspectBlockTask implements Task<Void>
+public class InspectBlockTask extends Task<Void>
 {
 	private Player mWho;
 	private Location mLocation;

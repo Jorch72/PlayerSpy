@@ -20,6 +20,7 @@ public class PriorityExecutor
 		public Future<T> future;
 		public Task<T> task;
 		public Callback<T> callback;
+		public ProgressReportReceiver<T> reporter = null;
 	}
 	private static class ThreadInfo
 	{
@@ -79,6 +80,7 @@ public class PriorityExecutor
 				{
 					try
 					{
+						((Task<Object>)task.task).setProgressReceiver((ProgressReportReceiver<Object>)task.reporter);
 						((FutureTask<?>)task.future).run();
 						Object data = ((FutureTask<?>)task.future).get();
 						
@@ -120,6 +122,11 @@ public class PriorityExecutor
 	}
 	
 	public synchronized <T> Future<T> submit(Task<T> task, Callback<T> callback)
+	{
+		return submit(task, callback, null);
+	}
+	
+	public synchronized <T> Future<T> submit(Task<T> task, Callback<T> callback, ProgressReportReceiver<T> reportReceiver)
 	{
 		int taskId = task.getTaskTargetId();
 
@@ -173,6 +180,7 @@ public class PriorityExecutor
 		sTask.task = task;
 		sTask.future = future;
 		sTask.callback = callback;
+		sTask.reporter = reportReceiver;
 		synchronized(mThreadPool.get(best).taskQueue)
 		{
 			Profiler.setValue("thread-" + best + "-queue", mThreadPool.get(best).taskQueue.size() + (mThreadPool.get(best).isExecuting ? 1 : 0));
@@ -205,7 +213,7 @@ public class PriorityExecutor
 	
 	public synchronized <T> Future<T> submit(Task<T> task) 
 	{
-		return submit(task, null);
+		return submit(task, null, null);
 	}
 	
 	/**

@@ -10,7 +10,7 @@ import au.com.mineauz.PlayerSpy.Records.UpdateInventoryRecord;
 import au.com.mineauz.PlayerSpy.storage.InventorySlot;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 
-public class SearchForItemTask implements Task<Long>
+public class SearchForItemTask extends Task<Long>
 {
 	private final Material mItemType;
 	private final boolean mGained;

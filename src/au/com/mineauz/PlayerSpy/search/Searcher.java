@@ -16,12 +16,13 @@ import au.com.mineauz.PlayerSpy.Cause;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Records.IRollbackable;
 import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.Utilities.Callback;
 import au.com.mineauz.PlayerSpy.Utilities.Pager;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
+import au.com.mineauz.PlayerSpy.Utilities.ProgressReportReceiver;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.search.interfaces.ExtraDataModifier;
-import au.com.mineauz.PlayerSpy.search.interfaces.FormatterModifier;
 import au.com.mineauz.PlayerSpy.search.interfaces.Modifier;
 
 public class Searcher 
@@ -32,12 +33,16 @@ public class Searcher
 	private HashMap<CommandSender, SearchResults> mCachedResults;
 	private HashMap<CommandSender, Boolean> mCachedResultsAreSearch;
 	
+	private HashMap<CommandSender, Integer> mRequestedPage;
+	private HashMap<CommandSender, Boolean> mCachedResultsComplete;
 	
 	private Searcher() 
 	{
 		mWaitingTasks = new HashMap<CommandSender, Future<SearchResults>>();
 		mCachedResults = new HashMap<CommandSender, SearchResults>();
 		mCachedResultsAreSearch = new HashMap<CommandSender, Boolean>();
+		mRequestedPage = new HashMap<CommandSender, Integer>();
+		mCachedResultsComplete = new HashMap<CommandSender, Boolean>();
 	}
 	
 	public void update()
@@ -67,45 +72,93 @@ public class Searcher
 		}
 	}
 	
-	public void searchAndDisplay(CommandSender sender, SearchFilter filter)
+	public void searchAndDisplay(final CommandSender sender, SearchFilter filter)
 	{
 		SearchTask task = new SearchTask(filter);
-		mWaitingTasks.put(sender, SpyPlugin.getExecutor().submit(task));
+		Callback<SearchResults> callback = new Callback<SearchResults>()
+		{
+			@Override
+			public void onSuccess( SearchResults data )
+			{
+				mCachedResultsComplete.put(sender, true);
+				mCachedResults.put(sender, data);
+				
+				if(mRequestedPage.containsKey(sender))
+					displayResults(sender, mRequestedPage.get(sender));
+			}
+			
+			@Override
+			public void onFailure( Throwable error )
+			{
+				sender.sendMessage(ChatColor.RED + "An internal error occured while performing the search. Please check the console for more information");
+				error.printStackTrace();
+			}
+		};
+		
+		ProgressReportReceiver<SearchResults> progress = new ProgressReportReceiver<SearchResults>()
+		{
+			@Override
+			public void onProgressReport( SearchResults data )
+			{
+				if(canFillPage(data, sender, mRequestedPage.get(sender)))
+				{
+					mCachedResults.put(sender, data);
+					mCachedResultsComplete.put(sender, false);
+					displayResults(sender, mRequestedPage.get(sender));
+				}
+			}
+		};
+		
+		SpyPlugin.getExecutor().submit(task, callback, progress);
 		mCachedResultsAreSearch.put(sender, true);
+		mRequestedPage.put(sender, 0);
 	}
-	public void getBlockHistory(CommandSender sender, SearchFilter filter)
+	public void getBlockHistory(final CommandSender sender, SearchFilter filter)
 	{
 		SearchTask task = new SearchTask(filter);
-		mWaitingTasks.put(sender, SpyPlugin.getExecutor().submit(task));
+		Callback<SearchResults> callback = new Callback<SearchResults>()
+		{
+			@Override
+			public void onSuccess( SearchResults data )
+			{
+				mCachedResultsComplete.put(sender, true);
+				mCachedResults.put(sender, data);
+				
+				if(mRequestedPage.containsKey(sender))
+					displayResults(sender, mRequestedPage.get(sender));
+			}
+			
+			@Override
+			public void onFailure( Throwable error )
+			{
+				sender.sendMessage(ChatColor.RED + "An internal error occured while performing the search. Please check the console for more information");
+				error.printStackTrace();
+			}
+		};
+		
+		ProgressReportReceiver<SearchResults> progress = new ProgressReportReceiver<SearchResults>()
+		{
+			@Override
+			public void onProgressReport( SearchResults data )
+			{
+				if(canFillPage(data, sender, mRequestedPage.get(sender)))
+				{
+					mCachedResults.put(sender, data);
+					mCachedResultsComplete.put(sender, false);
+					displayResults(sender, mRequestedPage.get(sender));
+				}
+			}
+		};
+		
+		SpyPlugin.getExecutor().submit(task, callback, progress);
 		mCachedResultsAreSearch.put(sender, false);
+		mRequestedPage.put(sender, 0);
 	}
-	public void displayResults(CommandSender who, int page)
+	
+	private Pager pageResults(SearchResults results, String title, int rpp)
 	{
-		if(!mCachedResults.containsKey(who))
-			return;
-		
-		if(who instanceof Player && !(((Player)who).isOnline()))
-		{
-			mCachedResults.remove(who);
-			return;
-		}
-		
-		SearchResults results = mCachedResults.get(who);
-		String title;
-		if(mCachedResultsAreSearch.get(who))
-			title = "Search results";
-		else
-			title = "Block history";
-		
-		// Apply formatter modifier
-		for(Modifier mod : results.usedFilter.modifiers)
-		{
-			if(mod instanceof FormatterModifier)
-				((FormatterModifier)mod).format(results);
-		}
-		
 		long lastDate = 0;
-		Pager pager = new Pager(title, (who instanceof Player ? 16 : 40));
+		Pager pager = new Pager(title, rpp);
 		for(Pair<Record,Integer> result : results.allRecords)
 		{
 			String msg = result.getArg1().getDescription();
@@ -174,8 +227,68 @@ public class Searcher
 						pager.addItem("         " + temp.trim());
 				}
 			}
-			
-			
+		}
+		
+		return pager;
+	}
+	
+	private boolean canFillPage(SearchResults results, CommandSender who, int page)
+	{
+		Pager pager = pageResults(results, "", (who instanceof Player ? 16 : 40));
+		
+		page++;
+		
+		int count = pager.getPageCount();
+		
+		if(page < count)
+			return true;
+		
+		if(page > count)
+			return false;
+		
+		return pager.isLastPageFull();
+	}
+	
+	public void displayResults(CommandSender who, int page)
+	{
+		if(!mCachedResults.containsKey(who))
+			return;
+		
+		if(who instanceof Player && !(((Player)who).isOnline()))
+		{
+			mCachedResults.remove(who);
+			return;
+		}
+		
+		SearchResults results = mCachedResults.get(who);
+		String title;
+		if(mCachedResultsAreSearch.get(who))
+			title = "Search results";
+		else
+			title = "Block history";
+		
+		if(!mCachedResultsComplete.get(who))
+		{
+			if(!canFillPage(results, who, page))
+			{
+				mRequestedPage.put(who, page);
+				return;
+			}
+		}
+		
+		mRequestedPage.remove(who);
+		
+		Pager pager = pageResults(results, title, (who instanceof Player ? 16 : 40));
+		
+		if(pager.getPageCount() == 0)
+		{
+			who.sendMessage(ChatColor.GOLD + "[PlayerSpy] " + ChatColor.WHITE + "There are no results to display");
+			return;
+		}
+		else if(page >= pager.getPageCount())
+		{
+			who.sendMessage(ChatColor.GOLD + "[PlayerSpy] " + ChatColor.WHITE + "There are no more results to display");
+			return;
 		}
 		
 		pager.displayPage(who, page);
@@ -186,7 +299,6 @@ public class Searcher
 			else
 				who.sendMessage(ChatColor.GOLD + "Use '/ps history " + (page + 2) + "' to view the next page");
 		}
-		
 	}
 
 	public boolean hasResults( CommandSender sender, boolean isSearch )

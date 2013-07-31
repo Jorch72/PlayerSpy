@@ -4,7 +4,7 @@ import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 
-public class SearchForEventTask implements Task<Long>
+public class SearchForEventTask extends Task<Long>
 {
 	private final RecordType mRecordType;
 	private final long mSearchStartDate;

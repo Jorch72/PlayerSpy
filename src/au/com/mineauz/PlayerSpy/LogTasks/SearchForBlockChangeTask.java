@@ -8,7 +8,7 @@ import au.com.mineauz.PlayerSpy.Records.RecordType;
 import au.com.mineauz.PlayerSpy.storage.StoredBlock;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
 
-public class SearchForBlockChangeTask implements Task<Long>
+public class SearchForBlockChangeTask extends Task<Long>
 {
 	private final Material mBlockType;
 	private final boolean mMined;

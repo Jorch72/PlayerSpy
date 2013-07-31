@@ -27,6 +27,13 @@ public class Pager
 		return (int) Math.ceil(mItems.size() / (float)mItemsPerPage);
 	}
 	
+	public boolean isLastPageFull()
+	{
+		int items = mItems.size() - ((getPageCount() - 1) * mItemsPerPage);
+		
+		return (items == mItemsPerPage);
+	}
+	
 	public void displayPage(CommandSender sender, int page)
 	{
 		sender.sendMessage(mName);

@@ -1424,7 +1424,7 @@ public class LogFile extends StructuredFile
 	private HashSet<Integer> mKnownBadSessions = new HashSet<Integer>();
 	
 	// Task for closing the logfile when everything is executed
-	private class CloseTask implements Task<Void> 
+	private class CloseTask extends Task<Void> 
 	{
 		@Override
 		public Void call() 

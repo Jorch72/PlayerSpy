@@ -13,7 +13,7 @@ import au.com.mineauz.PlayerSpy.search.SearchResults;
 import au.com.mineauz.PlayerSpy.search.SearchTask;
 import au.com.mineauz.PlayerSpy.search.TimeConstraint;
 
-public class CatchupTask implements Task<Void>
+public class CatchupTask extends Task<Void>
 {
 	private final CommandSender mSender;
 	private final String mFormat;
