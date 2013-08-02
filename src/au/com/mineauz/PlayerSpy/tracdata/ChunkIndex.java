@@ -210,7 +210,7 @@ public class ChunkIndex extends DataIndex<ChunkEntry, IMovableData<ChunkEntry>>
 			
 			long availableSpace = mLocator.getFreeSpace(mEntry.location + mEntry.size);
 			
-			if(newSize < availableSpace)
+			if(newSize - getSize() < availableSpace) // Todo: newSize - getSize()
 			{
 				// There is a hole to consume
 				mLocator.consumeSpace(mEntry.location + mEntry.size, newSize - getSize());

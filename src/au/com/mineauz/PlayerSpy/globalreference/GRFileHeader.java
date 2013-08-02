@@ -30,8 +30,6 @@ public class GRFileHeader implements IData<IndexEntry>
 	public long ChunkIndexSize;
 	public int ChunkIndexCount;
 	
-	public byte[] Reserved = new byte[18];
-	
 	public GRFileHeader()
 	{
 	}
@@ -45,7 +43,7 @@ public class GRFileHeader implements IData<IndexEntry>
 	@Override
 	public long getSize()
 	{
-		return 60;
+		return 42;
 	}
 
 	public void write(RandomAccessFile file) throws IOException

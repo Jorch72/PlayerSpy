@@ -831,4 +831,10 @@ public class Utility
 	{
 		return Arrays.copyOf(array, array.length);
 	}
+	
+	public static long getChunkId(long x, long z)
+	{
+		return (0xffffffffL & x) | (0xffffffff00000000L & (z << 32L));
+	}
+			
 }

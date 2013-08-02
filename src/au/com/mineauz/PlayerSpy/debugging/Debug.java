@@ -9,8 +9,10 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.Map.Entry;
+import java.util.UUID;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -23,18 +25,25 @@ import javax.swing.tree.DefaultMutableTreeNode;
 
 import org.bukkit.entity.Player;
 
+import com.google.common.collect.Multimap;
+
 import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.RecordList;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Records.Record;
 import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
+import au.com.mineauz.PlayerSpy.Utilities.CubicChunk;
 import au.com.mineauz.PlayerSpy.Utilities.Pair;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
+import au.com.mineauz.PlayerSpy.globalreference.FileEntry;
+import au.com.mineauz.PlayerSpy.globalreference.GRFileHeader;
 import au.com.mineauz.PlayerSpy.globalreference.GlobalReferenceFile;
 import au.com.mineauz.PlayerSpy.structurefile.HoleEntry;
 import au.com.mineauz.PlayerSpy.structurefile.Index;
 import au.com.mineauz.PlayerSpy.structurefile.IndexEntry;
 import au.com.mineauz.PlayerSpy.structurefile.StructuredFile;
+import au.com.mineauz.PlayerSpy.tracdata.ChunkEntry;
+import au.com.mineauz.PlayerSpy.tracdata.ChunkIndex;
 import au.com.mineauz.PlayerSpy.tracdata.FileHeader;
 import au.com.mineauz.PlayerSpy.tracdata.HoleIndex;
 import au.com.mineauz.PlayerSpy.tracdata.LogFile;
@@ -64,7 +73,7 @@ public class Debug
 			OutputStream stream = new FileOutputStream(debugLogFile, true);
 
 			mDebugLog = Logger.getLogger("PlayerSpyDebug");
-			mDebugLog.setLevel(Level.INFO); // TODO: NOTE: This level should be set to INFO for release versions 
+			mDebugLog.setLevel(Level.FINEST); // TODO: NOTE: This level should be set to INFO for release versions 
 			mDebugLog.setUseParentHandlers(false);
 			
 			for(Handler handler : mDebugLog.getHandlers())
@@ -281,6 +290,8 @@ public class Debug
 		// This is not to be used for release versions
 		if(log instanceof LogFile)
 			logLayoutInt((LogFile)log);
+		else
+			logLayoutInt((GlobalReferenceFile)log);
 	}
 	private static void logLayoutInt(LogFile log)
 	{
@@ -390,6 +401,104 @@ public class Debug
 		}
 	}
 	
+	private static void logLayoutInt(GlobalReferenceFile ref)
+	{
+		try
+		{
+			File f = new File("plugins/PlayerSpy/layoutref.txt");
+			if(!f.exists())
+				f.getParentFile().mkdirs();
+			
+			if(mLayoutWriter == null)
+				mLayoutWriter = new OutputStreamWriter(new FileOutputStream(f));
+			
+			au.com.mineauz.PlayerSpy.globalreference.HoleIndex holeIndex;
+			au.com.mineauz.PlayerSpy.globalreference.ChunkIndex chunkIndex;
+			GRFileHeader header;
+			ACIDRandomAccessFile file;
+			
+			try
+			{
+				Field field = ref.getClass().getDeclaredField("mHoleIndex");
+				field.setAccessible(true);
+				
+				holeIndex = (au.com.mineauz.PlayerSpy.globalreference.HoleIndex) field.get(ref);
+				
+				field = ref.getClass().getDeclaredField("mChunkIndex");
+				field.setAccessible(true);
+				
+				chunkIndex = (au.com.mineauz.PlayerSpy.globalreference.ChunkIndex) field.get(ref);
+				
+				field = ref.getClass().getDeclaredField("mHeader");
+				field.setAccessible(true);
+				
+				header = (GRFileHeader)field.get(ref);
+				
+				field = StructuredFile.class.getDeclaredField("mFile");
+				field.setAccessible(true);
+				
+				file = (ACIDRandomAccessFile) field.get(ref);
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+				return;
+			}
+			
+			mLayoutWriter.write("\r\nLayout: ");
+			String message = mLastMessage.get(Thread.currentThread().getId());
+			if(message != null)
+				mLayoutWriter.write(message);
+
+			mLayoutWriter.write("\r\n");
+			
+			TreeMap<Long,Pair<Long,Object>> sortedItems = new TreeMap<Long, Pair<Long,Object>>();
+			sortedItems.put(0L, new Pair<Long,Object>((long)header.getSize(),"Header"));
+			
+			sortedItems.put(header.FileIndexLocation, new Pair<Long,Object>(header.FileIndexSize,"File Index"));
+			sortedItems.put(header.ChunkIndexLocation, new Pair<Long,Object>(header.ChunkIndexSize,"Chunk Index"));
+			sortedItems.put(header.SessionIndexLocation, new Pair<Long,Object>(header.SessionIndexSize,"Session Index"));
+			sortedItems.put(header.HolesIndexLocation, new Pair<Long,Object>(header.HolesIndexSize,"Holes Index (" + header.HolesIndexPadding + ")"));
+			
+			for(HoleEntry hole : holeIndex)
+				sortedItems.put(hole.Location, new Pair<Long,Object>(hole.Size,"Hole"));
+			
+			for(au.com.mineauz.PlayerSpy.globalreference.ChunkEntry entry : chunkIndex)
+				sortedItems.put(entry.location, new Pair<Long,Object>(entry.size,"ChunkList for " + String.format("%d, %d (%d)", entry.chunkX, entry.chunkZ, entry.worldHash)));
+			
+			// Find any Unallocated space
+			long lastPos = 0;
+			String last = "";
+			for(Entry<Long, Pair<Long, Object>> entry : sortedItems.entrySet())
+			{
+				if(lastPos > entry.getKey())
+					mLayoutWriter.write(String.format("%X-%X:\t\tCONFLICT with %s!\r\n", entry.getKey(), entry.getKey(), last));
+				else if(lastPos < entry.getKey())
+				{
+					mLayoutWriter.write(String.format("%X-%X:\t\tUnallocated space!\r\n", lastPos, entry.getKey() - 1));
+					lastPos = entry.getKey() + entry.getValue().getArg1();
+					last = (String)entry.getValue().getArg2();
+				}
+				else
+				{
+					lastPos = entry.getKey() + entry.getValue().getArg1();
+					last = (String)entry.getValue().getArg2();
+				}
+				
+				mLayoutWriter.write(String.format("%X-%X:\t\t%s\r\n", entry.getKey(), entry.getKey() + entry.getValue().getArg1() - 1, entry.getValue().getArg2()));
+			}
+			
+			if(lastPos != file.length())
+				mLayoutWriter.write(String.format("%X-%X:\t\tUnallocated space!\r\n", lastPos, file.length()));
+			
+			mLayoutWriter.flush();
+		}
+		catch(IOException e)
+		{
+			
+		}
+	}
+	
 	private static void buildNodes(LogFile log, DefaultMutableTreeNode root)
 	{
 		Index<?>[] indexes = null;
@@ -435,6 +544,23 @@ public class Debug
 				{
 					entryNode.setUserObject("Tag: " + ((OwnerMapEntry)entry).Id + ": " + ((OwnerMapEntry)entry).Owner);
 				}
+				else if(entry instanceof ChunkEntry)
+				{
+					ChunkEntry chunk = (ChunkEntry)entry;
+					entryNode.setUserObject("Chunk List: " + chunk.listId);
+					
+					try
+					{
+						Set<CubicChunk> chunks = ((ChunkIndex)index).getChunks(chunk.listId);
+						
+						for(CubicChunk c : chunks)
+							entryNode.add(new DefaultMutableTreeNode("Chunk: " + String.format("%d, %d, %d (%d)", c.chunkX, c.chunkY, c.chunkZ, c.worldHash)));
+					}
+					catch(IOException e)
+					{
+						entryNode.add(new DefaultMutableTreeNode("IOException: " + e.getMessage()));
+					}
+				}
 				else if(entry instanceof SessionEntry)
 				{
 					String name = "Session ";
@@ -454,6 +580,7 @@ public class Debug
 					entryNode.add(new DefaultMutableTreeNode("Record Count: " + session.RecordCount));
 					entryNode.add(new DefaultMutableTreeNode("Compressed: " + session.Compressed));
 					entryNode.add(new DefaultMutableTreeNode("OwnerTag Id: " + session.OwnerTagId));
+					entryNode.add(new DefaultMutableTreeNode("ChunkList Id: " + session.ChunkListId));
 					entryNode.add(new DefaultMutableTreeNode("Location: " + String.format("%X -> %X", session.Location, session.Location + session.TotalSize - 1)));
 					entryNode.add(new DefaultMutableTreeNode("Padding: " + String.format("%X", session.Padding)));
 					entryNode.add(new DefaultMutableTreeNode("Start Date: " + Util.dateToString(session.StartTimestamp)));
@@ -492,7 +619,91 @@ public class Debug
 	
 	private static void buildNodes(GlobalReferenceFile ref, DefaultMutableTreeNode root)
 	{
+		Index<?>[] indexes = null;
+		GRFileHeader header = null;
+		try
+		{
+			Field field = StructuredFile.class.getDeclaredField("mIndexes");
+			field.setAccessible(true);
+			
+			indexes = (Index<?>[]) field.get(ref);
+			
+			field = GlobalReferenceFile.class.getDeclaredField("mHeader");
+			field.setAccessible(true);
+			
+			header = (GRFileHeader)field.get(ref);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			root.add(new DefaultMutableTreeNode("Error: " + e.getMessage()));
+			return;
+		}
 		
+		
+		root.add(new DefaultMutableTreeNode("Version: " + header.VersionMajor + "." + header.VersionMinor));
+		
+		for(Index<?> index : indexes)
+		{
+			DefaultMutableTreeNode node = new DefaultMutableTreeNode(index.getIndexName());
+			for(int i = 0; i < index.getCount(); ++i)
+			{
+				IndexEntry entry = index.get(i);
+				
+				DefaultMutableTreeNode entryNode = new DefaultMutableTreeNode();
+				
+				if(entry instanceof HoleEntry)
+				{
+					entryNode.setUserObject("Hole " + String.format("%X -> %X", ((HoleEntry)entry).Location, ((HoleEntry)entry).Location + ((HoleEntry)entry).Size - 1));
+				}
+				else if(entry instanceof FileEntry)
+				{
+					entryNode.setUserObject("File: " + ((FileEntry)entry).fileId.toString() + "(" + ((FileEntry)entry).fileName + ") from " + Util.dateToString(((FileEntry)entry).timeBegin) + " - " + Util.dateToString(((FileEntry)entry).timeEnd));
+				}
+				else if(entry instanceof au.com.mineauz.PlayerSpy.globalreference.ChunkEntry)
+				{
+					au.com.mineauz.PlayerSpy.globalreference.ChunkEntry chunk = (au.com.mineauz.PlayerSpy.globalreference.ChunkEntry)entry;
+					
+					entryNode.setUserObject("Chunk: " + String.format("%d, %d (%d)  Count: %d", chunk.chunkX, chunk.chunkZ, chunk.worldHash, chunk.count));
+					
+					entryNode.add(new DefaultMutableTreeNode("Location: " + String.format("%X -> %X", chunk.location, chunk.location + chunk.size - 1)));
+					entryNode.add(new DefaultMutableTreeNode("Padding: " + String.format("%X", chunk.padding)));
+					entryNode.add(new DefaultMutableTreeNode(""));
+					
+					try
+					{
+						Multimap<UUID, Integer> sessions = ((au.com.mineauz.PlayerSpy.globalreference.ChunkIndex)index).getSessionsInChunk(chunk.chunkX, chunk.chunkZ, chunk.worldHash);
+						
+						for(Entry<UUID, Integer> session : sessions.entries())
+							entryNode.add(new DefaultMutableTreeNode("Session: File: " + session.getKey().toString() + " Id: " + session.getValue()));
+					}
+					catch(IOException e)
+					{
+						entryNode.add(new DefaultMutableTreeNode("IOException: " + e.getMessage()));
+					}
+				}
+				else if(entry instanceof au.com.mineauz.PlayerSpy.globalreference.SessionEntry)
+				{
+					String name = "Session ";
+					au.com.mineauz.PlayerSpy.globalreference.SessionEntry session = (au.com.mineauz.PlayerSpy.globalreference.SessionEntry)entry;
+		
+					name += session.fileId.toString() + " - " + session.sessionId;
+										
+					entryNode.setUserObject(name);
+					
+					entryNode.add(new DefaultMutableTreeNode("ID: " + session.sessionId));
+					entryNode.add(new DefaultMutableTreeNode("File ID: " + session.fileId));
+					entryNode.add(new DefaultMutableTreeNode("Start Date: " + Util.dateToString(session.startTime)));
+					entryNode.add(new DefaultMutableTreeNode("End Date: " + Util.dateToString(session.endTime)));
+
+				}
+				else
+					entryNode.setUserObject(entry);
+
+				node.add(entryNode);
+			}
+			root.add(node);
+		}
 	}
 	
 	public static void showLayout(StructuredFile file)

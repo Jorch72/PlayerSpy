@@ -230,6 +230,9 @@ public class RollbackIndex extends DataIndex<RollbackEntry, IMovableData<Rollbac
 						mFile.writeShort(index);
 					
 					mRollbackEntry.padding += (oldSize - newSize);
+					
+					set(indexOf(mRollbackEntry), mRollbackEntry);
+					
 					Debug.finer("Adding %d bytes of padding", (oldSize - newSize));
 					Debug.logLayout(mHostingFile);
 				}

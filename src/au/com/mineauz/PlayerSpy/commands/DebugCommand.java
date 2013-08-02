@@ -81,7 +81,6 @@ public class DebugCommand implements ICommand
 		return false;
 	}
 
-	@SuppressWarnings( "unused" )
 	private void showLog(String logName)
 	{
 		StructuredFile file;
@@ -284,8 +283,8 @@ public class DebugCommand implements ICommand
 			if(args.length != 2 || !(sender instanceof ConsoleCommandSender))
 				return false;
 			
-//			String logName = args[1];
-//			showLog(logName);
+			String logName = args[1];
+			showLog(logName);
 		}
 		else if(args[0].equalsIgnoreCase("test"))
 		{

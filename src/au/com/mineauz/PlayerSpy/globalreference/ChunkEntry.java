@@ -68,4 +68,9 @@ public class ChunkEntry extends IndexEntry
 		return size;
 	}
 
+	@Override
+	public String toString()
+	{
+		return String.format("ChunkEntry: {x: %d z: %d world: %d loc: %X size: %X count: %d padding: %X}", chunkX, chunkZ, worldHash, location, size, count, padding);
+	}
 }

@@ -452,12 +452,15 @@ public class GlobalReferenceFile extends StructuredFile
 		{
 			Multimap<UUID, Integer> inChunk = mChunkIndex.getSessionsInChunk(chunk.chunkX, chunk.chunkZ, chunk.worldHash);
 		
-			for(Entry<UUID, Integer> entry : inChunk.entries())
+			if(inChunk != null)
 			{
-				SessionEntry session = mSessionIndex.get(entry.getKey(), entry.getValue());
-				
-				if(session.otherBB.isContained(location))
-					sessions.add(session);
+				for(Entry<UUID, Integer> entry : inChunk.entries())
+				{
+					SessionEntry session = mSessionIndex.get(entry.getKey(), entry.getValue());
+					
+					if(session != null && session.otherBB.isContained(location))
+						sessions.add(session);
+				}
 			}
 		}
 		catch(IOException e)
@@ -530,6 +533,9 @@ public class GlobalReferenceFile extends StructuredFile
 				try
 				{
 					Multimap<UUID, Integer> inChunk = mChunkIndex.getSessionsInChunk(chunkX, chunkZ, worldHash);
+					
+					if(inChunk == null)
+						continue;
 					
 					for(Entry<UUID, Integer> entry : inChunk.entries())
 					{

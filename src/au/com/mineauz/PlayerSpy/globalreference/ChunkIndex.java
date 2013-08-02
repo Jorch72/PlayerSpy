@@ -9,6 +9,9 @@ import java.util.UUID;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
+import au.com.mineauz.PlayerSpy.LogUtil;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
+import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.structurefile.DataIndex;
 import au.com.mineauz.PlayerSpy.structurefile.IMovableData;
 import au.com.mineauz.PlayerSpy.structurefile.SpaceLocator;
@@ -99,7 +102,7 @@ public class ChunkIndex extends DataIndex<ChunkEntry, IMovableData<ChunkEntry>>
 		int index = 0;
 		for(ChunkEntry entry : mElements)
 		{
-			mIdMap.put(entry.chunkX | (long)entry.chunkZ << 32, index);
+			mIdMap.put(Utility.getChunkId(entry.chunkX, entry.chunkZ), index);
 			++index;
 		}
 	}
@@ -131,7 +134,7 @@ public class ChunkIndex extends DataIndex<ChunkEntry, IMovableData<ChunkEntry>>
 	
 	public Multimap<UUID, Integer> getSessionsInChunk(int chunkX, int chunkZ, int worldHash) throws IOException
 	{
-		Collection<Integer> indexes = mIdMap.get(chunkX | (long)chunkZ << 32);
+		Collection<Integer> indexes = mIdMap.get(Utility.getChunkId(chunkX, chunkZ));
 		
 		for(int index : indexes)
 		{
@@ -149,7 +152,7 @@ public class ChunkIndex extends DataIndex<ChunkEntry, IMovableData<ChunkEntry>>
 	
 	public void addSessionToChunk(int chunkX, int chunkZ, int worldHash, UUID fileId, int sessionId) throws IOException
 	{
-		Collection<Integer> indexes = mIdMap.get(chunkX | (long)chunkZ << 32);
+		Collection<Integer> indexes = mIdMap.get(Utility.getChunkId(chunkX, chunkZ));
 		
 		for(int index : indexes)
 		{
@@ -177,7 +180,7 @@ public class ChunkIndex extends DataIndex<ChunkEntry, IMovableData<ChunkEntry>>
 	
 	public void removeSessionFromChunk(int chunkX, int chunkZ, int worldHash, UUID fileId, int sessionId) throws IOException
 	{
-		Collection<Integer> indexes = mIdMap.get(chunkX | (long)chunkZ << 32);
+		Collection<Integer> indexes = mIdMap.get(Utility.getChunkId(chunkX, chunkZ));
 		
 		for(int index : indexes)
 		{
@@ -237,11 +240,13 @@ public class ChunkIndex extends DataIndex<ChunkEntry, IMovableData<ChunkEntry>>
 		
 		private void write(Multimap<UUID, Integer> sessions) throws IOException
 		{
+			Debug.fine("Updaing chunk list %s", mChunkEntry);
 			int newSize = 20 * sessions.entries().size();
 			long oldSize = getSize() - mChunkEntry.padding;
 			
 			if(newSize < oldSize)
 			{
+				Debug.finer("Losing %d bytes", oldSize - newSize);
 				if(newSize == 0)
 				{
 					mLocator.releaseSpace(getLocation(), getSize());
@@ -256,14 +261,20 @@ public class ChunkIndex extends DataIndex<ChunkEntry, IMovableData<ChunkEntry>>
 					mChunkEntry.count = sessions.entries().size();
 					
 					set(indexOf(mChunkEntry), mChunkEntry);
+					
+					Debug.finer("Adding %d bytes of padding", (oldSize - newSize));
+					Debug.logLayout(mHostingFile);
 				}
 			}
 			else
 			{
+				Debug.finer("Gaining %d bytes", newSize - oldSize);
 				long availableSpace = mChunkEntry.padding;
 				availableSpace += mLocator.getFreeSpace(mChunkEntry.location + mChunkEntry.size);
 				
-				if(newSize < availableSpace)
+				Debug.finer("*Avaiable Space: " + availableSpace + " padding: " + mChunkEntry.padding);
+				
+				if(newSize - oldSize < availableSpace)
 				{
 					long temp = Math.min(mChunkEntry.padding, newSize);
 					mChunkEntry.padding -= temp;
@@ -281,6 +292,9 @@ public class ChunkIndex extends DataIndex<ChunkEntry, IMovableData<ChunkEntry>>
 					
 					mChunkEntry.count = sessions.entries().size();
 					set(indexOf(mChunkEntry), mChunkEntry);
+					
+					Debug.finest("Chunklist expanded to %X -> %X", mChunkEntry.location, mChunkEntry.location + mChunkEntry.size - 1);
+					Debug.logLayout(mHostingFile);
 				}
 				else
 				{
@@ -303,6 +317,9 @@ public class ChunkIndex extends DataIndex<ChunkEntry, IMovableData<ChunkEntry>>
 					
 					// Update entry
 					set(indexOf(mChunkEntry), mChunkEntry);
+					
+					Debug.finest("Chunklist reloated to %X -> %X from %X -> %X", mChunkEntry.location, mChunkEntry.location + mChunkEntry.size - 1, oldLocation, oldLocation + oldSize - 1);
+					Debug.logLayout(mHostingFile);
 					
 					mLocator.releaseSpace(oldLocation, oldSize);
 				}
