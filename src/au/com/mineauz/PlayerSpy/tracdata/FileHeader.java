@@ -30,6 +30,10 @@ public class FileHeader implements IData<IndexEntry>
 	public int RollbackIndexCount;
 	public long TagLocation;
 	public long TagSize;
+	public long ChunkIndexLocation;
+	public long ChunkIndexSize;
+	public int ChunkIndexCount;
+	
 	public byte[] Reserved = new byte[22];
 	
 	public void write(RandomAccessFile file) throws IOException
@@ -62,6 +66,10 @@ public class FileHeader implements IData<IndexEntry>
 		file.writeInt((int)TagLocation);
 		file.writeInt((int)TagSize);
 		
+		file.writeInt((int)ChunkIndexLocation);
+		file.writeInt((int)ChunkIndexSize);
+		file.writeShort((short)ChunkIndexCount);
+		
 		file.write(Reserved);
 	}
 	
@@ -77,27 +85,27 @@ public class FileHeader implements IData<IndexEntry>
 		
 		PlayerName = file.readUTF();
 			
-		IndexLocation = (long)file.readInt();
-		IndexSize = (long)file.readInt();
+		IndexLocation = Utility.getUnsignedInt(file.readInt());
+		IndexSize = Utility.getUnsignedInt(file.readInt());
 		SessionCount = (int)file.readShort();
 		
-		HolesIndexLocation = (long)file.readInt();
-		HolesIndexSize = (long)file.readInt();
+		HolesIndexLocation = Utility.getUnsignedInt(file.readInt());
+		HolesIndexSize = Utility.getUnsignedInt(file.readInt());
 		HolesIndexCount = (int)file.readShort();
 		HolesIndexPadding = file.readShort();
 		
 		if(VersionMajor >= 2)
 		{
 			RequiresOwnerTags = file.readBoolean();
-			OwnerMapLocation = file.readInt();
-			OwnerMapSize = file.readInt();
+			OwnerMapLocation = Utility.getUnsignedInt(file.readInt());
+			OwnerMapSize = Utility.getUnsignedInt(file.readInt());
 			OwnerMapCount = file.readShort();
 		}
 		
 		if(VersionMajor >= 3)
 		{
-			RollbackIndexLocation = file.readInt();
-			RollbackIndexSize = file.readInt();
+			RollbackIndexLocation = Utility.getUnsignedInt(file.readInt());
+			RollbackIndexSize = Utility.getUnsignedInt(file.readInt());
 			RollbackIndexCount = file.readShort();
 
 			if(VersionMajor == 3)
@@ -107,8 +115,15 @@ public class FileHeader implements IData<IndexEntry>
 				file.readFully(bytes);
 			}
 			
-			TagLocation = file.readInt();
-			TagSize = file.readInt();
+			TagLocation = Utility.getUnsignedInt(file.readInt());
+			TagSize = Utility.getUnsignedInt(file.readInt());
+			
+			if(VersionMajor >= 4)
+			{
+				ChunkIndexLocation = Utility.getUnsignedInt(file.readInt());
+				ChunkIndexSize = Utility.getUnsignedInt(file.readInt());
+				ChunkIndexCount = file.readShort();
+			}
 			
 			file.readFully(Reserved);
 		}
@@ -125,7 +140,7 @@ public class FileHeader implements IData<IndexEntry>
 		else if(VersionMajor == 3)
 			return 75 + Utility.getUTFLength(PlayerName) + (Utility.cBitSetSize/8);
 		else if(VersionMajor == 4)
-			return 75 + Utility.getUTFLength(PlayerName);
+			return 85 + Utility.getUTFLength(PlayerName);
 		else
 			throw new IllegalArgumentException("Invalid Version " + VersionMajor);
 	}

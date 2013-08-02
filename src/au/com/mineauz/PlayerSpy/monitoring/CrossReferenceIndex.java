@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.io.File;
 import java.io.IOException;
@@ -14,6 +15,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 
 import au.com.mineauz.PlayerSpy.SpyPlugin;
+import au.com.mineauz.PlayerSpy.Utilities.CubicChunk;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.globalreference.GlobalReferenceFile;
 import au.com.mineauz.PlayerSpy.tracdata.SessionEntry;
@@ -106,7 +108,7 @@ public class CrossReferenceIndex
 		try
 		{
 			instance.beginTransaction();
-			instance.addSession(entry, log);
+			instance.addSession(entry, log, log.getPresentChunks(entry));
 			instance.commitTransaction();
 		}
 		catch(IOException e)
@@ -154,7 +156,7 @@ public class CrossReferenceIndex
 		try
 		{
 			instance.beginTransaction();
-			instance.updateSession(entry, log);
+			instance.updateSession(entry, log, log.getPresentChunks(entry));
 			instance.commitTransaction();
 		}
 		catch(IOException e)
@@ -184,9 +186,7 @@ public class CrossReferenceIndex
 		{
 			LogFile log = null;
 			if(openedLogs.containsKey(session.fileId))
-			{
 				log = openedLogs.get(session.fileId);
-			}
 			else
 			{
 				// Load it
@@ -205,6 +205,22 @@ public class CrossReferenceIndex
 			}
 			
 			if(log == null)
+				continue;
+			
+			// Check the sub chunks
+			Set<CubicChunk> chunks = log.getPresentChunks(session.sessionId);
+			
+			boolean isOk = false;
+			for(CubicChunk chunk : chunks)
+			{
+				if(chunk.isPresent(location))
+				{
+					isOk = true;
+					break;
+				}
+			}
+			
+			if(!isOk)
 				continue;
 			
 			SessionInFile res = new SessionInFile();
@@ -305,6 +321,22 @@ public class CrossReferenceIndex
 			}
 			
 			if(log == null)
+				continue;
+			
+			// Check the sub chunks
+			Set<CubicChunk> chunks = log.getPresentChunks(session.sessionId);
+			
+			boolean isOk = false;
+			for(CubicChunk chunk : chunks)
+			{
+				if(chunk.isPresent(loc, range))
+				{
+					isOk = true;
+					break;
+				}
+			}
+			
+			if(!isOk)
 				continue;
 			
 			SessionInFile res = new SessionInFile();

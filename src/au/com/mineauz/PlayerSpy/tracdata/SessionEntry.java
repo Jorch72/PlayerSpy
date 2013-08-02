@@ -21,7 +21,7 @@ public class SessionEntry extends IndexEntry
 		case 3:
 			return 39 + 2*(Utility.cBitSetSize/8);
 		case 4:
-			return 87;
+			return 91;
 		default:
 			throw new IllegalArgumentException("Invalid version number " + version);
 		}
@@ -37,6 +37,8 @@ public class SessionEntry extends IndexEntry
 	
 	public BoundingBox playerBB;
 	public BoundingBox otherBB;
+	
+	public int ChunkListId = -1;
 	
 	public boolean Compressed;
 	public int Id;
@@ -60,14 +62,16 @@ public class SessionEntry extends IndexEntry
 		
 		playerBB.write(file);
 		otherBB.write(file);
+		
+		file.writeInt(ChunkListId);
 	}
 	public void read(RandomAccessFile file) throws IOException
 	{
 		StartTimestamp = file.readLong();
 		EndTimestamp = file.readLong();
 		RecordCount = file.readShort();
-		Location = (long)file.readInt();
-		TotalSize = (long)file.readInt();
+		Location = Utility.getUnsignedInt(file.readInt());
+		TotalSize = Utility.getUnsignedInt(file.readInt());
 		Compressed = (file.readByte() == 0 ? false : true);
 		
 		if(version >= 2)
@@ -94,6 +98,8 @@ public class SessionEntry extends IndexEntry
 			playerBB.read(file);
 			otherBB = new BoundingBox();
 			otherBB.read(file);
+			
+			ChunkListId = file.readInt();
 		}
 	}
 	

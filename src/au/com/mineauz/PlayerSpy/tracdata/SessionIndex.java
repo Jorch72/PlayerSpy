@@ -7,7 +7,9 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -28,6 +30,7 @@ import au.com.mineauz.PlayerSpy.Records.SessionInfoRecord;
 import au.com.mineauz.PlayerSpy.Records.TeleportRecord;
 import au.com.mineauz.PlayerSpy.Records.WorldChangeRecord;
 import au.com.mineauz.PlayerSpy.Utilities.BoundingBox;
+import au.com.mineauz.PlayerSpy.Utilities.CubicChunk;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.debugging.Profiler;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
@@ -197,7 +200,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 		add(session);
 		
 		if(!((LogFile)mHostingFile).testOverride)
-			CrossReferenceIndex.getInstance().addSession(session, (LogFile)mHostingFile);
+			CrossReferenceIndex.getInstance().addSession(session, (LogFile)mHostingFile, Collections.<CubicChunk> emptySet());
 		return getDataFor(session);
 	}
 	
@@ -497,6 +500,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 			Profiler.beginTimingSection("appendRecordsInternal");
 			
 			ArrayList<Short> rolledBackEntries = new ArrayList<Short>();
+			HashSet<CubicChunk> chunks = new HashSet<CubicChunk>();
 			
 			try
 			{
@@ -541,6 +545,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 						
 						if(location != null)
 						{
+							chunks.add(new CubicChunk(location));
 							if(record instanceof IPlayerLocationAware)
 								mSession.playerBB.addPoint(location);
 							else
@@ -583,10 +588,19 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 					// Update the session info
 					mSession.EndTimestamp = records.getEndTimestamp();
 					mSession.RecordCount += records.size();
+					
+					if(!chunks.isEmpty())
+					{
+						if(mSession.ChunkListId == -1)
+							mSession.ChunkListId = ((LogFile)mHostingFile).mChunkIndex.createNewChunkList(chunks);
+						else
+							((LogFile)mHostingFile).mChunkIndex.appendChunks(mSession.ChunkListId, chunks);
+					}
+					
 					set(indexOf(mSession), mSession);
 
 					if(!((LogFile)mHostingFile).testOverride)
-						CrossReferenceIndex.getInstance().updateSession(mSession, ((LogFile)mHostingFile));
+						CrossReferenceIndex.getInstance().updateSession(mSession, ((LogFile)mHostingFile), chunks);
 					
 					Debug.info("Completed append to Session %d", mSession.Id);
 					Debug.logLayout(mHostingFile);

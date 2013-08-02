@@ -3,6 +3,7 @@ package au.com.mineauz.PlayerSpy.tracdata;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReentrantLock;
@@ -18,6 +19,7 @@ import au.com.mineauz.PlayerSpy.LogTasks.*;
 import au.com.mineauz.PlayerSpy.Records.*;
 import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
 import au.com.mineauz.PlayerSpy.Utilities.BoundingBox;
+import au.com.mineauz.PlayerSpy.Utilities.CubicChunk;
 import au.com.mineauz.PlayerSpy.Utilities.Util;
 import au.com.mineauz.PlayerSpy.debugging.CrashReporter;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
@@ -145,6 +147,10 @@ public class LogFile extends StructuredFile
 		header.RollbackIndexSize = 0;
 		header.RollbackIndexLocation = header.getSize();
 		
+		header.ChunkIndexCount = 0;
+		header.ChunkIndexSize = 0;
+		header.ChunkIndexLocation = header.getSize();
+		
 		if (playerName.startsWith(LogFileRegistry.cGlobalFilePrefix))
 			header.RequiresOwnerTags = true;
 		else
@@ -188,8 +194,9 @@ public class LogFile extends StructuredFile
 		log.mSessionIndex = new SessionIndex(log, header, file, log.mSpaceLocator);
 		log.mOwnerTagIndex = new OwnerTagIndex(log, header, file, log.mSpaceLocator);
 		log.mRollbackIndex = new RollbackIndex(log, header, file, log.mSpaceLocator);
+		log.mChunkIndex = new ChunkIndex(log, header, file, log.mSpaceLocator);
 		
-		log.load(file, new File(filename), new Index[] {log.mHoleIndex, log.mSessionIndex, log.mOwnerTagIndex, log.mRollbackIndex});
+		log.load(file, new File(filename), new Index[] {log.mHoleIndex, log.mSessionIndex, log.mOwnerTagIndex, log.mRollbackIndex, log.mChunkIndex});
 		
 		log.mIsLoaded = true;
 		log.mFile = file;
@@ -258,8 +265,9 @@ public class LogFile extends StructuredFile
 			mSessionIndex = new SessionIndex(this, mHeader, file, mSpaceLocator);
 			mOwnerTagIndex = new OwnerTagIndex(this, mHeader, file, mSpaceLocator);
 			mRollbackIndex = new RollbackIndex(this, mHeader, file, mSpaceLocator);
+			mChunkIndex = new ChunkIndex(this, mHeader, file, mSpaceLocator);
 			
-			load(file, new File(filename), new Index[] {mHoleIndex, mSessionIndex, mOwnerTagIndex, mRollbackIndex});
+			load(file, new File(filename), new Index[] {mHoleIndex, mSessionIndex, mOwnerTagIndex, mRollbackIndex, mChunkIndex});
 			
 			// Read the indices
 			mHoleIndex.read();
@@ -272,6 +280,9 @@ public class LogFile extends StructuredFile
 			
 			if(header.VersionMajor >= 3)
 				mRollbackIndex.read();
+			
+			if(header.VersionMajor >= 4)
+				mChunkIndex.read();
 
 			readTags();
 			
@@ -463,6 +474,38 @@ public class LogFile extends StructuredFile
 	public String getOwnerTag(int sessionIndex)
 	{
 		return getOwnerTag(mSessionIndex.get(sessionIndex));
+	}
+	
+	public Set<CubicChunk> getPresentChunks(int sessionId)
+	{
+		SessionEntry session = mSessionIndex.getSessionFromId(sessionId);
+		
+		if(session == null)
+			return null;
+		
+		return getPresentChunks(session);
+	}
+	public Set<CubicChunk> getPresentChunks(SessionEntry session)
+	{
+		if(session.ChunkListId == -1)
+			return null;
+		
+		lockRead();
+		
+		try
+		{
+			return mChunkIndex.getChunks(session.ChunkListId);
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			unlockRead();
+		}
+		
+		return null;
 	}
 	
 	/**
@@ -1245,6 +1288,9 @@ public class LogFile extends StructuredFile
 			if(mHeader.VersionMajor >= 3)
 				mRollbackIndex.read();
 			
+			if(mHeader.VersionMajor >= 4)
+				mChunkIndex.read();
+			
 			readTags();
 		}
 		catch(IOException e)
@@ -1409,6 +1455,7 @@ public class LogFile extends StructuredFile
 	HoleIndex mHoleIndex;
 	OwnerTagIndex mOwnerTagIndex;
 	RollbackIndex mRollbackIndex;
+	ChunkIndex mChunkIndex;
 	
 	private SpaceLocator mSpaceLocator;
 	

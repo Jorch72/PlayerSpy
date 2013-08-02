@@ -4,13 +4,19 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Location;
 
+import com.google.common.collect.Multimap;
+
 import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
+import au.com.mineauz.PlayerSpy.Utilities.CubicChunk;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.structurefile.Index;
 import au.com.mineauz.PlayerSpy.structurefile.SpaceLocator;
@@ -29,6 +35,7 @@ public class GlobalReferenceFile extends StructuredFile
 	private HoleIndex mHoleIndex;
 	private FileIndex mFileIndex;
 	private SessionIndex mSessionIndex;
+	private ChunkIndex mChunkIndex;
 	
 	public GlobalReferenceFile()
 	{
@@ -109,7 +116,13 @@ public class GlobalReferenceFile extends StructuredFile
 		reference.mSessionIndex = new SessionIndex(reference, header, file, reference.mSpaceLocator);
 		reference.mFileIndex = new FileIndex(reference, header, file, reference.mSpaceLocator);
 		
-		reference.load(file, path, new Index[] {reference.mHoleIndex, reference.mSessionIndex, reference.mFileIndex});
+		if(header.VersionMajor >= 2)
+		{
+			reference.mChunkIndex = new ChunkIndex(reference, header, file, reference.mSpaceLocator);
+			reference.load(file, path, new Index[] {reference.mHoleIndex, reference.mSessionIndex, reference.mFileIndex, reference.mChunkIndex});
+		}
+		else
+			reference.load(file, path, new Index[] {reference.mHoleIndex, reference.mSessionIndex, reference.mFileIndex});
 		
 		reference.mIsLoaded = true;
 		reference.mHeader = header;
@@ -146,17 +159,29 @@ public class GlobalReferenceFile extends StructuredFile
 			mSessionIndex = new SessionIndex(this, mHeader, file, mSpaceLocator);
 			mFileIndex = new FileIndex(this, mHeader, file, mSpaceLocator);
 			
-			load(file, filePath, new Index[] {mHoleIndex, mSessionIndex, mFileIndex});
+			if(header.VersionMajor >= 2)
+			{
+				mChunkIndex = new ChunkIndex(this, mHeader, file, mSpaceLocator);
+				load(file, filePath, new Index[] {mHoleIndex, mSessionIndex, mFileIndex, mChunkIndex});
+			}
+			else
+				load(file, filePath, new Index[] {mHoleIndex, mSessionIndex, mFileIndex});
+			
 			
 			// Read the indices
 			mHoleIndex.read();
 			mSessionIndex.read();
 			mFileIndex.read();
 			
+			if(header.VersionMajor >= 2)
+				mChunkIndex.read();
+			
 			Debug.info("Global reference load Succeeded:");
 			Debug.fine(" Files: " + mFileIndex.getCount());
 			Debug.fine(" Sessions: " + mSessionIndex.getCount());
 			Debug.fine(" Holes: " + mHoleIndex.getCount());
+			if(header.VersionMajor >= 2)
+				Debug.fine(" Chunks: " + mChunkIndex.getCount());
 			
 			mIsLoaded = true;
 			ok = true;
@@ -243,7 +268,7 @@ public class GlobalReferenceFile extends StructuredFile
 		return entry.fileName;
 	}
 	
-	public void addSession(au.com.mineauz.PlayerSpy.tracdata.SessionEntry session, LogFile log) throws IOException
+	public void addSession(au.com.mineauz.PlayerSpy.tracdata.SessionEntry session, LogFile log, Set<CubicChunk> chunks) throws IOException
 	{
 		UUID fileId = getFileID(log);
 		
@@ -266,9 +291,21 @@ public class GlobalReferenceFile extends StructuredFile
 		fileEntry.timeEnd = Math.max(fileEntry.timeEnd, session.EndTimestamp);
 		
 		mFileIndex.set(fileId, fileEntry);
+		
+		HashSet<Long> visitedChunks = new HashSet<Long>();
+		for(CubicChunk chunk : chunks)
+		{
+			long id = chunk.chunkX | (long)chunk.chunkZ << 32;
+			
+			if(visitedChunks.contains(id))
+				continue;
+			
+			mChunkIndex.addSessionToChunk(chunk.chunkX, chunk.chunkZ, chunk.worldHash, fileId, session.Id);
+			visitedChunks.add(id);
+		}
 	}
 	
-	public void updateSession(au.com.mineauz.PlayerSpy.tracdata.SessionEntry session, LogFile log) throws IOException
+	public void updateSession(au.com.mineauz.PlayerSpy.tracdata.SessionEntry session, LogFile log, Set<CubicChunk> chunks) throws IOException
 	{
 		UUID fileId = getFileID(log);
 		
@@ -276,7 +313,7 @@ public class GlobalReferenceFile extends StructuredFile
 		
 		if(entry == null)
 		{
-			addSession(session, log);
+			addSession(session, log, chunks);
 			return;
 		}
 		
@@ -294,6 +331,18 @@ public class GlobalReferenceFile extends StructuredFile
 		fileEntry.timeEnd = Math.max(fileEntry.timeEnd, session.EndTimestamp);
 		
 		mFileIndex.set(fileId, fileEntry);
+		
+		HashSet<Long> visitedChunks = new HashSet<Long>();
+		for(CubicChunk chunk : chunks)
+		{
+			long id = chunk.chunkX | (long)chunk.chunkZ << 32;
+			
+			if(visitedChunks.contains(id))
+				continue;
+			
+			mChunkIndex.addSessionToChunk(chunk.chunkX, chunk.chunkZ, chunk.worldHash, fileId, session.Id);
+			visitedChunks.add(id);
+		}
 	}
 	
 	public void removeSession(au.com.mineauz.PlayerSpy.tracdata.SessionEntry session, LogFile log) throws IOException
@@ -322,6 +371,20 @@ public class GlobalReferenceFile extends StructuredFile
 			
 			mFileIndex.set(fileId, fileEntry);
 		}
+		
+		Set<CubicChunk> chunks = log.getPresentChunks(session);
+		
+		HashSet<Long> visitedChunks = new HashSet<Long>();
+		for(CubicChunk chunk : chunks)
+		{
+			long id = chunk.chunkX | (long)chunk.chunkZ << 32;
+			
+			if(visitedChunks.contains(id))
+				continue;
+			
+			mChunkIndex.removeSessionFromChunk(chunk.chunkX, chunk.chunkZ, chunk.worldHash, fileId, session.Id);
+			visitedChunks.add(id);
+		}
 	}
 	
 	public void removeLog(File logFile) throws IOException
@@ -342,7 +405,11 @@ public class GlobalReferenceFile extends StructuredFile
 		
 		// Remove all the sessions that belong to it
 		for(SessionEntry entry : mSessionIndex.subset(fileId))
+		{
 			mSessionIndex.remove(entry);
+			
+			// TODO: Somehow remove the chunk entries
+		}
 		
 		// Remove the file
 		mFileIndex.remove(fileId);
@@ -353,7 +420,23 @@ public class GlobalReferenceFile extends StructuredFile
 		
 		// Remove all the sessions that belong to it
 		for(SessionEntry entry : mSessionIndex.subset(fileId))
+		{
+			Set<CubicChunk> chunks = log.getPresentChunks(entry.sessionId);
+			
+			HashSet<Long> visitedChunks = new HashSet<Long>();
+			for(CubicChunk chunk : chunks)
+			{
+				long id = chunk.chunkX | (long)chunk.chunkZ << 32;
+				
+				if(visitedChunks.contains(id))
+					continue;
+				
+				mChunkIndex.removeSessionFromChunk(chunk.chunkX, chunk.chunkZ, chunk.worldHash, fileId, entry.sessionId);
+				visitedChunks.add(id);
+			}
+			
 			mSessionIndex.remove(entry);
+		}
 		
 		// Remove the file
 		mFileIndex.remove(fileId);
@@ -363,28 +446,23 @@ public class GlobalReferenceFile extends StructuredFile
 	{
 		ArrayList<SessionEntry> sessions = new ArrayList<SessionEntry>();
 		
-		for(FileEntry file : mFileIndex)
+		CubicChunk chunk = new CubicChunk(location);
+		
+		try
 		{
-			for(SessionEntry entry : mSessionIndex.subset(file.fileId))
+			Multimap<UUID, Integer> inChunk = mChunkIndex.getSessionsInChunk(chunk.chunkX, chunk.chunkZ, chunk.worldHash);
+		
+			for(Entry<UUID, Integer> entry : inChunk.entries())
 			{
-				if(entry.otherBB.isContained(location))
-				{
-					// Order in decending time
-					boolean add = false;
-					for(int i = 0; i < sessions.size(); ++i)
-					{
-						if(sessions.get(i).endTime < entry.endTime)
-						{
-							sessions.add(i, entry);
-							add = true;
-							break;
-						}
-					}
-					
-					if(!add)
-						sessions.add(entry);
-				}
+				SessionEntry session = mSessionIndex.get(entry.getKey(), entry.getValue());
+				
+				if(session.otherBB.isContained(location))
+					sessions.add(session);
 			}
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
 		}
 		
 		return sessions;
@@ -439,41 +517,57 @@ public class GlobalReferenceFile extends StructuredFile
 	{
 		ArrayList<SessionEntry> sessions = new ArrayList<SessionEntry>();
 		
-		for(FileEntry file : mFileIndex)
+		int minChunkX = (int)(position.getBlockX() - radius) >> 4;
+		int minChunkZ = (int)(position.getBlockZ() - radius) >> 4;
+		int maxChunkX = (int)(position.getBlockX() + radius) >> 4;
+		int maxChunkZ = (int)(position.getBlockZ() + radius) >> 4;
+
+		int worldHash = position.getWorld().getUID().hashCode();
+		for(int chunkX = minChunkX; chunkX <= maxChunkX; ++chunkX)
 		{
-			// Is the specified time range within that of the file 
-			if((file.timeBegin >= timeBegin && file.timeBegin <= timeEnd) || (file.timeEnd >= timeBegin && file.timeEnd <= timeEnd) ||
-				(file.timeBegin < timeBegin && file.timeEnd > timeBegin) || (file.timeBegin < timeEnd && file.timeEnd > timeEnd))
+			for(int chunkZ = minChunkZ; chunkZ <= maxChunkZ; ++chunkZ)
 			{
-				for(SessionEntry session : mSessionIndex.subset(file.fileId))
+				try
 				{
-					// Is the specified time range within that of the session
-					if((session.startTime >= timeBegin && session.startTime <= timeEnd) || (session.endTime >= timeBegin && session.endTime <= timeEnd) ||
-						(session.startTime < timeBegin && session.endTime > timeBegin) || (session.startTime < timeEnd && session.endTime > timeEnd))
+					Multimap<UUID, Integer> inChunk = mChunkIndex.getSessionsInChunk(chunkX, chunkZ, worldHash);
+					
+					for(Entry<UUID, Integer> entry : inChunk.entries())
 					{
-						// Check the distance
-						if(session.otherBB.intersects(position, radius))
+						SessionEntry session = mSessionIndex.get(entry.getKey(), entry.getValue());
+						
+						if(session == null)
+							continue;
+						
+						if((session.startTime >= timeBegin && session.startTime <= timeEnd) || (session.endTime >= timeBegin && session.endTime <= timeEnd) ||
+						   (session.startTime < timeBegin && session.endTime > timeBegin) || (session.startTime < timeEnd && session.endTime > timeEnd))
 						{
-							// Order in decending time
-							boolean add = false;
-							for(int i = 0; i < sessions.size(); ++i)
+							if(session.otherBB.intersects(position, radius))
 							{
-								if(sessions.get(i).endTime < session.endTime)
+								// Order in decending time
+								boolean add = false;
+								for(int i = 0; i < sessions.size(); ++i)
 								{
-									sessions.add(i, session);
-									add = true;
-									break;
+									if(sessions.get(i).endTime < session.endTime)
+									{
+										sessions.add(i, session);
+										add = true;
+										break;
+									}
 								}
+								
+								if(!add)
+									sessions.add(session);
 							}
-							
-							if(!add)
-								sessions.add(session);
 						}
 					}
 				}
+				catch(IOException e)
+				{
+					e.printStackTrace();
+				}
 			}
 		}
-		
+	
 		return sessions;
 	}
 	
