@@ -451,7 +451,7 @@ public class GlobalReferenceFile extends StructuredFile
 		try
 		{
 			Multimap<UUID, Integer> inChunk = mChunkIndex.getSessionsInChunk(chunk.chunkX, chunk.chunkZ, chunk.worldHash);
-		
+			
 			if(inChunk != null)
 			{
 				for(Entry<UUID, Integer> entry : inChunk.entries())
@@ -462,6 +462,8 @@ public class GlobalReferenceFile extends StructuredFile
 						sessions.add(session);
 				}
 			}
+			
+			LogUtil.info("Found: " + inChunk.size() + " Added: " + sessions.size());
 		}
 		catch(IOException e)
 		{

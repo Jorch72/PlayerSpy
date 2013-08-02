@@ -47,13 +47,15 @@ public class FileIndex extends Index<FileEntry>
 	@Override
 	protected int getEntrySize()
 	{
-		return FileEntry.getByteSize();
+		return FileEntry.getByteSize(mHeader.VersionMajor);
 	}
 
 	@Override
 	protected FileEntry createNewEntry()
 	{
-		return new FileEntry();
+		FileEntry entry = new FileEntry();
+		entry.version = mHeader.VersionMajor;
+		return entry;
 	}
 
 	@Override
@@ -112,6 +114,7 @@ public class FileIndex extends Index<FileEntry>
 	@Override
 	public int add( FileEntry entry ) throws IOException
 	{
+		entry.version = mHeader.VersionMajor;
 		int index = super.add(entry);
 		
 		rebuildMaps();

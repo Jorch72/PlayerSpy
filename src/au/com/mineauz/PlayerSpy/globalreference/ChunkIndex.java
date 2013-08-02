@@ -9,7 +9,6 @@ import java.util.UUID;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
-import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.structurefile.DataIndex;
@@ -276,15 +275,16 @@ public class ChunkIndex extends DataIndex<ChunkEntry, IMovableData<ChunkEntry>>
 				
 				if(newSize - oldSize < availableSpace)
 				{
-					long temp = Math.min(mChunkEntry.padding, newSize);
+					long adding = newSize - oldSize;
+					long temp = Math.min(mChunkEntry.padding, adding);
 					mChunkEntry.padding -= temp;
-					newSize -= temp;
+					adding -= temp;
 					
-					if(mChunkEntry.padding == 0 && newSize != 0)
+					if(mChunkEntry.padding == 0 && adding != 0)
 					{
 						// There is a hole to consume
-						mLocator.consumeSpace(mChunkEntry.location + mChunkEntry.size, newSize);
-						mChunkEntry.size += newSize;
+						mLocator.consumeSpace(mChunkEntry.location + mChunkEntry.size, adding);
+						mChunkEntry.size += adding;
 					}
 					
 					mFile.seek(mChunkEntry.location);
@@ -330,6 +330,8 @@ public class ChunkIndex extends DataIndex<ChunkEntry, IMovableData<ChunkEntry>>
 		{
 			ArrayListMultimap<UUID, Integer> sessions = ArrayListMultimap.create();
 			
+			mFile.seek(mChunkEntry.location);
+			
 			for(int i = 0; i < mChunkEntry.count; ++i)
 			{
 				UUID fileId = new UUID(mFile.readLong(), mFile.readLong());
@@ -344,6 +346,9 @@ public class ChunkIndex extends DataIndex<ChunkEntry, IMovableData<ChunkEntry>>
 		public void addContainedSession(UUID fileId, Integer sessionId) throws IOException
 		{
 			Multimap<UUID, Integer> sessions = getContainedSessions();
+			
+			if(sessions.containsEntry(fileId, sessionId))
+				return;
 			
 			if(sessions.put(fileId, sessionId))
 				write(sessions);

@@ -14,6 +14,7 @@ import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 
+import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.SpyPlugin;
 import au.com.mineauz.PlayerSpy.Utilities.CubicChunk;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
@@ -182,6 +183,9 @@ public class CrossReferenceIndex
 		HashMap<UUID, LogFile> openedLogs = new HashMap<UUID, LogFile>();
 		HashSet<String> failedLogs = new HashSet<String>();
 
+		int using = 0;
+		int discard = 0;
+		
 		for(au.com.mineauz.PlayerSpy.globalreference.SessionEntry session : foundSessions)
 		{
 			LogFile log = null;
@@ -205,7 +209,10 @@ public class CrossReferenceIndex
 			}
 			
 			if(log == null)
+			{
+				discard++;
 				continue;
+			}
 			
 			// Check the sub chunks
 			Set<CubicChunk> chunks = log.getPresentChunks(session.sessionId);
@@ -221,7 +228,11 @@ public class CrossReferenceIndex
 			}
 			
 			if(!isOk)
+			{
+				discard++;
 				continue;
+			}
+			using++;
 			
 			SessionInFile res = new SessionInFile();
 			res.Log = log;
@@ -229,6 +240,8 @@ public class CrossReferenceIndex
 			if(res.Session != null)
 				results.add(res);
 		}
+		
+		LogUtil.info("Results: Using: " + using + " Discard: " + discard);
 		
 		return new Results(results, openedLogs.values());
 	}

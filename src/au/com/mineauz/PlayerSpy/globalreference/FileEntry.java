@@ -10,12 +10,17 @@ import au.com.mineauz.PlayerSpy.structurefile.IndexEntry;
 
 public class FileEntry extends IndexEntry
 {
-	public static int getByteSize()
+	public static int getByteSize(int version)
 	{
-		return 32 + cMaxFileNameLength;
+		if(version == 1)
+			return 32 + cMaxFileNameLength + (Utility.cBitSetSize/8);
+		else
+			return 32 + cMaxFileNameLength;
 	}
 
 	public static final int cMaxFileNameLength = 32;
+	
+	public int version;
 	
 	public UUID fileId;
 	
@@ -38,8 +43,11 @@ public class FileEntry extends IndexEntry
 		if(fileName.indexOf(0) != -1)
 			fileName = fileName.substring(0, fileName.indexOf(0));
 		
-		byte[] bytes = new byte[Utility.cBitSetSize/8];
-		file.readFully(bytes);
+		if(version == 1)
+		{
+			byte[] bytes = new byte[Utility.cBitSetSize/8];
+			file.readFully(bytes);
+		}
 		
 		timeBegin = file.readLong();
 		timeEnd = file.readLong();
@@ -48,6 +56,9 @@ public class FileEntry extends IndexEntry
 	@Override
 	public void write( RandomAccessFile file ) throws IOException
 	{
+		if(version != GRFileHeader.currentVersion)
+			throw new RuntimeException("Tried to write old version");
+		
 		file.writeLong(fileId.getMostSignificantBits());
 		file.writeLong(fileId.getLeastSignificantBits());
 		
