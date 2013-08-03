@@ -17,6 +17,7 @@ import com.google.common.collect.Multimap;
 import au.com.mineauz.PlayerSpy.LogUtil;
 import au.com.mineauz.PlayerSpy.Utilities.ACIDRandomAccessFile;
 import au.com.mineauz.PlayerSpy.Utilities.CubicChunk;
+import au.com.mineauz.PlayerSpy.Utilities.Utility;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.structurefile.Index;
 import au.com.mineauz.PlayerSpy.structurefile.SpaceLocator;
@@ -295,7 +296,7 @@ public class GlobalReferenceFile extends StructuredFile
 		HashSet<Long> visitedChunks = new HashSet<Long>();
 		for(CubicChunk chunk : chunks)
 		{
-			long id = chunk.chunkX | (long)chunk.chunkZ << 32;
+			long id = Utility.getChunkId(chunk.chunkX, chunk.chunkZ);
 			
 			if(visitedChunks.contains(id))
 				continue;
@@ -335,7 +336,7 @@ public class GlobalReferenceFile extends StructuredFile
 		HashSet<Long> visitedChunks = new HashSet<Long>();
 		for(CubicChunk chunk : chunks)
 		{
-			long id = chunk.chunkX | (long)chunk.chunkZ << 32;
+			long id = Utility.getChunkId(chunk.chunkX, chunk.chunkZ);
 			
 			if(visitedChunks.contains(id))
 				continue;
@@ -377,7 +378,7 @@ public class GlobalReferenceFile extends StructuredFile
 		HashSet<Long> visitedChunks = new HashSet<Long>();
 		for(CubicChunk chunk : chunks)
 		{
-			long id = chunk.chunkX | (long)chunk.chunkZ << 32;
+			long id = Utility.getChunkId(chunk.chunkX, chunk.chunkZ);
 			
 			if(visitedChunks.contains(id))
 				continue;
@@ -426,7 +427,7 @@ public class GlobalReferenceFile extends StructuredFile
 			HashSet<Long> visitedChunks = new HashSet<Long>();
 			for(CubicChunk chunk : chunks)
 			{
-				long id = chunk.chunkX | (long)chunk.chunkZ << 32;
+				long id = Utility.getChunkId(chunk.chunkX, chunk.chunkZ);
 				
 				if(visitedChunks.contains(id))
 					continue;
@@ -462,8 +463,6 @@ public class GlobalReferenceFile extends StructuredFile
 						sessions.add(session);
 				}
 			}
-			
-			LogUtil.info("Found: " + inChunk.size() + " Added: " + sessions.size());
 		}
 		catch(IOException e)
 		{

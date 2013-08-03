@@ -217,6 +217,7 @@ public class Searcher
 			}
 			
 			pager.addItem(output);
+			//pager.addItem("From " + result.getArg1().sourceFile.getName() + " session " + result.getArg1().sourceEntry.Id + " ChunkList: " + result.getArg1().sourceEntry.ChunkListId);
 			
 			for(Modifier mod : results.usedFilter.modifiers)
 			{

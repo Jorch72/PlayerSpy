@@ -79,7 +79,7 @@ public class LogFile extends StructuredFile
 	{
 		lockRead();
 		
-		long result = 0;
+		long result = Long.MAX_VALUE;
 		if(mSessionIndex.getCount() > 0)
 			result = mSessionIndex.get(0).StartTimestamp;
 		

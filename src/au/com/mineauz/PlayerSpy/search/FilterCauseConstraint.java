@@ -30,8 +30,6 @@ public class FilterCauseConstraint extends CauseConstraint
 		
 		pattern = pattern.replaceAll("\\.", ".+?");
 		
-		pattern = "^" + pattern + "$";
-		
 		mPattern = Pattern.compile(pattern);
 	}
 	
@@ -40,16 +38,8 @@ public class FilterCauseConstraint extends CauseConstraint
 	{
 		String matchStr = cause.friendlyName().toLowerCase();
 		Matcher m1 = mPattern.matcher(matchStr);
-		Matcher m2 = null;
-		if(matchStr.contains(">"))
-			m2 = mPattern.matcher(matchStr.substring(0,matchStr.indexOf('>')));
 		
-		boolean ok = m1.matches();
-		
-		if(!ok && m2 != null)
-			ok = m2.matches();
-		
-		return ok;
+		return m1.find();
 	}
 
 	@Override
