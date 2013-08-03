@@ -73,7 +73,7 @@ public class Debug
 			OutputStream stream = new FileOutputStream(debugLogFile, true);
 
 			mDebugLog = Logger.getLogger("PlayerSpyDebug");
-			mDebugLog.setLevel(Level.FINEST); // TODO: NOTE: This level should be set to INFO for release versions 
+			mDebugLog.setLevel(Level.INFO); // TODO: NOTE: This level should be set to INFO for release versions 
 			mDebugLog.setUseParentHandlers(false);
 			
 			for(Handler handler : mDebugLog.getHandlers())
