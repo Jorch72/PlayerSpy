@@ -10,10 +10,12 @@ import au.com.mineauz.PlayerSpy.search.interfaces.CauseConstraint;
 public class FilterCauseConstraint extends CauseConstraint
 {
 	private Pattern mPattern;
+	private String mPlain;
 	
 	public FilterCauseConstraint(String pattern)
 	{
 		pattern = pattern.toLowerCase();
+		mPlain = pattern;
 		// Escape all symbols
 		for(int i = 0; i < pattern.length(); ++i)
 		{
@@ -45,7 +47,7 @@ public class FilterCauseConstraint extends CauseConstraint
 	@Override
 	public String getDescription()
 	{
-		return null;
+		return mPlain;
 	}
 
 }

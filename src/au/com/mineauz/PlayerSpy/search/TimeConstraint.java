@@ -1,6 +1,7 @@
 package au.com.mineauz.PlayerSpy.search;
 
 import au.com.mineauz.PlayerSpy.Records.Record;
+import au.com.mineauz.PlayerSpy.Utilities.Util;
 import au.com.mineauz.PlayerSpy.search.interfaces.Constraint;
 
 public class TimeConstraint extends Constraint
@@ -28,7 +29,10 @@ public class TimeConstraint extends Constraint
 	@Override
 	public String getDescription()
 	{
-		return null;
+		if(mAfter)
+			return "after " + Util.dateToString(mTime);
+		else
+			return "before " + Util.dateToString(mTime);
 	}
 	
 	public boolean isAfter()

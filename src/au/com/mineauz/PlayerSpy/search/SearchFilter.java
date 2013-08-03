@@ -16,33 +16,47 @@ public class SearchFilter
 	
 	public String getDescription()
 	{
-		String or = "";
 		String and = "";
 		String cause = "";
+		
+		int andCount = 0;
 
 		for(int i = 0; i < andConstraints.size(); i++)
 		{
-			if(i != 0)
-				and += " and ";
-			and += andConstraints.get(i).getDescription();
+			String str = andConstraints.get(i).getDescription();
+			if(str != null)
+			{
+				if(!and.isEmpty())
+					and += " and ";
+				
+				and += str;
+				andCount++;
+			}
 		}
 		
 		for(int i = 0; i < causes.size(); i++)
 		{
-			if(i != 0)
-				cause += " or ";
-			cause += causes.get(i).getDescription();
+			String str = causes.get(i).getDescription();
+			if(str != null)
+			{
+				if(!cause.isEmpty())
+					cause += " and ";
+				
+				cause += str;
+			}
 		}
 		
 		String result = "";
 		
-		if(!or.isEmpty())
-			result += "( " + or + " )";
 		if(!and.isEmpty())
 		{
 			if(!result.isEmpty())
 				result += " and ";
-			result += "( " + and + " )";
+			
+			if(andCount > 1)
+				result += "( " + and + " )";
+			else
+				result += and;
 		}
 		
 		if(!cause.isEmpty())

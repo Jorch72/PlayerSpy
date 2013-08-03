@@ -27,8 +27,24 @@ public class OrCauseConstraint extends CauseConstraint
 	@Override
 	public String getDescription()
 	{
-		// TODO Auto-generated method stub
-		return null;
+		String list = "";
+		int count = 0;
+		for(CauseConstraint constraint : mConstraints)
+		{
+			String str = constraint.getDescription();
+			if(str != null)
+			{
+				if(!list.isEmpty())
+					list += " or ";
+				
+				list += str;
+				count++;
+			}
+		}
+		
+		if(count > 1)
+			return "( " + list + " )";
+		return list;
 	}
 
 }

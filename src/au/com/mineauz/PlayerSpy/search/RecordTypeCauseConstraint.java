@@ -62,6 +62,17 @@ public class RecordTypeCauseConstraint extends CauseConstraint
 					break;
 				}
 			}
+			else if(constraint instanceof ChatConstraint)
+				mAllowPlayer = true;
+			else if(constraint instanceof CommandConstraint)
+				mAllowPlayer = true;
+			else if(constraint instanceof ItemTransactionConstraint)
+				mAllowPlayer = true;
+			else if(constraint instanceof BlockChangeConstraint)
+			{
+				mAllowPlayer = true;
+				mAllowExtra = true;
+			}
 		}
 	}
 

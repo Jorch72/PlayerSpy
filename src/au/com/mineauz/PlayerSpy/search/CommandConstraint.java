@@ -22,4 +22,10 @@ public class CommandConstraint extends RecordTypeConstraint
 		
 		return false;
 	}
+	
+	@Override
+	public String getDescription()
+	{
+		return "Commands";
+	}
 }

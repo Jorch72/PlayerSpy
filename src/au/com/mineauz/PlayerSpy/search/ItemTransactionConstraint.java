@@ -24,4 +24,17 @@ public class ItemTransactionConstraint extends RecordTypeConstraint
 		
 		return ((mTake && ((InventoryTransactionRecord)record).isTaking()) && (mAdd && !((InventoryTransactionRecord)record).isTaking()));
 	}
+	
+	@Override
+	public String getDescription()
+	{
+		if(mTake && mAdd)
+			return "Transactions";
+		else if(mTake)
+			return "Removing Transactions";
+		else if(mAdd)
+			return "Adding Transactions";
+		
+		return null;
+	}
 }

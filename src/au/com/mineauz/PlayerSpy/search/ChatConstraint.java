@@ -22,4 +22,10 @@ public class ChatConstraint extends RecordTypeConstraint
 		
 		return true;
 	}
+	
+	@Override
+	public String getDescription()
+	{
+		return "Chat";
+	}
 }

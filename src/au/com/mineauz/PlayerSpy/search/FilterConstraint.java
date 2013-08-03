@@ -117,7 +117,7 @@ public class FilterConstraint extends Constraint
 	@Override
 	public String getDescription()
 	{
-		return null;
+		return "Containing " + mPlain;
 	}
 
 }

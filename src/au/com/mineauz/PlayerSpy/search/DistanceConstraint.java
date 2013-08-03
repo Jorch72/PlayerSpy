@@ -48,6 +48,6 @@ public class DistanceConstraint extends Constraint
 	@Override
 	public String getDescription()
 	{
-		return "Within " + String.format("%.0f", distance) + " block of " + Utility.locationToStringShort(location);
+		return "Within " + String.format("%.0f", distance) + " blocks of " + Utility.locationToStringShort(location);
 	}
 }

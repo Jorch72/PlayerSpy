@@ -54,7 +54,27 @@ public class CompoundConstraint extends Constraint
 	@Override
 	public String getDescription()
 	{
-		return null;
+		String sep = mAnd ? "and" : "or";
+		
+		String list = "";
+		
+		int count = 0;
+		for(Constraint c : mSubConstraints)
+		{
+			String str = c.getDescription();
+			if(str != null)
+			{
+				if(!list.isEmpty())
+					list += " " + sep + " ";
+				
+				list += str;
+				++count;
+			}
+		}
+		
+		if(count > 1)
+			return "( " + list + " )";
+		return list;
 	}
 
 }
