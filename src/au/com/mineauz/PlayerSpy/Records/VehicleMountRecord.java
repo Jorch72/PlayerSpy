@@ -61,7 +61,7 @@ public class VehicleMountRecord extends Record implements ILocationAware
 	@Override
 	public String getDescription()
 	{
-		String entityName = (mVehicle.getEntityType() == EntityType.PLAYER ? mVehicle.getPlayerName() : mVehicle.getEntityType().getName());
+		String entityName = (mVehicle.getEntityType() == EntityType.PLAYER ? mVehicle.getCustomName() : mVehicle.getEntityType().getName());
 		if(mIsMounting)
 			return "%s mounted " + ChatColor.DARK_AQUA + entityName + ChatColor.RESET;
 		else

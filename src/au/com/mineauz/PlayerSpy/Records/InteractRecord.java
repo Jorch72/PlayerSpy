@@ -9,7 +9,6 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.event.block.Action;
 import org.bukkit.inventory.ItemStack;
 
@@ -161,8 +160,7 @@ public class InteractRecord extends Record implements ILocationAware
 		}
 		else if(hasEntity())
 		{
-			String entityName = (mEntity.getEntityType() == EntityType.PLAYER ? mEntity.getPlayerName() : mEntity.getEntityType().getName());
-			return "%s interacted with " + ChatColor.DARK_AQUA + entityName + ChatColor.RESET;
+			return "%s interacted with " + ChatColor.DARK_AQUA + mEntity.getName() + ChatColor.RESET;
 		}
 		return null;
 	}

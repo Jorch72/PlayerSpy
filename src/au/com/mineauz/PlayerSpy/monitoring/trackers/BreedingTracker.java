@@ -70,11 +70,6 @@ public class BreedingTracker implements Listener, Tracker
 		
 		EntityType type = event.getRightClicked().getType();
 		
-		// type returns null with horses as of writing
-		// TODO: Remove when bukkit fixes this
-		if(event.getRightClicked() instanceof Horse)
-			type = EntityType.HORSE;
-		
 		List<Data> dataList = mData.get(type);
 		
 		if(dataList == null)

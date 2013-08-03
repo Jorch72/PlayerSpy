@@ -107,7 +107,7 @@ public class EntitySpawnRecord extends Record implements ILocationAware
 	@Override
 	public String toString()
 	{
-		return "EntitySpawnRecord { type: " + mType + " entity: " + mSpawned.toString() + " }";
+		return "EntitySpawnRecord { type: " + mType + " entity: " + mSpawned.getName() + " }";
 	}
 	
 }

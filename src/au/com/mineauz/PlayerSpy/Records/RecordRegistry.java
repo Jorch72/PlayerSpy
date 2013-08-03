@@ -142,5 +142,8 @@ public class RecordRegistry
 		registerRecordType(3, RecordType.BlockChange, au.com.mineauz.PlayerSpy.Records.BlockChangeRecord.class);
 		registerRecordType(3, RecordType.PaintingChange, au.com.mineauz.PlayerSpy.Records.PaintingChangeRecord.class);
 		registerRecordType(3, RecordType.EntitySpawn, EntitySpawnRecord.class);
+		
+		// ===== Version 4 Records =====
+		registerRecordType(4, RecordType.NameEntity, NameEntityRecord.class);
 	}
 }

@@ -49,5 +49,6 @@ public enum RecordType
 	RClickAction,
 	ItemTransaction,
 	ItemFrameChange,
-	EntitySpawn
+	EntitySpawn,
+	NameEntity
 }

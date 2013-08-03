@@ -8,8 +8,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-
 import au.com.mineauz.PlayerSpy.storage.StoredEntity;
 
 public class DamageRecord extends Record implements ILocationAware
@@ -75,8 +73,7 @@ public class DamageRecord extends Record implements ILocationAware
 	{
 		if(mDamager != null)
 		{
-			String entityName = (mDamager.getEntityType() == EntityType.PLAYER ? mDamager.getPlayerName() : mDamager.getEntityType().getName());
-			return "%s took " + mAmount + " damage from " + ChatColor.DARK_AQUA + entityName + ChatColor.RESET;
+			return "%s took " + mAmount + " damage from " + ChatColor.DARK_AQUA + mDamager.getName() + ChatColor.RESET;
 		}
 		else
 		{

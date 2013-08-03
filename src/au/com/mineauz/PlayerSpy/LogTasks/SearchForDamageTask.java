@@ -102,7 +102,7 @@ public class SearchForDamageTask extends Task<Long>
 			{
 				if(type == EntityType.PLAYER && mPlayerName != null)
 				{
-					if(arecord.getDamagee().getPlayerName() == mPlayerName)
+					if(arecord.getDamagee().getCustomName() == mPlayerName)
 						return true;
 				}
 				else
@@ -121,7 +121,7 @@ public class SearchForDamageTask extends Task<Long>
 				{
 					if(type == EntityType.PLAYER && mPlayerName != null)
 					{
-						if(drecord.getDamager().getPlayerName() == mPlayerName)
+						if(drecord.getDamager().getCustomName() == mPlayerName)
 							return true;
 					}
 					else

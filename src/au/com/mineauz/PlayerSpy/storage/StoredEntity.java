@@ -22,9 +22,6 @@ public class StoredEntity
 	public StoredEntity(Entity ent)
 	{
 		EntityType type = ent.getType();
-		// TODO: Remove when bukkit fixes this
-		if(ent instanceof Horse)
-			type = EntityType.HORSE;
 		
 		mTypeId = type.getTypeId();
 		if(mTypeId == -1)
@@ -35,7 +32,16 @@ public class StoredEntity
 		
 		if(ent.getType() == EntityType.PLAYER)
 		{
-			mPlayerName = ((Player)ent).getName();
+			mCustomName = ((Player)ent).getName();
+		}
+		else if(ent instanceof LivingEntity)
+		{
+			mCustomName = ((LivingEntity)ent).getCustomName();
+			if(mCustomName == null)
+				mCustomName = "";
+			
+			if(!mCustomName.isEmpty())
+				mTypeId |= 2048;
 		}
 	}
 
@@ -49,7 +55,9 @@ public class StoredEntity
 		mLocation.writeLocation(stream,true);
 		// name if player
 		if(mTypeId == (EntityType.PLAYER.ordinal() | 1024))
-			stream.writeUTF(mPlayerName);
+			stream.writeUTF(mCustomName);
+		else if (getEntityType().isAlive() && (mTypeId & 2048) == 2048)
+			stream.writeUTF(mCustomName);
 	}
 	
 	public void read(DataInputStream stream) throws IOException, RecordFormatException
@@ -64,8 +72,10 @@ public class StoredEntity
 		try
 		{
 			// name if player
-			if(mTypeId == (EntityType.PLAYER.ordinal() | 1024))
-				mPlayerName = stream.readUTF();
+			if(mTypeId - (mTypeId & 2048) == (EntityType.PLAYER.ordinal() | 1024))
+				mCustomName = stream.readUTF();
+			else if(getEntityType().isAlive() && (mTypeId & 2048) == 2048)
+				mCustomName = stream.readUTF();
 		}
 		catch(UTFDataFormatException e)
 		{
@@ -82,18 +92,26 @@ public class StoredEntity
 	}
 	public int getSize()
 	{
- 		return 6 + mLocation.getSize(true) + (mTypeId == (EntityType.PLAYER.ordinal() | 1024) ? Utility.getUTFLength(mPlayerName) : 0);
+		int size = 6 + mLocation.getSize(true);
+		
+		int id = mTypeId - (mTypeId & 2048);
+		if(id == (EntityType.PLAYER.ordinal() | 1024) || getEntityType().isAlive() && (mTypeId & 2048) == 2048)
+			size += Utility.getUTFLength(mCustomName);
+		
+		return size;
 	}
 	
 	public au.com.mineauz.PlayerSpy.wrappers.minecraft.Entity createEntity()
 	{
 		au.com.mineauz.PlayerSpy.wrappers.minecraft.Entity ent;
-		if(mTypeId == (EntityType.PLAYER.ordinal() | 1024))
+		
+		int id = mTypeId - (mTypeId & 2048);
+		if(id == (EntityType.PLAYER.ordinal() | 1024))
 		{
-			ent = new EntityShadowPlayer(CraftWorld.castFrom(mLocation.getLocation().getWorld()).getHandle(), mPlayerName);
+			ent = new EntityShadowPlayer(CraftWorld.castFrom(mLocation.getLocation().getWorld()).getHandle(), mCustomName);
 		}
-		else if((mTypeId & 1024) == 0)
-			ent = EntityTypes.createEntityByID(mTypeId, CraftWorld.castFrom(mLocation.getLocation().getWorld()).getHandle());
+		else if((id & 1024) == 0)
+			ent = EntityTypes.createEntityByID(id, CraftWorld.castFrom(mLocation.getLocation().getWorld()).getHandle());
 		else
 			return null;
 		
@@ -103,28 +121,34 @@ public class StoredEntity
 
 	public EntityType getEntityType()
 	{
-		if((mTypeId & 1024) != 0)
+		int id = mTypeId - (mTypeId & 2048);
+		if((id & 1024) != 0)
 		{
-			return EntityType.values()[mTypeId & 1023];
+			return EntityType.values()[id & 1023];
 		}
 		
-		return EntityType.fromId(mTypeId);
+		return EntityType.fromId(id);
 	}
 	
 	public void setEntityType( EntityType type )
 	{
+		boolean named = (mTypeId & 2048) == 2048;
+		
 		mTypeId = type.getTypeId();
 		if(mTypeId == -1)
 			mTypeId = (short) (1024 | type.ordinal());
+		
+		if (named)
+			mTypeId |= 2048;
 	}
 	
 	public org.bukkit.Location getLocation()
 	{
 		return mLocation.getLocation();
 	}
-	public String getPlayerName()
+	public String getCustomName()
 	{
-		return mPlayerName;
+		return mCustomName;
 	}
 	public int getEntityId()
 	{
@@ -134,7 +158,14 @@ public class StoredEntity
 	public String getName()
 	{
 		if(getEntityType() == EntityType.PLAYER)
-			return getPlayerName();
+			return getCustomName();
+		else if(getEntityType().isAlive() && (mTypeId & 2048) == 2048)
+		{
+			if(mCustomName.isEmpty())
+				return getEntityType().getName();
+			else
+				return mCustomName + " (" + getEntityType().getName() + ")";
+		}
 		else
 			return getEntityType().getName();
 	}
@@ -157,17 +188,13 @@ public class StoredEntity
 			return false;
 		
 		
-		if(getEntityType() == EntityType.PLAYER)
-			return mPlayerName.equals(entity.mPlayerName);
+		if(getEntityType() == EntityType.PLAYER || getEntityType().isAlive())
+			return mCustomName.equals(entity.mCustomName);
 		return true;
 	}
 	
 	private short mTypeId;
 	private StoredLocation mLocation;
-	private String mPlayerName;
+	private String mCustomName;
 	private int mOriginalId;
-	
-	
-	
-	
 }

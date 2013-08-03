@@ -39,6 +39,7 @@ import au.com.mineauz.PlayerSpy.debugging.Debug;
 import au.com.mineauz.PlayerSpy.monitoring.trackers.BreedingTracker;
 import au.com.mineauz.PlayerSpy.monitoring.trackers.BuildableMobTracker;
 import au.com.mineauz.PlayerSpy.monitoring.trackers.EggTracker;
+import au.com.mineauz.PlayerSpy.monitoring.trackers.MobRenameTracker;
 import au.com.mineauz.PlayerSpy.monitoring.trackers.SpawnEggTracker;
 import au.com.mineauz.PlayerSpy.monitoring.trackers.Tracker;
 import au.com.mineauz.PlayerSpy.monitoring.trackers.VehiclePlaceTracker;
@@ -133,6 +134,7 @@ public class GlobalMonitor implements Listener
 		mTrackers.add(new SpawnEggTracker());
 		mTrackers.add(new BuildableMobTracker());
 		mTrackers.add(new VehiclePlaceTracker());
+		mTrackers.add(new MobRenameTracker());
 		
 		mItemTracker = new ItemFlowTracker();
 		Bukkit.getPluginManager().registerEvents(this, SpyPlugin.getInstance());

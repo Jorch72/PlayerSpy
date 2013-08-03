@@ -8,7 +8,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.ItemStack;
 
 import au.com.mineauz.PlayerSpy.Records.ILocationAware;
@@ -97,7 +96,7 @@ public class RightClickActionRecord extends Record implements ILocationAware
 	@Override
 	public String getDescription()
 	{
-		String entityName = (mEntity == null ? "" : (mEntity.getEntityType() == EntityType.PLAYER ? mEntity.getPlayerName() : mEntity.getEntityType().getName()));
+		String entityName = (mEntity == null ? "" : mEntity.getName());
 		String itemName = (mItem == null ? "" : Utility.formatItemName(mItem.getItem()));
 		
 		switch(mAction)

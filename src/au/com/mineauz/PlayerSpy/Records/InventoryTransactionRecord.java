@@ -12,7 +12,6 @@ import org.bukkit.block.BlockState;
 import org.bukkit.block.BrewingStand;
 import org.bukkit.block.Chest;
 import org.bukkit.block.Dispenser;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -122,8 +121,7 @@ public class InventoryTransactionRecord extends Record implements IRollbackable,
 		}
 		else if(mInvInfo.getEntity() != null)
 		{
-			String entityName = (mInvInfo.getEntity().getEntityType() == EntityType.PLAYER ? mInvInfo.getEntity().getPlayerName() : mInvInfo.getEntity().getEntityType().getName());
-			result += ChatColor.DARK_AQUA + entityName + ChatColor.RESET;
+			result += ChatColor.DARK_AQUA + mInvInfo.getEntity().getName() + ChatColor.RESET;
 		}
 		else if(mInvInfo.getType() == InventoryType.Player)
 		{

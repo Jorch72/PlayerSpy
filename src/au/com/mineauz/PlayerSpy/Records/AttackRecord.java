@@ -8,8 +8,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-
 import au.com.mineauz.PlayerSpy.storage.StoredEntity;
 
 public class AttackRecord extends Record implements ILocationAware
@@ -67,7 +65,7 @@ public class AttackRecord extends Record implements ILocationAware
 	@Override
 	public String getDescription()
 	{
-		String entityName = (mDamagee.getEntityType() == EntityType.PLAYER ? mDamagee.getPlayerName() : mDamagee.getEntityType().getName());
+		String entityName = mDamagee.getName();
 		
 		if(mDamagee.getEntityType().isAlive())
 		{
@@ -108,6 +106,6 @@ public class AttackRecord extends Record implements ILocationAware
 	@Override
 	public String toString()
 	{
-		return "AttackRecord {target: " + mDamagee.toString() + " damage: " + mAmount + "}";
+		return "AttackRecord {target: " + mDamagee.getName() + " damage: " + mAmount + "}";
 	}
 }
