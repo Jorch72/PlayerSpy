@@ -15,6 +15,7 @@ import au.com.mineauz.PlayerSpy.Upgrading.Upgrader;
 import au.com.mineauz.PlayerSpy.Utilities.PriorityExecutor;
 import au.com.mineauz.PlayerSpy.commands.*;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
+import au.com.mineauz.PlayerSpy.honeypot.commands.DefineCommand;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
 import au.com.mineauz.PlayerSpy.rollback.RollbackManager;
@@ -60,6 +61,14 @@ public class SpyPlugin extends JavaPlugin
 		dispatch.registerCommand(new EnderChestCommand());
 		dispatch.registerCommand(new CatchupCommand());
 		dispatch.registerCommand(new IntegrityCheckCommand());
+		dispatch.registerCommand(new HoneypotCommand());
+		
+		dispatch.register();
+		
+		CommandDispatcher honeypot = new CommandDispatcher("honeypot", "PlayerSpy honeypot manager");
+		honeypot.registerCommand(new DefineCommand());
+		
+		honeypot.register();
 		
 		// Attempt to load the test package if present
 		try
@@ -71,9 +80,6 @@ public class SpyPlugin extends JavaPlugin
 		{
 			
 		}
-		
-		getCommand("playerspy").setExecutor(dispatch);
-		getCommand("playerspy").setTabCompleter(dispatch);
 		
 		// Update every tick
 		getServer().getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {

@@ -164,6 +164,10 @@ public class Utility
 	{
 		return String.format("(%.0f,%.0f,%.0f,%s)", loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getName());
 	}
+	public static String locationToStringShorter(Location loc)
+	{
+		return String.format("(%.0f, %.0f, %.0f)", loc.getX(), loc.getY(), loc.getZ());
+	}
 	public static String formatItemName( org.bukkit.inventory.ItemStack myItem )
     {
 		if(myItem == null || myItem.getType() == Material.AIR)

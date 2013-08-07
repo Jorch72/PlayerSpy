@@ -6,12 +6,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.apache.commons.lang.Validate;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.BlockCommandSender;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.command.RemoteConsoleCommandSender;
 import org.bukkit.command.TabCompleter;
 
@@ -47,6 +50,16 @@ public class CommandDispatcher implements CommandExecutor, TabCompleter
 	public void registerCommand(ICommand command)
 	{
 		mCommands.put(command.getName().toLowerCase(), command);
+	}
+	
+	public void register()
+	{
+		PluginCommand cmd = Bukkit.getPluginCommand(mRootCommandName);
+		
+		Validate.notNull(cmd);
+		
+		cmd.setExecutor(this);
+		cmd.setTabCompleter(this);
 	}
 	
 	@Override

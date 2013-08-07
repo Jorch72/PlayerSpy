@@ -1,6 +1,6 @@
 name: PlayerSpy
 description: Player Spy is a player surveillance plugin that can record the movements and interactions of a player with the world, creatures, and players.
-version: 1.5.1
+version: 1.5.2
 
 author: Schmoller
 
@@ -11,6 +11,9 @@ commands:
     description: Container command for all player spy commands 
     usage: /<command> <spy | stopspy | list | playback | help> [args] 
     aliases: ps
+  honeypot:
+    description: Allows you to define and modify honeypots
+    aliases: hp
 permissions:
   playerspy.basic:
     description: Provides read only commands and abilities.
@@ -35,6 +38,8 @@ permissions:
       playerspy.restore: true
       playerspy.inventory.edit: true
       playerspy.enderchest.edit: true
+      playerspy.honeypot: true
+      playerspy.honeypot.immune: true
   
   playerspy.op:
     description: Provides every ability.
@@ -102,3 +107,9 @@ permissions:
   playerspy.integritycheck:
     default: op
     description: Allows a player to check the integrity of data files
+  playerspy.honeypot:
+    default: op
+    description: Allows a player to place and modify honeypots
+  playerspy.honeypot.immune:
+    default: op
+    descripton: Players with this permission are immune from honeypots
