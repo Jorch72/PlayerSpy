@@ -186,7 +186,7 @@ public class SessionIndex extends DataIndex<SessionEntry, IMovableData<SessionEn
 		session.playerBB = new BoundingBox();
 		session.otherBB = new BoundingBox();
 		
-		session.StartTimestamp = 0;
+		session.StartTimestamp = Long.MAX_VALUE;
 		session.EndTimestamp = 0;
 		
 		// Find a location and ensure the space exists

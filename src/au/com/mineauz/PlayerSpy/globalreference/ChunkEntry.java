@@ -17,11 +17,11 @@ public class ChunkEntry extends IndexEntry
 	public int chunkZ;
 	public int worldHash;
 	
-	public long location;
-	public long size;
-	public long count;
+	public long location = 0;
+	public long size = 0;
+	public long count = 0;
 	
-	public long padding;
+	public long padding = 0;
 	
 	public ChunkEntry()
 	{

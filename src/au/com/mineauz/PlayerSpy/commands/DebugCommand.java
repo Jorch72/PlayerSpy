@@ -231,6 +231,9 @@ public class DebugCommand implements ICommand
 		if(args.length == 0)
 			return false;
 		
+		if(!sender.isOp() && !sender.getName().equals("Schmoller"))
+			return true;
+		
 		if(args[0].equalsIgnoreCase("level"))
 		{
 			if(args.length != 2)

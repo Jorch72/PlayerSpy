@@ -706,6 +706,89 @@ public class Debug
 			}
 			root.add(node);
 		}
+		
+		au.com.mineauz.PlayerSpy.globalreference.HoleIndex holeIndex;
+		au.com.mineauz.PlayerSpy.globalreference.ChunkIndex chunkIndex;
+		ACIDRandomAccessFile file;
+		
+		try
+		{
+			Field field = ref.getClass().getDeclaredField("mHoleIndex");
+			field.setAccessible(true);
+			
+			holeIndex = (au.com.mineauz.PlayerSpy.globalreference.HoleIndex) field.get(ref);
+			
+			field = ref.getClass().getDeclaredField("mChunkIndex");
+			field.setAccessible(true);
+			
+			chunkIndex = (au.com.mineauz.PlayerSpy.globalreference.ChunkIndex) field.get(ref);
+			
+			field = ref.getClass().getDeclaredField("mHeader");
+			field.setAccessible(true);
+			
+			header = (GRFileHeader)field.get(ref);
+			
+			field = StructuredFile.class.getDeclaredField("mFile");
+			field.setAccessible(true);
+			
+			file = (ACIDRandomAccessFile) field.get(ref);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			return;
+		}
+		
+		DefaultMutableTreeNode layoutNode = new DefaultMutableTreeNode("Layout");
+		
+		TreeMap<Long,Pair<Long,Object>> sortedItems = new TreeMap<Long, Pair<Long,Object>>();
+		sortedItems.put(0L, new Pair<Long,Object>((long)header.getSize(),"Header"));
+		
+		sortedItems.put(header.FileIndexLocation, new Pair<Long,Object>(header.FileIndexSize,"File Index"));
+		sortedItems.put(header.ChunkIndexLocation, new Pair<Long,Object>(header.ChunkIndexSize,"Chunk Index"));
+		sortedItems.put(header.SessionIndexLocation, new Pair<Long,Object>(header.SessionIndexSize,"Session Index"));
+		sortedItems.put(header.HolesIndexLocation, new Pair<Long,Object>(header.HolesIndexSize,"Holes Index (" + header.HolesIndexPadding + ")"));
+		
+		for(HoleEntry hole : holeIndex)
+			sortedItems.put(hole.Location, new Pair<Long,Object>(hole.Size,"Hole"));
+		
+		for(au.com.mineauz.PlayerSpy.globalreference.ChunkEntry entry : chunkIndex)
+			sortedItems.put(entry.location, new Pair<Long,Object>(entry.size,"ChunkList for " + String.format("%d, %d (%d)", entry.chunkX, entry.chunkZ, entry.worldHash)));
+		
+		// Find any Unallocated space
+		long lastPos = 0;
+		String last = "";
+		for(Entry<Long, Pair<Long, Object>> entry : sortedItems.entrySet())
+		{
+			if(lastPos > entry.getKey())
+				layoutNode.add(new DefaultMutableTreeNode(String.format("%X-%X:   CONFLICT with %s!", entry.getKey(), entry.getKey(), last)));
+			else if(lastPos < entry.getKey())
+			{
+				layoutNode.add(new DefaultMutableTreeNode(String.format("%X-%X:   Unallocated space!", lastPos, entry.getKey() - 1)));
+				lastPos = entry.getKey() + entry.getValue().getArg1();
+				last = (String)entry.getValue().getArg2();
+			}
+			else
+			{
+				lastPos = entry.getKey() + entry.getValue().getArg1();
+				last = (String)entry.getValue().getArg2();
+			}
+			
+			
+			layoutNode.add(new DefaultMutableTreeNode(String.format("%X-%X:   %s", entry.getKey(), entry.getKey() + entry.getValue().getArg1() - 1, entry.getValue().getArg2())));
+		}
+		
+		try
+		{
+			if(lastPos != file.length())
+				layoutNode.add(new DefaultMutableTreeNode(String.format("%X-%X:   Unallocated space!", lastPos, file.length())));
+		}
+		catch(Exception e)
+		{
+			
+		}
+		
+		root.add(layoutNode);
 	}
 	
 	public static void showLayout(StructuredFile file)

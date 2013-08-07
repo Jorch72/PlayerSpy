@@ -35,7 +35,32 @@ public class Upgrader
 		
 		File path = new File(SpyPlugin.getInstance().getDataFolder(), "data/reference");
 		
-		if(path.exists() && index.load(path))
+		if(!path.exists())
+		{
+			LogUtil.severe("No reference exists! It will be generated");
+			mAddNeeded = true;
+			return;
+		}
+		
+		boolean loaded = false;
+		
+		try
+		{
+			loaded = index.load(path);
+		}
+		catch(Exception e)
+		{
+			LogUtil.severe("reference failed to load, it will be regenerated");
+			
+			if(!path.delete())
+			{
+				LogUtil.warning("Upgrade failed on reference");
+				return;
+			}
+			mAddNeeded = true;
+		}
+		
+		if(path.exists() && loaded)
 		{
 			if(index.getVersionMajor() < GRFileHeader.currentVersion)
 			{
