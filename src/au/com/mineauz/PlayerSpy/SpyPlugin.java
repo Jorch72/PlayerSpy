@@ -15,6 +15,7 @@ import au.com.mineauz.PlayerSpy.Upgrading.Upgrader;
 import au.com.mineauz.PlayerSpy.Utilities.PriorityExecutor;
 import au.com.mineauz.PlayerSpy.commands.*;
 import au.com.mineauz.PlayerSpy.debugging.Debug;
+import au.com.mineauz.PlayerSpy.honeypot.HoneypotManager;
 import au.com.mineauz.PlayerSpy.honeypot.commands.DefineCommand;
 import au.com.mineauz.PlayerSpy.monitoring.CrossReferenceIndex;
 import au.com.mineauz.PlayerSpy.monitoring.GlobalMonitor;
@@ -189,6 +190,8 @@ public class SpyPlugin extends JavaPlugin
 		{
 			playback.getValue().update();
 		}
+		
+		HoneypotManager.instance.onTick();
 	}
 	
 	private HashMap<Player,PlaybackContext> mPlayers = new HashMap<Player,PlaybackContext>();

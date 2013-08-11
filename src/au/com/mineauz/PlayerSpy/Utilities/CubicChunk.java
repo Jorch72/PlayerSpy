@@ -5,6 +5,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import org.bukkit.Location;
+import org.bukkit.World;
 
 public class CubicChunk
 {
@@ -26,6 +27,13 @@ public class CubicChunk
 		chunkZ = location.getBlockZ() >> 4;
 		chunkY = (byte)(location.getBlockY() >> 4);
 		worldHash = location.getWorld().getUID().hashCode();
+	}
+	public CubicChunk(int x, int y, int z, World world)
+	{
+		chunkX = x;
+		chunkZ = z;
+		chunkY = (byte)y;
+		worldHash = world.getUID().hashCode();
 	}
 	
 	@Override

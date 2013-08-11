@@ -99,16 +99,16 @@ public class DefineCommand implements ICommand
 
 		HoneypotManager.instance.addHoneypot(honeypot);
 		
-		if(selection.first.equals(selection.second))
+		if(selection.getBlockCount() == 1)
 		{
-			Block block = selection.first.getBlock();
+			Block block = selection.getFirst().getBlock();
 			String name = Utility.formatItemName(new ItemStack(block.getType(), 1, block.getData()));
 			sender.sendMessage("Honeypot created for " + ChatColor.DARK_AQUA + name + ChatColor.WHITE + " at " + ChatColor.GREEN + Utility.locationToStringShorter(block.getLocation()));
 		}
 		else
 		{
-			int blocks = (Math.abs(selection.first.getBlockX() - selection.second.getBlockX()) + 1) * (Math.abs(selection.first.getBlockY() - selection.second.getBlockY()) + 1) * (Math.abs(selection.first.getBlockZ() - selection.second.getBlockZ()) + 1);
-			sender.sendMessage("Honeypot created from " + ChatColor.GREEN + Utility.locationToStringShorter(selection.first) + ChatColor.WHITE + " to " + ChatColor.GREEN + Utility.locationToStringShorter(selection.second) + ChatColor.DARK_AQUA + " " + blocks + ChatColor.WHITE + " blocks total");
+			int blocks = selection.getBlockCount();
+			sender.sendMessage("Honeypot created from " + ChatColor.GREEN + Utility.locationToStringShorter(selection.getFirst()) + ChatColor.WHITE + " to " + ChatColor.GREEN + Utility.locationToStringShorter(selection.getSecond()) + ChatColor.DARK_AQUA + " " + blocks + ChatColor.WHITE + " blocks total");
 		}
 		return true;
 	}
@@ -116,7 +116,6 @@ public class DefineCommand implements ICommand
 	@Override
 	public List<String> onTabComplete( CommandSender sender, String label, String[] args )
 	{
-		// TODO Auto-generated method stub
 		return null;
 	}
 
