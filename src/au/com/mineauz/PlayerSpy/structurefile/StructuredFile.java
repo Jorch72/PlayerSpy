@@ -73,6 +73,7 @@ public class StructuredFile
 	protected static void rollbackJointTransaction(StructuredFile master, StructuredFile child)
 	{
 		master.mFile.rollback();
+		master.onRollback();
 	}
 	
 	protected void load(ACIDRandomAccessFile file, File filePath, Index<?>... indexes)
@@ -265,4 +266,6 @@ public class StructuredFile
 			throw new RuntimeException(String.format("Holes indicate that this section is not free. But absolute scan says othewise. Location: %X->%X", location, location + size - 1));
 		}
 	}
+	
+	protected void onRollback() {}
 }

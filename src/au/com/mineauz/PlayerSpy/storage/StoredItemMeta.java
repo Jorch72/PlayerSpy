@@ -16,6 +16,8 @@ import java.util.Map.Entry;
 import org.bukkit.Color;
 import org.bukkit.FireworkEffect;
 import org.bukkit.inventory.meta.*;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import au.com.mineauz.PlayerSpy.Records.RecordFormatException;
 import au.com.mineauz.PlayerSpy.Utilities.ReflectionHelper;
@@ -67,7 +69,11 @@ public class StoredItemMeta
 			data = ((NBTTagLong)tag).getData();
 		
 		else if(tag instanceof NBTTagString)
+		{
 			data = ((NBTTagString)tag).getData();
+			if(((String)data).startsWith("B:"))
+				data = Boolean.parseBoolean(((String)data).substring(2));
+		}
 		
 		else if(tag instanceof NBTTagFloat)
 			data = ((NBTTagFloat)tag).getData();
@@ -136,6 +142,15 @@ public class StoredItemMeta
 				
 				return FireworkEffect.builder().flicker(flicker).trail(trail).with(effectType).withColor(colors).withFade(fade).build();
 			}
+			else if(type.equals("potion"))
+			{
+				int amplifier = ((NBTTagCompound)tag).getInt("amp");
+				int duration = ((NBTTagCompound)tag).getInt("duration");
+				int id = ((NBTTagCompound)tag).getInt("id");
+				
+				PotionEffectType effectType = PotionEffectType.getById(id);
+				return effectType.createEffect(duration, amplifier);
+			}
 			else
 				throw new RuntimeException("Unsupported type: " + type);
 		}
@@ -176,6 +191,10 @@ public class StoredItemMeta
 		else if(data instanceof Short)
 		{
 			tag = new NBTTagShort("", (Short)data);
+		}
+		else if(data instanceof Boolean)
+		{
+			tag = new NBTTagString("", "B:" + data.toString());
 		}
 		else if(data instanceof List)
 		{
@@ -239,6 +258,17 @@ public class StoredItemMeta
 					colours.add(makeTagFor(col));
 				((NBTTagCompound)tag).set("fade", colours);
 			}
+		}
+		else if(data instanceof PotionEffect)
+		{
+			PotionEffect effect = (PotionEffect)data;
+			
+			tag = new NBTTagCompound("");
+			
+			((NBTTagCompound)tag).set("type", new NBTTagString("", "potion"));
+			((NBTTagCompound)tag).set("amp", new NBTTagInt("", effect.getAmplifier()));
+			((NBTTagCompound)tag).set("id", new NBTTagInt("", effect.getType().getId()));
+			((NBTTagCompound)tag).set("duration", new NBTTagInt("", effect.getDuration()));
 		}
 		else
 			throw new RuntimeException("Invalid type " + data.getClass().getName() + " for making NBT tags");

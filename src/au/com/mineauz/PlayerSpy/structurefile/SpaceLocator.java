@@ -77,7 +77,11 @@ public class SpaceLocator
 		int hole = findHoleAt(location);
 		
 		if(hole == -1 && location != mIndex.getEndOfFile())
+		{
+			Debug.recordVariable("Spacelocator Location", location);
+			Debug.recordVariable("Spacelocator Size", size);
 			throw new RuntimeException("The location asked for did not have a hole to consume");
+		}
 		
 		if(hole != -1)
 		{
