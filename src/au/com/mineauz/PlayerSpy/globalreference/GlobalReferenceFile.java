@@ -591,6 +591,7 @@ public class GlobalReferenceFile extends StructuredFile
 	public void rollbackTransaction()
 	{
 		mFile.rollback();
+		onRollback();
 	}
 	
 	public int getVersionMajor()
@@ -601,5 +602,31 @@ public class GlobalReferenceFile extends StructuredFile
 	public int getVersionMinor()
 	{
 		return mHeader.VersionMinor;
+	}
+	
+	@Override
+	protected void onRollback()
+	{
+		try
+		{
+			readIndexes();
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+	}
+	
+	private void readIndexes() throws IOException
+	{
+		mFile.seek(0);
+		mHeader.read(mFile);
+		
+		mHoleIndex.read();
+		mSessionIndex.read();
+		mFileIndex.read();
+		
+		if(mHeader.VersionMajor >= 2)
+			mChunkIndex.read();
 	}
 }

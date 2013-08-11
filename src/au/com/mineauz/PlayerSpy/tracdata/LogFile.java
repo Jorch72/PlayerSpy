@@ -905,6 +905,8 @@ public class LogFile extends StructuredFile
 		if(records.isEmpty())
 			return false;
 		
+		Debug.startSection();
+		
 		Profiler.beginTimingSection("appendRecords");
 		Object synchObject = CrossReferenceIndex.getInstance();
 		if(testOverride)
@@ -976,6 +978,7 @@ public class LogFile extends StructuredFile
 				reporter.addVariable("LogFile", mPlayerName);
 				reporter.addVariable("Session", chosenSession);
 				reporter.addVariable("owner", owner);
+				reporter.addVariables(Debug.getVariables());
 				
 				Debug.logCrash(reporter);
 				StructuredFile.rollbackJointTransaction(CrossReferenceIndex.getInstance(), this);
@@ -985,6 +988,7 @@ public class LogFile extends StructuredFile
 			}
 			finally
 			{
+				Debug.stopSection();
 				unlockWrite();
 				Profiler.endTimingSection();
 			}
